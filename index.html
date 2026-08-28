@@ -387,6 +387,14 @@
   #quickAddModalOverlay .modal-card{ width:500px; }
   #quickAddModalOverlay .modal-actions{ display:flex; justify-content:flex-end; align-items:center; gap:18px; }
   #quickAddModalOverlay .modal-actions .qa-delete{ margin-right:0; }
+  /* La fenêtre « Rendez-vous d'exception » a 4 boutons avec du texte plus long (Annuler la plage /
+     Céduler un rendez-vous / Fermer / Enregistrer) qui dépassaient de la largeur par défaut de la
+     modale (440px) : le bouton « Annuler la plage », poussé tout à gauche par margin-right:auto,
+     se retrouvait complètement caché hors de la zone visible. On élargit la modale et on retire ce
+     margin-right:auto, comme pour la modale de rendez-vous normal ci-dessus. */
+  #quickExceptionModalOverlay .modal-card{ width:560px; }
+  #quickExceptionModalOverlay .modal-actions{ flex-wrap:wrap; row-gap:10px; }
+  #quickExceptionModalOverlay .modal-actions .qa-delete{ margin-right:0; }
   .btn-facturer{ display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:14px; padding:13px 18px; background:var(--ink); color:#fff; border:none; border-radius:12px; cursor:pointer; font-family:'Josefin Sans'; font-size:12.5px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
   .btn-facturer:hover{ filter:brightness(1.15); }
   .btn-facturer-left{ display:flex; align-items:center; gap:9px; }
@@ -969,7 +977,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 16 14"></polyline></svg>
           Prochaine dispo
         </button>
-        <span class="db-badge">&#9679; base de données en direct · v37:165</span>
+        <span class="db-badge">&#9679; base de données en direct · v37:166</span>
       </div>
     </div>
     <div class="cal-inline" id="calInline">
