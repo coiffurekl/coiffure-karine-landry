@@ -178,6 +178,10 @@
   .ecol2{ min-width:120px; flex:1; border-right:1px solid var(--line); }
   .ecol2:last-child{ border-right:none; }
   .ecol2-head{ height:38px; display:flex; align-items:center; justify-content:center; color:#fff; font-family:'Josefin Sans'; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:.03em; }
+  /* Nom de l'employée dans son propre <span> pour pouvoir le tronquer avec des "..." (voir le bloc
+     cellulaire plus bas) sans jamais toucher l'apparence tablette/ordinateur : à ces largeurs-là, le
+     nom rentre toujours au complet donc l'ellipse ne se déclenche simplement jamais. */
+  .ecol2-head-txt{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; }
   .ecol2-head.clickable{ cursor:pointer; }
   .ecol2-head.clickable:hover{ filter:brightness(1.08); }
   .horaire-emp-bar{ display:flex; align-items:center; height:48px; border-radius:12px; margin-bottom:10px; padding:0 14px; background:var(--paper2); border:1px solid var(--line); color:var(--ink); font-family:'Josefin Sans'; font-weight:700; font-size:16px; text-transform:uppercase; letter-spacing:.04em; }
@@ -957,6 +961,33 @@
     .app-shell{ padding:20px 16px 40px; }
     .page-head{ margin-bottom:18px; }
     .page-head h1{ font-size:24px; }
+
+    /* ---- Horaire : en-tête (Prochaine dispo, Madame Patron, la pilule de date) empilé en colonne
+       au lieu de tout superposer en position:absolute — c'est ce qui causait le chevauchement vu
+       sur cellulaire (la pilule de date passait par-dessus le badge Madame Patron et débordait des
+       deux côtés de l'écran). Le badge Madame Patron est retiré ici pour garder de la place ; tout
+       le reste reste utilisable, juste réduit. */
+    .page-head.horaire-head{ position:static; flex-direction:column; align-items:stretch; gap:10px; }
+    .page-head.horaire-head h1{ font-size:20px; }
+    .patron-badge{ display:none !important; }
+    .date-center{ position:static; transform:none; }
+    .date-nav{ justify-content:center; gap:8px; }
+    .date-pill{ flex:1; justify-content:center; gap:8px; padding:10px 12px; font-size:14px; }
+    .date-pill .day{ font-size:15px; }
+    .date-arrow{ font-size:20px; }
+    .today-reset{ width:38px; height:38px; font-size:18px; flex-shrink:0; }
+    .hor-head-right{ margin-left:0; justify-content:space-between; }
+    .next-avail-btn{ padding:8px 12px; font-size:11px; gap:6px; }
+    .next-avail-btn svg{ width:14px; height:14px; }
+    .db-badge{ font-size:8.5px; padding:5px 8px; }
+
+    /* ---- Horaire : colonnes employées plus étroites, avec le nom tronqué (…) au besoin — comme
+       dans la plupart des logiciels de rendez-vous sur cellulaire, la grille reste scrollable
+       horizontalement pour voir les employées suivantes. */
+    .time-axis{ width:42px; }
+    .time-axis .tick{ font-size:9px; right:4px; }
+    .ecol2{ min-width:72px; }
+    .ecol2-head{ font-size:10.5px; padding:0 5px; height:34px; }
   }
 </style>
 </head>
@@ -1041,7 +1072,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 16 14"></polyline></svg>
           Prochaine dispo
         </button>
-        <span class="db-badge">&#9679; base de données en direct · v37:171</span>
+        <span class="db-badge">&#9679; base de données en direct · v37:172</span>
       </div>
     </div>
     <div class="cal-inline" id="calInline">
@@ -7864,7 +7895,14 @@ async function loadHoraire(){
     const head = document.createElement('div');
     head.className = 'ecol2-head clickable';
     head.style.background = emp.color_hex;
-    head.textContent = emp.name;
+    // Le nom est dans un <span> (plutôt que directement en textContent du conteneur flex) pour
+    // pouvoir le tronquer avec des points de suspension (...) sur cellulaire, quand les colonnes
+    // sont trop étroites pour un nom complet — voir .ecol2-head-txt. Aucun effet sur
+    // tablette/ordinateur, où il y a toujours assez de place pour le nom complet.
+    const headTxt = document.createElement('span');
+    headTxt.className = 'ecol2-head-txt';
+    headTxt.textContent = emp.name;
+    head.appendChild(headTxt);
     head.title = 'Voir la semaine de ' + emp.name;
     head.addEventListener('click', function(){ showEmployeeWeek(emp.name, emp.color_hex); });
     col.appendChild(head);
