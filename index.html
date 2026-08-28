@@ -969,7 +969,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 16 14"></polyline></svg>
           Prochaine dispo
         </button>
-        <span class="db-badge">&#9679; base de données en direct · v37:163</span>
+        <span class="db-badge">&#9679; base de données en direct · v37:164</span>
       </div>
     </div>
     <div class="cal-inline" id="calInline">
@@ -2053,6 +2053,7 @@ function performGo(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   currentScreenId = id;
+  try{ sessionStorage.setItem('lastScreenId', id); }catch(e){}
   window.scrollTo({top:0});
   if(id === 'screen-clients') loadClients();
   if(id === 'screen-prix') loadPrixList();
@@ -5495,6 +5496,15 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   loadClients();
   applyThemeOnLoad();
+  // Après un refresh (F5), on revient sur la page où on était plutôt que de retourner
+  // systématiquement à la page d'accueil. Les zones protégées par un code PIN redemandent
+  // quand même ce code, puisque go() gère déjà cette vérification normalement.
+  try{
+    const savedScreenId = sessionStorage.getItem('lastScreenId');
+    if(savedScreenId && savedScreenId !== 'screen-cover' && document.getElementById(savedScreenId)){
+      go(savedScreenId);
+    }
+  }catch(e){}
 });
 
 /* ---------- Horaire : grille connectée à Supabase (employés + rendez-vous) ---------- */
