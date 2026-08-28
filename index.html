@@ -894,6 +894,70 @@
     .clients-list{ width:auto; border-right:none; border-bottom:1px solid var(--line); }
     .config-grid{ grid-template-columns:1fr; }
   }
+
+  /* ================= MOBILE (téléphones seulement — ne touche jamais tablette/ordinateur) =================
+     Tout ce bloc est sous max-width:640px, une largeur bien en dessous des tablettes (iPad ≥768px en
+     portrait). La mise en page tablette/ordinateur ci-dessus reste 100% inchangée.
+     Corrige 2 problèmes trouvés sur cellulaire :
+     1) La page couverture avait un margin-top négatif (pensé pour l'écran large) qui, une fois les
+        colonnes empilées en un seul bloc, faisait remonter "Horaire" par-dessus le logo, et le logo
+        (hauteur fixe, largeur libre) débordait carrément de l'écran, coupant "Landry" et faisant
+        chevaucher "Mes performances". Ici : logo contraint à la largeur de l'écran, "Mes performances"
+        replacé dans le flux normal (jamais en position absolue qui pourrait chevaucher), Madame Patron
+        remontée juste sous le logo, et les 6 coups de pinceau (mêmes images que la version web) réarrangés
+        en 2 colonnes plutôt qu'empilés un par un — plus compact, sans avoir à faire défiler autant.
+     2) La barre de navigation du haut (logo + Horaire/Facturation/Clients/Prix + Config/Gestionnaire/
+        Mes performances) ne pouvait jamais revenir à la ligne (flex nowrap) : sur un écran de cellulaire,
+        les liens se chevauchaient ou débordaient. Ici : la barre s'empile proprement et les liens
+        peuvent revenir à la ligne au besoin. */
+  @media (max-width:640px){
+    /* ---- Page couverture ---- */
+    .page{ padding:18px 16px 14px; }
+    .cover-topright-link{ position:static; display:block; text-align:right; margin:0 0 8px; font-size:11px; }
+    .brand{ margin-top:0; }
+    .brand img{ height:auto; width:auto; max-width:min(72vw,240px); }
+    /* Grille unique à 2 colonnes pour les 6 coups de pinceau (au lieu de 2 groupes de 3 qui
+       s'empilaient de façon inégale — 2 puis 1 tout seul). .col.left/.col.right passent en
+       display:contents pour "disparaître" et laisser leurs boutons rejoindre directement la grille
+       de .layout ; l'ordre voulu (Horaire/RDV, Fiches/Facture, Prix/Caisse) est fixé bouton par
+       bouton avec la propriété order, que la grille respecte pour le placement automatique. */
+    .layout{ display:grid; grid-template-columns:1fr 1fr; gap:14px 10px; min-height:0; margin-top:10px; }
+    .center-col{ grid-column:1 / -1; order:-1; margin-top:0; }
+    .glow{ width:220px; height:220px; }
+    .patron{ height:220px; }
+    .col.left, .col.right{ display:contents; }
+    .col.left .brush-btn:nth-child(1){ order:1; }  /* Horaire */
+    .col.right .brush-btn:nth-child(1){ order:2; } /* Chercher un prix */
+    .col.left .brush-btn:nth-child(3){ order:3; }  /* Fiches clients */
+    .col.right .brush-btn:nth-child(2){ order:4; } /* Nouvelle facture */
+    .col.left .brush-btn:nth-child(2){ order:5; }  /* Rendez-vous en ligne */
+    .col.right .brush-btn:nth-child(3){ order:6; } /* Fermer ma caisse */
+    .brush-btn{ max-width:none; width:auto; }
+    .brush-btn:hover{ transform:none; }
+    /* Le coup de pinceau est une forme diagonale : plein/opaque dans son "ventre" en bas à gauche,
+       et effiloché (des poils de pinceau, presque transparent) dans son quart supérieur droit. La
+       version tablette avait simplifié le texte en le centrant avec un padding symétrique, ce qui
+       fonctionnait à peu près à leur taille, mais à la taille encore plus petite du cellulaire le
+       texte débordait carrément sur la zone effilochée/transparente. On revient ici au même
+       padding asymétrique (en %, donc qui suit la forme peu importe la taille) déjà utilisé sur
+       la version bureau, qui garde le texte bien dans la partie pleine de la peinture. */
+    .col.left .brush-content{ padding:31% 40% 21% 12% !important; align-items:flex-start !important; text-align:left !important; }
+    .col.right .brush-content{ padding:31% 12% 21% 40% !important; align-items:flex-end !important; text-align:right !important; }
+    .brush-content .lbl{ white-space:normal; font-size:11.5px; line-height:1.18; }
+    .bottombar{ flex-direction:column; gap:10px; align-items:center; padding-top:14px; text-align:center; }
+    .footer-note{ margin-top:10px; }
+
+    /* ---- Barre de navigation interne (toutes les pages sauf la couverture) ---- */
+    .app-nav{ flex-direction:column; align-items:stretch; gap:8px; padding:10px 14px; }
+    .app-nav .nav-left{ justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .app-nav .nav-left img{ height:32px; }
+    .app-nav .nav-links{ flex-wrap:wrap; gap:12px 16px; justify-content:center; }
+    .app-nav .nav-left .nav-links{ justify-content:flex-start; width:100%; order:3; }
+    .app-nav .nav-links span{ font-size:11px; padding-bottom:2px; }
+    .app-shell{ padding:20px 16px 40px; }
+    .page-head{ margin-bottom:18px; }
+    .page-head h1{ font-size:24px; }
+  }
 </style>
 </head>
 <body>
@@ -977,7 +1041,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 16 14"></polyline></svg>
           Prochaine dispo
         </button>
-        <span class="db-badge">&#9679; base de données en direct · v37:166</span>
+        <span class="db-badge">&#9679; base de données en direct · v37:171</span>
       </div>
     </div>
     <div class="cal-inline" id="calInline">
