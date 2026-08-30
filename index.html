@@ -984,11 +984,17 @@
     /* ---- Horaire : colonnes employées plus étroites, avec le nom tronqué (…) au besoin — comme
        dans la plupart des logiciels de rendez-vous sur cellulaire, la grille reste scrollable
        horizontalement pour voir les employées suivantes. */
-    .time-axis{ width:38px; }
+    .time-axis{ width:34px; }
     .time-axis .tick{ font-size:8.5px; right:3px; }
-    /* 56px : environ six colonnes visibles d'un coup sur un écran de 375px, le reste accessible
-       en glissant vers la droite. Assez large pour l'heure et un prénom tronqué dans le bloc. */
-    .ecol2{ min-width:56px; }
+    /* La grille déborde volontairement des marges de .app-shell (16px de chaque côté) : ces
+       32px récupérés sont ce qui permet aux huit coiffeuses d'entrer à l'écran. Bordures et
+       coins arrondis retirés sur les côtés, sinon le débordement aurait l'air d'un défaut. */
+    .horaire-grid-wrap{ margin-left:-16px; margin-right:-16px; border-radius:0; border-left:none; border-right:none; }
+    /* Colonnes élastiques plutôt que de largeur fixe : elles se partagent la place disponible,
+       donc toutes les coiffeuses de la journée entrent sans défilement horizontal, quel qu'en
+       soit le nombre. Le plancher de 38px évite qu'elles deviennent illisibles si l'équipe
+       grandit — au-delà d'une dizaine, le défilement latéral reprend le relais. */
+    .ecol2{ min-width:38px; flex:1 1 0; }
     /* Pas de majuscules : « Ge… » se lit mieux que « GE… », et les accents restent lisibles. */
     .ecol2-head{ font-size:12px; padding:0 2px; height:32px; letter-spacing:0; text-transform:none; }
     /* Bascule vers l'abréviation posée par le JS (data-short) : on masque le nom complet en
