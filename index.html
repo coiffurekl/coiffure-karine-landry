@@ -996,6 +996,17 @@
     .ecol2-head-txt{ font-size:0; }
     .ecol2-head-txt::before{ content:attr(data-short); font-size:12.5px; }
     .ecol2-hours-wrap{ padding:2px 0 4px; }
+
+    /* ---- Le nom de la coiffeuse reste visible pendant qu'on descend dans la journée.
+       Sans ça, rendu à 15h on ne sait plus quelle colonne appartient à qui.
+       Pour que « position:sticky » ait de l'effet, il faut que .ecols-wrap défile lui-même
+       verticalement : sa hauteur est donc plafonnée par fitHoraireGrid() (en JS, selon la
+       place réellement disponible à l'écran). L'axe des heures, qui est à côté et non dedans,
+       est plafonné à la même hauteur et son défilement est synchronisé — sinon les heures
+       se décaleraient des rendez-vous dès le premier glissement. */
+    .ecol2-head{ position:sticky; top:0; z-index:6; }
+    .horaire-grid-wrap{ overflow:visible; }
+    .time-axis{ overflow:hidden; }
     .appt2{ left:2px; right:2px; padding:4px 5px; font-size:9.5px; border-radius:7px; line-height:1.25; }
     /* Le nom de la cliente passe sur sa propre ligne et se coupe avec « … » plutôt que de
        déborder du bloc ; le séparateur « · » n'a plus lieu d'être une fois les deux séparés. */
@@ -2294,7 +2305,7 @@ function performGo(id){
   if(id === 'screen-services-edit') loadServicesEdit();
   if(id === 'screen-comptable-equipe') loadTeamEdit();
   if(id === 'screen-produits') loadProduits();
-  if(id === 'screen-horaire') return loadHoraire().then(resumeQuickAddIfPending);
+  if(id === 'screen-horaire') return loadHoraire().then(resumeQuickAddIfPending).then(fitHoraireGrid);
   if(id === 'screen-schedule-employees') loadScheduleEmployees();
   if(id === 'screen-business-settings') loadBusinessSettingsScreen();
   if(id === 'screen-facture') loadFactureScreen();
@@ -5807,6 +5818,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }catch(e){}
 });
+
+/* ---------- Horaire sur cellulaire : en-tête collant ----------
+   Sur petit écran, la grille défile à l'intérieur de son propre cadre plutôt qu'avec la page.
+   C'est ce qui permet au nom des coiffeuses de rester affiché en haut (.ecol2-head est en
+   position:sticky) quand on descend dans la journée. Sur tablette/ordinateur, aucun plafond
+   n'est posé : la grille reprend son comportement habituel, inchangé. */
+const HORAIRE_STICKY_MAX_WIDTH = 640;   // même seuil que le bloc @media du CSS
+
+function fitHoraireGrid(){
+  const wrap = document.querySelector('#screen-horaire .ecols-wrap');
+  if(!wrap) return;
+  const axis = wrap.parentElement && wrap.parentElement.querySelector('.time-axis');
+  if(window.innerWidth > HORAIRE_STICKY_MAX_WIDTH){
+    wrap.style.maxHeight = '';
+    if(axis) axis.style.maxHeight = '';
+    return;
+  }
+  // Hauteur réellement disponible entre le haut de la grille et le bas de l'écran, avec une
+  // petite marge pour ne pas coller au bord. Mesurée plutôt que codée en dur : la barre de
+  // navigation passe sur une ou deux lignes selon la largeur, donc la position varie.
+  const dispo = Math.max(260, Math.round(window.innerHeight - wrap.getBoundingClientRect().top - 10));
+  wrap.style.maxHeight = dispo + 'px';
+  if(axis) axis.style.maxHeight = dispo + 'px';
+
+  // Écouteur posé directement sur le conteneur qui défile. Le drapeau évite de l'attacher
+  // plusieurs fois : .ecols-wrap survit aux redessins de la grille (seules ses colonnes sont
+  // remplacées), donc fitHoraireGrid() peut être rappelée sans empiler les écouteurs.
+  if(!wrap.dataset.axisSyncBound){
+    wrap.addEventListener('scroll', function(){
+      const ax = wrap.parentElement && wrap.parentElement.querySelector('.time-axis');
+      if(ax) ax.scrollTop = wrap.scrollTop;   // garde les heures alignées sur les rendez-vous
+    }, { passive:true });
+    wrap.dataset.axisSyncBound = '1';
+  }
+}
+
+window.addEventListener('resize', fitHoraireGrid);
 
 /* ---------- Employées non bookables ----------
    Ces deux-là occupent une ligne dans `employees` sans être des coiffeuses à qui on donne un
