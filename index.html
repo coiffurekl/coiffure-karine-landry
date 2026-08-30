@@ -1077,8 +1077,10 @@
     border:1px solid var(--line); border-radius:18px; padding:32px 28px;
     box-shadow:0 10px 40px rgba(32,48,47,.10); text-align:center;
   }
-  .auth-script{ font-family:'Alex Brush',cursive; font-size:38px; color:var(--ocre); line-height:1; }
-  .auth-title{ font-family:'Playfair Display',serif; font-size:21px; color:var(--teal-dk); margin:2px 0 4px; }
+  /* Le vrai logo du salon, repris de la page d'accueil. Sa source est copiée en JS plutôt que
+     recollée ici : l'image est encodée dans le fichier et pèse quelques centaines de kilo-octets,
+     inutile de la dupliquer. */
+  .auth-logo{ display:block; margin:0 auto 6px; height:auto; width:auto; max-width:min(74%,230px); }
   .auth-sub{ font-family:'Josefin Sans',sans-serif; font-size:13px; color:var(--ink-soft); margin-bottom:22px; letter-spacing:.3px; }
   .auth-field{ text-align:left; margin-bottom:14px; }
   .auth-field label{
@@ -1091,17 +1093,29 @@
     border:1px solid var(--line); border-radius:10px; background:var(--paper2);
   }
   .auth-field input:focus{ outline:none; border-color:var(--teal); background:var(--white); }
-  #authSubmitBtn{
+  #authSubmitBtn, #authResetBtn{
     width:100%; margin-top:8px; padding:13px; border:none; border-radius:10px; cursor:pointer;
     background:var(--teal); color:#fff; font-family:'Josefin Sans',sans-serif;
     font-size:15px; font-weight:600; letter-spacing:.8px; text-transform:uppercase;
   }
-  #authSubmitBtn:hover{ background:var(--teal-dk); }
-  #authSubmitBtn:disabled{ background:var(--sage); cursor:default; }
+  #authSubmitBtn:hover, #authResetBtn:hover{ background:var(--teal-dk); }
+  #authSubmitBtn:disabled, #authResetBtn:disabled{ background:var(--sage); cursor:default; }
+  .auth-link{
+    display:inline-block; margin-top:16px; cursor:pointer;
+    font-family:'Josefin Sans',sans-serif; font-size:12.5px;
+    color:var(--ink-soft); text-decoration:underline;
+  }
+  .auth-link:hover{ color:var(--teal); }
+  #authOk{
+    margin-top:10px; font-family:'Poppins',sans-serif;
+    font-size:13px; color:var(--teal);
+  }
+  #authOk:empty{ display:none; }
   #authError{
-    min-height:18px; margin-top:12px; font-family:'Poppins',sans-serif;
+    margin-top:10px; font-family:'Poppins',sans-serif;
     font-size:13px; color:var(--terracotta);
   }
+  #authError:empty{ display:none; }
   /* En haut à gauche, et non en bas : en bas il passait par-dessus les liens « Zone
      Configuration » / « Zone Gestionnaire », qui sont centrés au pied de la page d'accueil. */
   #authLogoutBtn{
@@ -1114,6 +1128,32 @@
   @media (max-width:640px){
     .auth-card{ padding:26px 20px; }
     .auth-script{ font-size:32px; }
+  }
+  /* ---------- Bandeau « nouvelle version » ----------
+     Le fichier est servi avec une durée de cache généreuse, et les navigateurs mobiles le
+     gardent souvent bien plus longtemps : sans ça, une coiffeuse pourrait travailler des jours
+     durant sur une version périmée sans le savoir. Le bandeau ne force rien — elle touche
+     quand ça l'arrange, ce qui évite de lui faire perdre une saisie en cours. */
+  #versionBanner{
+    position:fixed; top:0; left:0; right:0; z-index:99998; display:none;
+    padding:11px 16px; cursor:pointer; text-align:center;
+    background:var(--teal); color:#fff;
+    font-family:'Josefin Sans',sans-serif; font-size:13.5px; letter-spacing:.3px;
+    box-shadow:0 3px 12px rgba(32,48,47,.22);
+  }
+  #versionBanner.on{ display:block; }
+  /* Le bandeau étant en position fixe, il recouvrirait la barre de navigation et le bouton
+     Déconnexion. On décale plutôt le contenu vers le bas tant qu'il est affiché : la coiffeuse
+     garde l'usage complet du logiciel et met à jour quand ça lui convient. */
+  body.banniere-version{ padding-top:46px; }
+  body.banniere-version #authLogoutBtn{ top:58px; }
+  @media (max-width:640px){
+    body.banniere-version{ padding-top:60px; }
+    body.banniere-version #authLogoutBtn{ top:72px; }
+  }
+  #versionBanner b{ text-decoration:underline; }
+  @media (max-width:640px){
+    #versionBanner{ font-size:12.5px; padding:10px 12px; }
   }
 </style>
 </head>
@@ -2250,8 +2290,7 @@
 
 <div id="authGate">
   <form class="auth-card" onsubmit="event.preventDefault(); doLogin();">
-    <div class="auth-script">La Coiffure</div>
-    <div class="auth-title">par Karine Landry</div>
+    <img class="auth-logo" alt="La Coiffure par Karine Landry">
     <div class="auth-sub">Connexion au logiciel</div>
     <div class="auth-field">
       <label for="authEmail">Courriel</label>
@@ -2263,7 +2302,29 @@
     </div>
     <button type="submit" id="authSubmitBtn">Se connecter</button>
     <div id="authError" role="alert"></div>
+    <div id="authOk" role="status"></div>
+    <span class="auth-link" onclick="demanderReinitialisation()">Mot de passe oublié&nbsp;?</span>
   </form>
+
+  <!-- Affichée uniquement au retour du lien reçu par courriel (voir MODE_RECUPERATION). -->
+  <form class="auth-card" id="authResetCard" style="display:none;" onsubmit="event.preventDefault(); enregistrerNouveauMotDePasse();">
+    <img class="auth-logo" alt="La Coiffure par Karine Landry">
+    <div class="auth-sub"><b>Nouveau mot de passe</b><br>Choisis un mot de passe pour ton compte</div>
+    <div class="auth-field">
+      <label for="authNewPass">Nouveau mot de passe</label>
+      <input type="password" id="authNewPass" autocomplete="new-password">
+    </div>
+    <div class="auth-field">
+      <label for="authNewPass2">Retape-le pour confirmer</label>
+      <input type="password" id="authNewPass2" autocomplete="new-password">
+    </div>
+    <button type="submit" id="authResetBtn">Enregistrer</button>
+    <div id="authResetError" role="alert" style="min-height:18px; margin-top:12px; font-family:'Poppins',sans-serif; font-size:13px; color:var(--terracotta);"></div>
+  </form>
+</div>
+
+<div id="versionBanner" onclick="appliquerNouvelleVersion()">
+  Une nouvelle version du logiciel est disponible — <b>toucher pour mettre à jour</b>
 </div>
 
 <script>
@@ -3450,7 +3511,67 @@ const sbClient = window.supabase.createClient(SUPA_URL, SUPA_KEY);
    pour l'équipe, ni pour un curieux qui trouverait l'adresse du site.
    La session est conservée par supabase-js dans le stockage local du navigateur : l'équipe ne se
    reconnecte donc pas à chaque ouverture, seulement après une déconnexion explicite. */
+/* Le lien reçu par courriel ramène ici avec un jeton de récupération dans l'adresse.
+   supabase-js le transforme en session valide — sans ce drapeau, requireAuth() conclurait que
+   la personne est connectée et la laisserait entrer sans jamais lui demander son nouveau mot
+   de passe. On lit l'adresse AVANT toute vérification de session. */
+const MODE_RECUPERATION = /type=recovery/.test(location.hash) || /type=recovery/.test(location.search);
+
+// Le logo n'est présent qu'une fois dans le fichier (page d'accueil) : on réutilise sa source
+// pour les cartes de connexion, ce qui évite d'alourdir le fichier d'une deuxième copie.
+function poserLogoAuth(){
+  const source = document.querySelector('.brand img');
+  if(!source) return;
+  document.querySelectorAll('.auth-logo').forEach(img => { img.src = source.src; });
+}
+document.addEventListener('DOMContentLoaded', poserLogoAuth);
+
+function afficherCarteNouveauMotDePasse(){
+  poserLogoAuth();
+  const gate = document.getElementById('authGate');
+  if(gate) gate.classList.add('on');
+  const connexion = gate && gate.querySelector('.auth-card');
+  if(connexion) connexion.style.display = 'none';
+  const reset = document.getElementById('authResetCard');
+  if(reset) reset.style.display = '';
+}
+
+async function demanderReinitialisation(){
+  const email = document.getElementById('authEmail').value.trim();
+  const errEl = document.getElementById('authError');
+  const okEl = document.getElementById('authOk');
+  errEl.textContent = ''; okEl.textContent = '';
+  if(!email){
+    errEl.textContent = 'Écris d’abord ton courriel, puis touche « Mot de passe oublié ».';
+    return;
+  }
+  // redirectTo doit correspondre à une adresse autorisée dans Supabase (URL Configuration),
+  // sinon le lien du courriel ramène vers l'adresse par défaut du projet.
+  const { error } = await sbClient.auth.resetPasswordForEmail(email, {
+    redirectTo: location.origin + location.pathname
+  });
+  if(error){ errEl.textContent = 'Envoi impossible : ' + error.message; return; }
+  okEl.textContent = 'Courriel envoyé. Regarde ta boîte de réception.';
+}
+
+async function enregistrerNouveauMotDePasse(){
+  const a = document.getElementById('authNewPass').value;
+  const b = document.getElementById('authNewPass2').value;
+  const errEl = document.getElementById('authResetError');
+  const btn = document.getElementById('authResetBtn');
+  errEl.textContent = '';
+  if(a.length < 8){ errEl.textContent = 'Choisis un mot de passe d’au moins 8 caractères.'; return; }
+  if(a !== b){ errEl.textContent = 'Les deux mots de passe ne sont pas identiques.'; return; }
+  btn.disabled = true; btn.textContent = 'Enregistrement…';
+  const { error } = await sbClient.auth.updateUser({ password: a });
+  btn.disabled = false; btn.textContent = 'Enregistrer';
+  if(error){ errEl.textContent = 'Impossible d’enregistrer : ' + error.message; return; }
+  // On repart sur une adresse propre : le jeton de récupération ne doit pas rester visible.
+  location.replace(location.pathname);
+}
+
 async function requireAuth(){
+  if(MODE_RECUPERATION){ afficherCarteNouveauMotDePasse(); return false; }
   let session = null;
   try{
     const { data } = await sbClient.auth.getSession();
@@ -5908,6 +6029,56 @@ function fitHoraireGrid(){
 }
 
 window.addEventListener('resize', fitHoraireGrid);
+
+
+/* ---------- Détection d'une nouvelle version en ligne ----------
+   On compare l'empreinte (ETag) du fichier servi par GitHub Pages à celle relevée au
+   chargement. Une requête HEAD suffit : on ne retélécharge jamais les 9,6 Mo du fichier.
+   Sans ce mécanisme, il fallait ouvrir l'adresse avec « ?v=2 », « ?v=3 »… à la main après
+   chaque déploiement — impensable à expliquer à huit coiffeuses. */
+const VERSION_INTERVALLE_MS = 5 * 60 * 1000;   // une vérification aux 5 minutes
+let empreinteAuChargement = null;
+
+async function lireEmpreinteEnLigne(){
+  // Le paramètre aléatoire et « no-store » contournent le cache : sans eux, le navigateur
+  // répondrait avec l'empreinte qu'il a en mémoire, c'est-à-dire justement celle qu'on veut
+  // comparer. La requête ne demande que les en-têtes, pas le corps du fichier.
+  const url = location.pathname + '?_v=' + Date.now();
+  const r = await fetch(url, { method:'HEAD', cache:'no-store' });
+  if(!r.ok) return null;
+  return r.headers.get('etag') || r.headers.get('last-modified');
+}
+
+async function verifierNouvelleVersion(){
+  try{
+    const actuelle = await lireEmpreinteEnLigne();
+    if(!actuelle) return;
+    if(empreinteAuChargement === null){ empreinteAuChargement = actuelle; return; }
+    if(actuelle !== empreinteAuChargement){
+      const b = document.getElementById('versionBanner');
+      if(b && !b.classList.contains('on')){
+        b.classList.add('on');
+        document.body.classList.add('banniere-version');
+        // La grille de l'Horaire calcule sa hauteur à partir de l'espace disponible : elle doit
+        // être recalculée maintenant que le contenu est descendu de quelques dizaines de pixels.
+        if(typeof fitHoraireGrid === 'function') fitHoraireGrid();
+      }
+    }
+  }catch(e){ /* hors ligne ou réseau capricieux : on réessaiera au prochain tour */ }
+}
+
+function appliquerNouvelleVersion(){
+  // On repart avec une adresse différente pour que le navigateur aille vraiment rechercher le
+  // fichier au lieu de ressortir sa copie. L'écran en cours est restauré par sessionStorage.
+  location.replace(location.pathname + '?v=' + Date.now());
+}
+
+verifierNouvelleVersion();                                   // relève l'empreinte de départ
+setInterval(verifierNouvelleVersion, VERSION_INTERVALLE_MS);
+// Une coiffeuse laisse souvent l'onglet ouvert des heures : on revérifie dès qu'elle y revient.
+document.addEventListener('visibilitychange', function(){
+  if(!document.hidden) verifierNouvelleVersion();
+});
 
 /* ---------- Employées non bookables ----------
    Ces deux-là occupent une ligne dans `employees` sans être des coiffeuses à qui on donne un
