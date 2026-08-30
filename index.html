@@ -995,6 +995,11 @@
        soit le nombre. Le plancher de 38px évite qu'elles deviennent illisibles si l'équipe
        grandit — au-delà d'une dizaine, le défilement latéral reprend le relais. */
     .ecol2{ min-width:38px; flex:1 1 0; }
+    /* Les colonnes doivent faire la hauteur de la JOURNÉE, pas celle du cadre. Par défaut, en
+       flex, elles s'étiraient sur la hauteur du conteneur (plafonnée plus haut) : l'en-tête
+       collant, qui ne peut jamais sortir de sa colonne, décrochait donc passé le milieu de
+       l'après-midi et disparaissait vers 21h. */
+    .ecols-wrap{ align-items:flex-start; }
     /* Pas de majuscules : « Ge… » se lit mieux que « GE… », et les accents restent lisibles. */
     .ecol2-head{ font-size:12px; padding:0 2px; height:32px; letter-spacing:0; text-transform:none; }
     /* Bascule vers l'abréviation posée par le JS (data-short) : on masque le nom complet en
