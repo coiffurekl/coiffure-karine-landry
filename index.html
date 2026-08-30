@@ -4591,6 +4591,36 @@ function closeFacturePaiement(){
   document.getElementById('factPaiementOverlay').classList.remove('show');
 }
 
+/* ---------- Champs chiffrés pré-sélectionnés au toucher ----------
+   Ces champs contiennent presque toujours déjà une valeur (le montant dû, la durée par défaut,
+   le prix actuel). Sans ça, il fallait effacer chiffre par chiffre avant de corriger — pénible
+   au comptoir, et pire encore au pouce sur un cellulaire. Le contenu est donc sélectionné en
+   entier dès qu'on entre dans le champ : la première touche tapée le remplace.
+
+   Écoute déléguée sur « focusin » (qui remonte, contrairement à « focus ») : les rangées de
+   paiement sont recréées à chaque ouverture de l'écran, un écouteur global évite de les
+   rebrancher à chaque fois. Le passage par setTimeout est nécessaire sur iOS, où le navigateur
+   replace le curseur juste après le focus et annulerait une sélection posée trop tôt. */
+const CHAMPS_MONTANT_A_SELECTIONNER = [
+  '.fact-pay-amount-input',   // montant par mode de paiement, à l'encaissement
+  '.fact-tip-input',          // pourboire sur une facture
+  '#factEditTipAmount',       // pourboire, écran d'édition
+  '.crep-comm-rate-input',    // taux de commission (Zone Gestionnaire)
+  '.price-in',                // prix d'un service par niveau (Zone Configuration)
+  '.dur-in',                  // durée d'un service (Zone Configuration)
+  '.prod-price-input',        // prix d'un produit
+  '.prod-upc-input',          // code UPC d'un produit
+  '#qaDurationH', '#qaDurationM',   // durée à la prise de rendez-vous
+  '#naDurationH', '#naDurationM',   // durée dans « Prochaine disponibilité »
+  '#rdvDuration'              // durée dans le détail d'un rendez-vous
+].join(', ');
+document.addEventListener('focusin', function(e){
+  const el = e.target;
+  if(!el || typeof el.matches !== 'function') return;
+  if(!el.matches(CHAMPS_MONTANT_A_SELECTIONNER)) return;
+  setTimeout(function(){ try{ el.select(); }catch(_){} }, 0);
+});
+
 function renderFactPayTable(){
   const box = document.getElementById('factPayTable');
   box.innerHTML = factPayMethodsList.map(m=>{
