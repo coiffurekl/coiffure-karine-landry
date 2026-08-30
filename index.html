@@ -984,10 +984,48 @@
     /* ---- Horaire : colonnes employées plus étroites, avec le nom tronqué (…) au besoin — comme
        dans la plupart des logiciels de rendez-vous sur cellulaire, la grille reste scrollable
        horizontalement pour voir les employées suivantes. */
-    .time-axis{ width:42px; }
-    .time-axis .tick{ font-size:9px; right:4px; }
-    .ecol2{ min-width:72px; }
-    .ecol2-head{ font-size:10.5px; padding:0 5px; height:34px; }
+    .time-axis{ width:38px; }
+    .time-axis .tick{ font-size:8.5px; right:3px; }
+    /* 56px : environ six colonnes visibles d'un coup sur un écran de 375px, le reste accessible
+       en glissant vers la droite. Assez large pour l'heure et un prénom tronqué dans le bloc. */
+    .ecol2{ min-width:56px; }
+    /* Pas de majuscules : « Ge… » se lit mieux que « GE… », et les accents restent lisibles. */
+    .ecol2-head{ font-size:12px; padding:0 2px; height:32px; letter-spacing:0; text-transform:none; }
+    /* Bascule vers l'abréviation posée par le JS (data-short) : on masque le nom complet en
+       mettant sa taille à zéro, et on affiche les deux premières lettres à sa place. */
+    .ecol2-head-txt{ font-size:0; }
+    .ecol2-head-txt::before{ content:attr(data-short); font-size:12.5px; }
+    .ecol2-hours-wrap{ padding:2px 0 4px; }
+    .appt2{ left:2px; right:2px; padding:4px 5px; font-size:9.5px; border-radius:7px; line-height:1.25; }
+    /* Le nom de la cliente passe sur sa propre ligne et se coupe avec « … » plutôt que de
+       déborder du bloc ; le séparateur « · » n'a plus lieu d'être une fois les deux séparés. */
+    .appt2 b .sep{ display:none; }
+    .appt2 b .cli{ display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .appt2 .svc{ font-size:8.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .appt2 .dur{ font-size:8.5px; }
+
+    /* ---- Produits : la rangée passe en carte empilée. En version large elle aligne six
+       colonnes de largeur fixe (nom, fournisseur, UPC, prix, état, retrait) qui totalisent
+       plus de 600px — d'où le prix coupé hors de l'écran sur cellulaire. */
+    .prod-row{ flex-wrap:wrap; gap:8px 10px; padding:12px 14px; }
+    .prod-row .name{ flex:1 1 100%; font-size:15px; }
+    .prod-row .supplier{ width:auto; flex:1 1 100%; margin-top:-4px; font-size:12px; }
+    .prod-row input.prod-upc-input{ flex:1 1 auto; width:auto; min-width:0; }
+    .prod-row input.prod-price-input{ flex:0 0 92px; width:92px; }
+    .prod-row .save-state{ width:auto; flex:0 0 auto; text-align:left; }
+    .prod-row .prod-remove-btn{ margin-left:auto; }
+
+    /* ---- Historique des factures : six colonnes fixes qui débordent. On garde le tableau
+       (plus lisible qu'un empilement pour comparer des montants) mais on le rend défilable
+       à l'horizontale, au lieu de le laisser couper par overflow:hidden. */
+    .comptable-invoice-wrap{ overflow-x:auto; }
+    .comptable-invoice-row{
+      grid-template-columns:72px 1.2fr 84px 1fr 92px 82px;
+      gap:8px; padding:11px 12px; font-size:11.5px; min-width:520px;
+    }
+
+    /* Indicateur d'état technique : sans intérêt pour l'équipe, et il mangeait une rangée. */
+    .db-badge{ display:none; }
   }
   /* ---------- Écran de connexion ----------
      Superposition plein écran affichée par-dessus tout tant qu'aucune session Supabase n'est
@@ -1030,8 +1068,10 @@
     min-height:18px; margin-top:12px; font-family:'Poppins',sans-serif;
     font-size:13px; color:var(--terracotta);
   }
+  /* En haut à gauche, et non en bas : en bas il passait par-dessus les liens « Zone
+     Configuration » / « Zone Gestionnaire », qui sont centrés au pied de la page d'accueil. */
   #authLogoutBtn{
-    position:fixed; left:14px; bottom:14px; z-index:500; cursor:pointer;
+    position:fixed; left:12px; top:12px; z-index:500; cursor:pointer;
     padding:7px 14px; border-radius:20px; background:rgba(255,253,251,.9);
     border:1px solid var(--line); color:var(--ink-soft);
     font-family:'Josefin Sans',sans-serif; font-size:12px; letter-spacing:.5px;
@@ -5768,6 +5808,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   }catch(e){}
 });
 
+/* ---------- Employées non bookables ----------
+   Ces deux-là occupent une ligne dans `employees` sans être des coiffeuses à qui on donne un
+   rendez-vous : Madame Patron (dont le statut du jour vit dans le badge en haut de l'Horaire)
+   et Réception. Elles sont donc écartées partout où l'on prend ou cherche un rendez-vous —
+   grille du jour, sélecteur d'employée, plages « Non-dispo », « Prochaine dispo », duplication.
+   Elles restent en revanche disponibles à la facturation : une vente de produit au comptoir
+   peut légitimement être attribuée à la Réception. */
+const NON_BOOKABLE_EMPLOYEES = ['Madame Patron', 'Réception'];
+function isBookableEmployee(e){
+  return NON_BOOKABLE_EMPLOYEES.indexOf(e.name) === -1 && e.active !== false;
+}
+
 /* ---------- Horaire : grille connectée à Supabase (employés + rendez-vous) ---------- */
 const HOR_START_H = 7, HOR_END_H = 21;      // plage affichée : 7h00 à 21h00
 const HOR_PX_PER_MIN = 1.45;                // plus grand = grille plus haute (condensée pour limiter le défilement malgré l'heure ajoutée)
@@ -6067,7 +6119,7 @@ let qaSelectedTiers = [];
 async function loadBookableEmployeeNames(){
   const { data, error } = await sbClient.from('employees').select('name').eq('active', true).order('sort_order');
   if(error){ console.error(error); return []; }
-  return (data||[]).filter(e => e.name !== 'Madame Patron').map(e => e.name);
+  return (data||[]).filter(isBookableEmployee).map(e => e.name);
 }
 
 function fillEmployeeSelect(selectId, names){
@@ -6513,7 +6565,7 @@ async function prepareClientDupAvailability(durationMinutes){
   clientUpcomingDupAvail = null;
   const { data: employeesData, error: eErr } = await sbClient.from('employees').select('id, name, color_hex').eq('active', true).order('sort_order');
   if(eErr){ console.error(eErr); return; }
-  const employees = (employeesData||[]).filter(e => e.name !== 'Madame Patron');
+  const employees = (employeesData||[]).filter(isBookableEmployee);
   if(!employees.length) return;
   const empIds = employees.map(e => e.id);
   const empNames = employees.map(e => e.name);
@@ -7527,7 +7579,7 @@ async function populateNaEmployeeChips(){
   naSelectedEmpId = null;
   const { data, error } = await sbClient.from('employees').select('*').order('sort_order');
   if(error){ console.error(error); return; }
-  (data||[]).filter(e => e.name !== 'Madame Patron' && e.active !== false).forEach(e => {
+  (data||[]).filter(isBookableEmployee).forEach(e => {
     wrap.insertAdjacentHTML('beforeend', '<div class="qa-cat-chip na-chip" data-emp-id="'+e.id+'">'+escapeHtml(e.name)+'</div>');
   });
 }
@@ -7584,7 +7636,7 @@ async function searchNextAvailability(){
 
   const { data: employeesData, error: eErr } = await sbClient.from('employees').select('*').order('sort_order');
   if(eErr){ resultsEl.innerHTML = '<div class="list-msg">Erreur de chargement.</div>'; console.error(eErr); return; }
-  let candidates = (employeesData||[]).filter(e => e.name !== 'Madame Patron' && e.active !== false);
+  let candidates = (employeesData||[]).filter(isBookableEmployee);
   if(naSelectedEmpId) candidates = candidates.filter(e => e.id === naSelectedEmpId);
   if(!candidates.length){ resultsEl.innerHTML = '<div class="list-msg">Aucune coiffeuse à chercher.</div>'; return; }
 
@@ -8005,7 +8057,7 @@ async function loadHoraire(){
     // Madame Patron n'est pas une coiffeuse bookable : elle reste seulement dans le petit badge
     // en haut de l'Horaire (son statut du jour), pas comme colonne de la grille de rendez-vous.
     // Les employées retirées (active = false) ne sont plus proposées non plus.
-    employees = employeesData.filter(e => e.name !== 'Madame Patron' && e.active !== false);
+    employees = employeesData.filter(isBookableEmployee);
     appts = apptsData;
     // Horaire alterné aux 2 semaines : jusqu'à 2 lignes possibles par employée pour ce jour de semaine
     // (une universelle, une spécifique à la parité de currentViewDate) -> on regroupe d'abord par
@@ -8043,6 +8095,11 @@ async function loadHoraire(){
     const headTxt = document.createElement('span');
     headTxt.className = 'ecol2-head-txt';
     headTxt.textContent = emp.name;
+    // Sur cellulaire, seules les deux premières lettres s'affichent (« Ge… », « An… »), pour que
+    // six colonnes tiennent à l'écran au lieu de quatre. Le nom complet reste dans le <span> :
+    // c'est le CSS qui bascule vers cette abréviation, donc rien ne change sur tablette/ordinateur.
+    // Deux lettres plutôt qu'une pour distinguer les prénoms qui commencent pareil (Véro/Vanessa).
+    headTxt.dataset.short = emp.name.trim().slice(0, 2) + '…';
     head.appendChild(headTxt);
     head.title = 'Voir la semaine de ' + emp.name;
     head.addEventListener('click', function(){ showEmployeeWeek(emp.name, emp.color_hex); });
@@ -8105,7 +8162,10 @@ async function loadHoraire(){
       const svcLine = a.services_label
         ? a.services_label.split(', ').map(s => '<span class="svc">&bull; '+escapeHtml(s)+'</span>').join('')
         : '';
-      el.innerHTML = '<b>'+timeStr+' · '+escapeHtml(clientName)+'</b>'+svcLine+'<span class="dur">'+durLabel+'</span>';
+      // L'heure, le séparateur et le nom sont dans des <span> distincts uniquement pour que le CSS
+      // cellulaire puisse mettre le nom sur sa propre ligne et le tronquer (…) quand la colonne est
+      // étroite. Sur tablette/ordinateur, ces <span> sont inertes : l'affichage reste identique.
+      el.innerHTML = '<b>'+timeStr+'<span class="sep"> · </span><span class="cli">'+escapeHtml(clientName)+'</span></b>'+svcLine+'<span class="dur">'+durLabel+'</span>';
       makeApptDraggable(el, a, dayCols);
       body.appendChild(el);
       renderDbSlotChip(body, a, emp.name, new Date(currentViewDate), empAppts);
@@ -8236,7 +8296,10 @@ async function loadHoraireWeek(wrap){
       const svcLine = a.services_label
         ? a.services_label.split(', ').map(s => '<span class="svc">&bull; '+escapeHtml(s)+'</span>').join('')
         : '';
-      el.innerHTML = '<b>'+timeStr+' · '+escapeHtml(clientName)+'</b>'+svcLine+'<span class="dur">'+durLabel+'</span>';
+      // L'heure, le séparateur et le nom sont dans des <span> distincts uniquement pour que le CSS
+      // cellulaire puisse mettre le nom sur sa propre ligne et le tronquer (…) quand la colonne est
+      // étroite. Sur tablette/ordinateur, ces <span> sont inertes : l'affichage reste identique.
+      el.innerHTML = '<b>'+timeStr+'<span class="sep"> · </span><span class="cli">'+escapeHtml(clientName)+'</span></b>'+svcLine+'<span class="dur">'+durLabel+'</span>';
       makeApptDraggable(el, a, weekCols);
       body.appendChild(el);
       renderDbSlotChip(body, a, employee.name, dayDate, dayAppts);
