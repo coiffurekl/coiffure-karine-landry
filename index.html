@@ -1048,6 +1048,18 @@
 
     /* Indicateur d'état technique : sans intérêt pour l'équipe, et il mangeait une rangée. */
     .db-badge{ display:none; }
+
+    /* ---- Modales : les boutons d'action restent toujours atteignables.
+       Dans « Nouvelle fiche client », la zone Notes (8 rangées, ~196px) poussait Annuler et
+       Enregistrer sous le bas de l'écran. Ils restaient accessibles en faisant défiler DANS la
+       fenêtre, mais personne ne devine qu'il faut faire ça. On raccourcit la zone de notes, et
+       on ancre la rangée de boutons au bas de la carte — ce qui protège du même défaut toutes
+       les autres modales, y compris celles que je n'ai pas encore inspectées. */
+    #fNotes{ height:92px; }
+    .modal-card .modal-actions{
+      position:sticky; bottom:0; background:var(--white);
+      padding-top:10px; margin-top:4px;
+    }
   }
   /* ---------- Écran de connexion ----------
      Superposition plein écran affichée par-dessus tout tant qu'aucune session Supabase n'est
