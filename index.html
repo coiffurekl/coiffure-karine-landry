@@ -229,6 +229,56 @@
   /* Rendez-vous déjà facturé : nettement plus pâle pour qu'on repère d'un coup d'œil, dans l'Horaire,
      ceux qui restent à facturer (couleur pleine) par rapport à ceux déjà réglés (pâles). */
   .appt2.appt2-invoiced{ opacity:.4; }
+
+  /* ---------- Statut du rendez-vous ----------
+     Le rond dans le coin resume l'etat d'un coup d'oeil : jaune quand le rappel est parti,
+     vert quand la cliente a confirme. Il sert aussi de bouton pour corriger a la main.
+     La zone de touche (::after) deborde largement du rond visible : a 42px de colonne sur
+     cellulaire, un rond de 10px serait impossible a viser au pouce. */
+  /* Coin inferieur droit. En haut, le rond se posait sur l'heure : dans une colonne de 38px,
+     « 09:00 » occupe deja 32px pour 28px disponibles. En bas a droite, la duree s'aligne a
+     gauche et laisse ce coin libre. */
+  .appt2-dot{
+    position:absolute; bottom:4px; right:4px; width:10px; height:10px; border-radius:50%;
+    border:1.5px solid rgba(255,255,255,.9); box-sizing:border-box; z-index:3; cursor:pointer;
+  }
+  .appt2-dot::after{ content:''; position:absolute; inset:-9px; border-radius:50%; }
+  .appt2-dot.dot-aucun{ background:transparent; border-color:rgba(255,255,255,.45); }
+  .appt2-dot.dot-rappel{ background:#E8C33A; }
+  .appt2-dot.dot-confirme{ background:#63C46B; }
+  .appt2-dot.dot-annule{ background:#D8402F; }
+
+  /* Annulation : le bloc entier devient rouge hachure. La plage est libre, et ca doit se voir
+     de loin — un simple contour se perdrait au milieu de huit colonnes. */
+  .appt2.statut-annule{
+    background:#D8402F !important;
+    box-shadow:inset 0 0 0 2px rgba(0,0,0,.18), 0 3px 8px rgba(0,0,0,.14);
+  }
+  .appt2.statut-annule::before{
+    content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    background:repeating-linear-gradient(45deg, rgba(255,255,255,.16) 0 6px, transparent 6px 12px);
+  }
+  .appt2.statut-annule .cli{ text-decoration:line-through; }
+
+  /* Menu de correction manuelle, ouvert en touchant le rond. */
+  #statutMenu{
+    position:fixed; z-index:99997; display:none; min-width:186px; padding:6px 0;
+    background:var(--white); border:1px solid var(--line); border-radius:12px;
+    box-shadow:0 12px 34px rgba(32,48,47,.22); font-family:'Poppins',sans-serif;
+  }
+  #statutMenu.on{ display:block; }
+  #statutMenu .sm-titre{
+    padding:7px 14px 9px; font-family:'Josefin Sans',sans-serif; font-size:11px;
+    letter-spacing:.5px; text-transform:uppercase; color:var(--ink-soft);
+    border-bottom:1px solid var(--line); margin-bottom:4px;
+  }
+  #statutMenu .sm-item{
+    display:flex; align-items:center; gap:10px; padding:11px 14px; cursor:pointer; font-size:13.5px;
+  }
+  #statutMenu .sm-item:hover{ background:var(--paper2); }
+  #statutMenu .sm-pastille{ width:14px; height:14px; border-radius:50%; flex-shrink:0; border:1px solid rgba(32,48,47,.12); }
+  #statutMenu .sm-actuel{ font-weight:600; }
+  #statutMenu .sm-actuel::after{ content:' ✓'; color:var(--teal); }
   .appt2.appt2-invoiced:hover{ opacity:.55; }
   .appt2-dragging{ opacity:.85; box-shadow:0 10px 26px rgba(0,0,0,.35); z-index:50; cursor:grabbing; }
   .appt2 b{ display:block; font-size:12.5px; font-family:'Josefin Sans'; font-weight:600; margin-bottom:1px; }
@@ -2323,6 +2373,14 @@
   </form>
 </div>
 
+<div id="statutMenu">
+  <div class="sm-titre">Statut du rendez-vous</div>
+  <div class="sm-item" data-statut="rappel"><span class="sm-pastille" style="background:#E8C33A"></span>Rappel fait</div>
+  <div class="sm-item" data-statut="confirme"><span class="sm-pastille" style="background:#63C46B"></span>Confirmé</div>
+  <div class="sm-item" data-statut="annule"><span class="sm-pastille" style="background:#D8402F"></span>Annulé</div>
+  <div class="sm-item" data-statut="aucun"><span class="sm-pastille" style="background:transparent"></span>Aucun statut</div>
+</div>
+
 <div id="versionBanner" onclick="appliquerNouvelleVersion()">
   Une nouvelle version du logiciel est disponible — <b>toucher pour mettre à jour</b>
 </div>
@@ -3793,8 +3851,15 @@ async function loadAppointments(clientId){
 // TWILIO_AUTH_TOKEN / TWILIO_FROM_NUMBER sur le projet Supabase), la fonction serveur répond
 // simplement « skipped » — on ne bloque jamais la prise de rendez-vous et on n'affiche aucune
 // alerte à l'employée pour ça, on se contente de logger en cas de souci.
+// DÉSACTIVÉ le 2026-08-30, décision de Karine : seul le rappel 48h avant est conservé, ce qui
+// réduit de moitié la facture Twilio. La confirmation apporte peu — la cliente vient tout juste
+// de fixer l'heure avec la coiffeuse. Pour la réactiver un jour, il suffit de remettre cette
+// constante à true ; la fonction serveur, la tâche planifiée et le reste du code sont intacts.
+const SMS_CONFIRMATION_ACTIVE = false;
+
 function sendAppointmentConfirmationSms(appointmentId){
   if(!appointmentId) return;
+  if(!SMS_CONFIRMATION_ACTIVE) return;
   sbClient.functions.invoke('send-appointment-confirmation-sms', { body: { appointmentId } })
     .then(({ data, error }) => {
       if(error) console.warn('SMS de confirmation non envoyé :', error);
@@ -6078,6 +6143,98 @@ setInterval(verifierNouvelleVersion, VERSION_INTERVALLE_MS);
 // Une coiffeuse laisse souvent l'onglet ouvert des heures : on revérifie dès qu'elle y revient.
 document.addEventListener('visibilitychange', function(){
   if(!document.hidden) verifierNouvelleVersion();
+});
+
+/* ---------- Statut d'un rendez-vous ----------
+   Trois sources se combinent en un seul etat visible :
+     - client_status = 'cancelled'  -> bloc rouge hachure
+     - client_status = 'confirmed'  -> rond vert
+     - reminder_sms_sent_at rempli  -> rond jaune (rappel parti, sans reponse encore)
+   Aucun des trois -> rond discret, qui sert surtout de bouton pour corriger a la main. */
+function statutRendezVous(a){
+  if(!a) return 'aucun';
+  if(a.client_status === 'cancelled') return 'annule';
+  if(a.client_status === 'confirmed') return 'confirme';
+  if(a.reminder_sms_sent_at) return 'rappel';
+  return 'aucun';
+}
+
+// Applique le statut a un bloc deja construit : la classe du bloc et le rond dans le coin.
+function appliquerStatutAuBloc(el, a){
+  const st = statutRendezVous(a);
+  el.classList.toggle('statut-annule', st === 'annule');
+  const rond = document.createElement('span');
+  rond.className = 'appt2-dot dot-' + st;
+  rond.dataset.apptId = a.id;
+  rond.title = 'Changer le statut';
+  // stopPropagation partout : sans ca, toucher le rond ouvrirait la fiche du rendez-vous
+  // ou demarrerait un glisser-deposer.
+  ['mousedown','touchstart','pointerdown'].forEach(ev =>
+    rond.addEventListener(ev, e => { e.stopPropagation(); }, { passive:true }));
+  rond.addEventListener('click', e => {
+    e.stopPropagation(); e.preventDefault();
+    ouvrirMenuStatut(rond, a);
+  });
+  el.appendChild(rond);
+}
+
+let statutMenuRdv = null;
+
+function ouvrirMenuStatut(ancre, a){
+  const menu = document.getElementById('statutMenu');
+  if(!menu) return;
+  statutMenuRdv = a;
+  const actuel = statutRendezVous(a);
+  menu.querySelectorAll('.sm-item').forEach(it => {
+    it.classList.toggle('sm-actuel', it.dataset.statut === actuel);
+  });
+  menu.classList.add('on');
+  // Positionne le menu sous le rond, sans jamais sortir de l'ecran.
+  const r = ancre.getBoundingClientRect();
+  const larg = menu.offsetWidth, haut = menu.offsetHeight;
+  let x = Math.min(Math.max(8, r.left), window.innerWidth - larg - 8);
+  let y = r.bottom + 6;
+  if(y + haut > window.innerHeight - 8) y = Math.max(8, r.top - haut - 6);
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+}
+
+function fermerMenuStatut(){
+  const menu = document.getElementById('statutMenu');
+  if(menu) menu.classList.remove('on');
+  statutMenuRdv = null;
+}
+
+async function choisirStatut(statut){
+  const a = statutMenuRdv;
+  fermerMenuStatut();
+  if(!a) return;
+  // « Rappel fait » sans texto envoye : on note l'heure pour que le rond jaune apparaisse.
+  const maj = {
+    client_status: statut === 'confirme' ? 'confirmed' : (statut === 'annule' ? 'cancelled' : null),
+    client_status_at: (statut === 'confirme' || statut === 'annule') ? new Date().toISOString() : null,
+  };
+  if(statut === 'rappel' && !a.reminder_sms_sent_at) maj.reminder_sms_sent_at = new Date().toISOString();
+  if(statut === 'aucun') maj.reminder_sms_sent_at = null;
+
+  const { error } = await sbClient.from('appointments').update(maj).eq('id', a.id);
+  if(error){ alert('Le statut n’a pas pu être enregistré : ' + error.message); return; }
+  Object.assign(a, maj);
+  if(currentScreenId === 'screen-horaire') loadHoraire();
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  const menu = document.getElementById('statutMenu');
+  if(!menu) return;
+  menu.addEventListener('click', e => {
+    const it = e.target.closest('.sm-item');
+    if(it) choisirStatut(it.dataset.statut);
+  });
+  // Un toucher ailleurs referme le menu.
+  document.addEventListener('click', e => {
+    if(menu.classList.contains('on') && !e.target.closest('#statutMenu') && !e.target.closest('.appt2-dot')) fermerMenuStatut();
+  });
+  window.addEventListener('resize', fermerMenuStatut);
 });
 
 /* ---------- Employées non bookables ----------
@@ -8438,6 +8595,7 @@ async function loadHoraire(){
       // cellulaire puisse mettre le nom sur sa propre ligne et le tronquer (…) quand la colonne est
       // étroite. Sur tablette/ordinateur, ces <span> sont inertes : l'affichage reste identique.
       el.innerHTML = '<b>'+timeStr+'<span class="sep"> · </span><span class="cli">'+escapeHtml(clientName)+'</span></b>'+svcLine+'<span class="dur">'+durLabel+'</span>';
+      appliquerStatutAuBloc(el, a);
       makeApptDraggable(el, a, dayCols);
       body.appendChild(el);
       renderDbSlotChip(body, a, emp.name, new Date(currentViewDate), empAppts);
@@ -8572,6 +8730,7 @@ async function loadHoraireWeek(wrap){
       // cellulaire puisse mettre le nom sur sa propre ligne et le tronquer (…) quand la colonne est
       // étroite. Sur tablette/ordinateur, ces <span> sont inertes : l'affichage reste identique.
       el.innerHTML = '<b>'+timeStr+'<span class="sep"> · </span><span class="cli">'+escapeHtml(clientName)+'</span></b>'+svcLine+'<span class="dur">'+durLabel+'</span>';
+      appliquerStatutAuBloc(el, a);
       makeApptDraggable(el, a, weekCols);
       body.appendChild(el);
       renderDbSlotChip(body, a, employee.name, dayDate, dayAppts);
