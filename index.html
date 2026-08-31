@@ -261,6 +261,52 @@
   .appt2.statut-annule .cli{ text-decoration:line-through; }
 
   /* Menu de correction manuelle, ouvert en touchant le rond. */
+  /* ---------- Pastille d'annulations ----------
+     Inseree par le code dans chacune des 21 barres de navigation : la modifier a la main
+     21 fois inviterait l'oubli. Elle n'apparait que s'il y a quelque chose a signaler. */
+  .annul-pastille{
+    display:none; align-items:center; gap:7px; cursor:pointer; white-space:nowrap;
+    padding:5px 12px 5px 8px; border-radius:20px; background:#D8402F; color:#fff;
+    font-family:'Josefin Sans',sans-serif; font-size:12px; letter-spacing:.3px;
+  }
+  .annul-pastille.on{ display:inline-flex; }
+  .annul-pastille:hover{ background:#B8351F; }
+  .annul-pastille .ap-nb{
+    display:inline-flex; align-items:center; justify-content:center; min-width:19px; height:19px;
+    padding:0 5px; border-radius:10px; background:rgba(255,255,255,.24);
+    font-weight:600; font-size:12px;
+  }
+  @media (max-width:640px){
+    .annul-pastille{ align-self:center; font-size:11.5px; padding:4px 10px 4px 6px; }
+  }
+
+  /* Liste des annulations, ouverte en touchant la pastille. */
+  #annulListe{
+    position:fixed; inset:0; z-index:99996; display:none;
+    align-items:center; justify-content:center; padding:20px;
+    background:rgba(32,48,47,.45);
+  }
+  #annulListe.on{ display:flex; }
+  #annulListe .al-carte{
+    width:100%; max-width:440px; max-height:80vh; overflow:auto; background:var(--white);
+    border-radius:16px; box-shadow:0 16px 44px rgba(32,48,47,.28); padding:20px;
+  }
+  #annulListe h3{
+    margin:0 0 4px; font-family:'Playfair Display',serif; font-size:19px; color:var(--terracotta);
+  }
+  #annulListe .al-sous{ font-family:'Josefin Sans',sans-serif; font-size:12.5px; color:var(--ink-soft); margin-bottom:14px; }
+  #annulListe .al-item{
+    display:flex; justify-content:space-between; gap:12px; align-items:center;
+    padding:11px 12px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px;
+    cursor:pointer; font-family:'Poppins',sans-serif; font-size:13.5px;
+  }
+  #annulListe .al-item:hover{ background:var(--paper2); }
+  #annulListe .al-quand{ color:var(--ink-soft); font-size:12px; }
+  #annulListe .al-fermer{
+    width:100%; margin-top:6px; padding:12px; border:1px solid var(--line); border-radius:10px;
+    background:transparent; cursor:pointer; font-family:'Josefin Sans',sans-serif; font-size:14px; color:var(--ink-soft);
+  }
+
   #statutMenu{
     position:fixed; z-index:99997; display:none; min-width:186px; padding:6px 0;
     background:var(--white); border:1px solid var(--line); border-radius:12px;
@@ -2371,6 +2417,15 @@
     <button type="submit" id="authResetBtn">Enregistrer</button>
     <div id="authResetError" role="alert" style="min-height:18px; margin-top:12px; font-family:'Poppins',sans-serif; font-size:13px; color:var(--terracotta);"></div>
   </form>
+</div>
+
+<div id="annulListe" onclick="if(event.target.id==='annulListe') fermerListeAnnulations()">
+  <div class="al-carte">
+    <h3 id="alTitre">Annulations</h3>
+    <div class="al-sous">Touchez une ligne pour aller à cette journée.</div>
+    <div id="alItems"></div>
+    <button class="al-fermer" onclick="fermerListeAnnulations()">Fermer</button>
+  </div>
 </div>
 
 <div id="statutMenu">
@@ -6047,6 +6102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   loadClients();
   applyThemeOnLoad();
+  majPastilleAnnulations();
   // Après un refresh (F5), on revient sur la page où on était plutôt que de retourner
   // systématiquement à la page d'accueil. Les zones protégées par un code PIN redemandent
   // quand même ce code, puisque go() gère déjà cette vérification normalement.
@@ -6145,6 +6201,89 @@ document.addEventListener('visibilitychange', function(){
   if(!document.hidden) verifierNouvelleVersion();
 });
 
+/* ---------- Pastille d'annulations ----------
+   Signale les rendez-vous annules par une cliente, pour aujourd'hui et les jours suivants.
+   Rien pour le passe : une annulation d'il y a trois semaines n'est plus une nouvelle.
+   Pas de notion de « deja vu » : la pastille s'eteint d'elle-meme quand la coiffeuse a repris
+   la plage ou supprime le rendez-vous, ce qui est le moment ou l'alerte cesse d'etre utile. */
+let annulationsCache = [];
+
+// Jour civil de Montreal, au format AAAA-MM-JJ — la comparaison doit se faire en heure locale,
+// pas en UTC, sinon une annulation de ce soir disparaitrait des 20h.
+function jourMontreal(d){
+  return new Intl.DateTimeFormat('en-CA', { timeZone:'America/Montreal', year:'numeric', month:'2-digit', day:'2-digit' }).format(d);
+}
+
+function poserPastillesAnnulations(){
+  document.querySelectorAll('.app-nav').forEach(nav => {
+    if(nav.querySelector('.annul-pastille')) return;
+    const p = document.createElement('div');
+    p.className = 'annul-pastille';
+    p.innerHTML = '<span class="ap-nb">0</span><span class="ap-txt"></span>';
+    p.addEventListener('click', ouvrirListeAnnulations);
+    // « :scope > » est essentiel : chaque barre contient deux groupes .nav-links, dont un
+    // imbrique dans .nav-left. Sans cette precision, on visait un noeud qui n'est pas un
+    // enfant direct et l'insertion echouait.
+    const liens = nav.querySelector(':scope > .nav-links');
+    if(liens) nav.insertBefore(p, liens); else nav.appendChild(p);
+  });
+}
+
+async function majPastilleAnnulations(){
+  poserPastillesAnnulations();
+  // On ratisse a partir d'hier puis on filtre par jour de Montreal : plus sur que de calculer
+  // un minuit local en SQL, et le volume reste minuscule.
+  const depuis = new Date(Date.now() - 36*3600*1000).toISOString();
+  const { data, error } = await sbClient
+    .from('appointments')
+    .select('id, start_at, employee_name, clients(first_name,last_name)')
+    .eq('client_status', 'cancelled')
+    .gte('start_at', depuis)
+    .order('start_at');
+  if(error){ console.warn('Pastille annulations :', error); return; }
+
+  const aujourdhui = jourMontreal(new Date());
+  annulationsCache = (data || []).filter(a => jourMontreal(new Date(a.start_at)) >= aujourdhui);
+
+  const n = annulationsCache.length;
+  document.querySelectorAll('.annul-pastille').forEach(p => {
+    p.classList.toggle('on', n > 0);
+    p.querySelector('.ap-nb').textContent = n;
+    p.querySelector('.ap-txt').textContent = n > 1 ? 'annulations' : 'annulation';
+  });
+}
+
+function ouvrirListeAnnulations(){
+  const box = document.getElementById('alItems');
+  const titre = document.getElementById('alTitre');
+  if(!box) return;
+  titre.textContent = annulationsCache.length > 1 ? 'Rendez-vous annulés' : 'Rendez-vous annulé';
+  box.innerHTML = annulationsCache.map(a => {
+    const d = new Date(a.start_at);
+    const quand = d.toLocaleDateString('fr-CA', { timeZone:'America/Montreal', weekday:'long', day:'numeric', month:'long' })
+                + ' · ' + d.toLocaleTimeString('fr-CA', { timeZone:'America/Montreal', hour:'2-digit', minute:'2-digit' });
+    const nom = a.clients ? ((a.clients.first_name||'') + ' ' + (a.clients.last_name||'')).trim() : 'Cliente';
+    return '<div class="al-item" data-date="'+a.start_at+'">'
+         + '<span><b>'+escapeHtml(nom)+'</b><br><span class="al-quand">'+escapeHtml(quand)+'</span></span>'
+         + '<span class="al-quand">'+escapeHtml(a.employee_name||'')+'</span></div>';
+  }).join('') || '<div class="al-quand">Aucune annulation à venir.</div>';
+
+  box.querySelectorAll('.al-item').forEach(it => {
+    it.addEventListener('click', () => {
+      currentViewDate = new Date(it.dataset.date);
+      horaireViewMode = 'day';
+      fermerListeAnnulations();
+      performGo('screen-horaire');
+    });
+  });
+  document.getElementById('annulListe').classList.add('on');
+}
+
+function fermerListeAnnulations(){
+  const l = document.getElementById('annulListe');
+  if(l) l.classList.remove('on');
+}
+
 /* ---------- Statut d'un rendez-vous ----------
    Trois sources se combinent en un seul etat visible :
      - client_status = 'cancelled'  -> bloc rouge hachure
@@ -6220,6 +6359,7 @@ async function choisirStatut(statut){
   const { error } = await sbClient.from('appointments').update(maj).eq('id', a.id);
   if(error){ alert('Le statut n’a pas pu être enregistré : ' + error.message); return; }
   Object.assign(a, maj);
+  majPastilleAnnulations();
   if(currentScreenId === 'screen-horaire') loadHoraire();
 }
 
