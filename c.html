@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Confirmation de rendez-vous</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#F6ECE5">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,600&family=Josefin+Sans:wght@400;600&family=Poppins:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{ box-sizing:border-box }
+  body{
+    margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    padding:24px; background:#F6ECE5; color:#20302F; font-family:'Poppins',sans-serif;
+  }
+  .carte{
+    width:100%; max-width:400px; background:#FFFDFB; border:1px solid rgba(32,48,47,.10);
+    border-radius:18px; padding:30px 24px; box-shadow:0 10px 40px rgba(32,48,47,.10);
+    text-align:center;
+  }
+  /* Le vrai logo du salon, servi comme fichier separe plutot qu'encode dans la page :
+     le navigateur peut le garder en cache, et la page reste legere. */
+  .logo{ display:block; margin:0 auto 4px; width:auto; height:auto; max-width:min(78%,250px); }
+  h1{ font-family:'Playfair Display',serif; font-size:22px; margin:20px 0 6px; font-weight:600; }
+  .sous{ font-family:'Josefin Sans',sans-serif; font-size:14px; color:#5B6E6C; line-height:1.5; margin-bottom:20px; }
+  .rdv{ background:#FBF4EF; border-radius:12px; padding:14px; margin-bottom:22px; font-size:14.5px; line-height:1.6; }
+  .rdv b{ display:block; font-size:16px; color:#20302F; }
+  button{
+    width:100%; padding:15px; border:none; border-radius:11px; cursor:pointer;
+    font-family:'Josefin Sans',sans-serif; font-size:15px; font-weight:600; letter-spacing:.6px;
+  }
+  .oui{ background:#2E8B57; color:#fff; margin-bottom:12px; }
+  .oui:disabled{ background:#8FA09B; cursor:default; }
+  .non{ background:transparent; color:#5B6E6C; border:1px solid rgba(32,48,47,.18); }
+  .non:disabled{ opacity:.5; cursor:default; }
+  .tel{ margin-top:22px; font-size:13.5px; color:#5B6E6C; line-height:1.6; }
+  .tel a{ color:#27656C; font-weight:500; }
+  .erreur{ color:#A85C34; font-size:13.5px; margin-top:12px; min-height:18px; }
+</style>
+</head>
+<body>
+<div class="carte" id="carte">
+  <img class="logo" src="logo.png" alt="La Coiffure par Karine Landry">
+  <h1 id="titre">Un instant…</h1>
+  <div class="sous" id="sous">Nous récupérons votre rendez-vous.</div>
+  <div id="corps"></div>
+  <div class="erreur" id="erreur"></div>
+  <div class="tel" id="tel"></div>
+</div>
+
+<script>
+/* Page publique de confirmation. Elle ne touche jamais la base directement : tout passe par la
+   fonction Supabase, qui seule connaît le jeton et décide de ce qui est permis. La clé ci-dessous
+   est la clé publique du projet — elle ne donne accès à rien sans authentification (RLS). */
+const API = 'https://dbhfeldbciiewxwtwmcg.supabase.co/functions/v1/confirm-appointment';
+const CLE_PUBLIQUE = 'sb_publishable_sDlNQNWaX933EzyxSNd8gA_sGVys7_P';
+
+const jeton = new URLSearchParams(location.search).get('t') || '';
+const $ = (id) => document.getElementById(id);
+
+function afficher(d){
+  const rdv = d.date
+    ? '<div class="rdv"><b>' + d.date + '</b>' + d.heure + (d.coiffeuse ? ' avec ' + d.coiffeuse : '') + '</div>'
+    : '';
+
+  if(d.etat === 'attente'){
+    $('titre').textContent = d.prenom ? 'Bonjour ' + d.prenom : 'Bonjour';
+    $('titre').style.color = '#27656C';
+    $('sous').textContent = 'Merci de confirmer votre rendez-vous :';
+    $('corps').innerHTML = rdv +
+      '<button class="oui" id="btnOui">OUI, JE SERAI LÀ</button>' +
+      '<button class="non" id="btnNon">Je ne pourrai pas venir</button>';
+    $('btnOui').addEventListener('click', () => repondre('oui'));
+    $('btnNon').addEventListener('click', () => repondre('non'));
+  } else if(d.etat === 'confirme'){
+    $('titre').textContent = 'C’est confirmé';
+    $('titre').style.color = '#2E8B57';
+    $('sous').textContent = 'Merci ! Nous vous attendons.';
+    $('corps').innerHTML = rdv;
+  } else if(d.etat === 'annule'){
+    $('titre').textContent = 'Annulation enregistrée';
+    $('titre').style.color = '#A85C34';
+    $('sous').textContent = 'Merci de nous avoir prévenus.';
+    $('corps').innerHTML = rdv;
+  } else if(d.etat === 'passe'){
+    $('titre').textContent = 'Rendez-vous passé';
+    $('titre').style.color = '#8FA09B';
+    $('sous').textContent = 'Ce rendez-vous a déjà eu lieu.';
+    $('corps').innerHTML = rdv;
+  } else {
+    $('titre').textContent = 'Lien invalide';
+    $('titre').style.color = '#8FA09B';
+    $('sous').textContent = 'Ce lien ne correspond à aucun rendez-vous.';
+    $('corps').innerHTML = '';
+  }
+
+  $('tel').innerHTML = d.phone
+    ? 'Une question ? Appelez-nous au<br><a href="tel:' + d.phone + '">' + d.phone + '</a>'
+    : '';
+}
+
+async function appeler(methode, corps){
+  const options = {
+    method: methode,
+    headers: { 'apikey': CLE_PUBLIQUE, 'Authorization': 'Bearer ' + CLE_PUBLIQUE, 'Content-Type': 'application/json' }
+  };
+  if(corps) options.body = JSON.stringify(corps);
+  const url = methode === 'GET' ? API + '?t=' + encodeURIComponent(jeton) : API;
+  const r = await fetch(url, options);
+  if(!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+async function repondre(choix){
+  // On désactive les deux boutons dès le premier clic : sans ça, un double touchement sur un
+  // écran tactile enverrait deux requêtes, et la cliente pourrait croire avoir annulé son choix.
+  const o = $('btnOui'), n = $('btnNon');
+  if(o) o.disabled = true;
+  if(n) n.disabled = true;
+  $('erreur').textContent = '';
+  try{
+    afficher(await appeler('POST', { t: jeton, choix }));
+  }catch(e){
+    $('erreur').textContent = 'La connexion a échoué. Réessayez dans un instant.';
+    if(o) o.disabled = false;
+    if(n) n.disabled = false;
+  }
+}
+
+(async function(){
+  try{
+    afficher(await appeler('GET'));
+  }catch(e){
+    $('titre').textContent = 'Oups';
+    $('sous').textContent = 'Impossible de joindre le salon pour le moment. Réessayez dans quelques minutes.';
+  }
+})();
+</script>
+</body>
+</html>
