@@ -648,6 +648,15 @@
   .team-row .drag-handle:active{ cursor:grabbing; }
   .team-row .team-delete-btn{ width:26px; height:26px; border-radius:50%; border:none; background:rgba(255,255,255,.22); color:#fff; font-size:16px; line-height:1; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
   .team-row .team-delete-btn:hover{ background:#B23A3A; }
+  .team-row .team-acces-btn{ flex-shrink:0; border:none; border-radius:999px; padding:5px 12px; font-family:'Josefin Sans'; font-size:12px; font-weight:600; letter-spacing:.4px; cursor:pointer; background:rgba(255,255,255,.22); color:#fff; white-space:nowrap; }
+  .team-row .team-acces-btn:hover{ background:rgba(255,255,255,.38); }
+  .team-row .team-acces-btn.aucun{ opacity:.72; font-weight:400; }
+  .acces-card{ width:380px; max-width:100%; }
+  .acces-card .acces-nom{ font-family:'Playfair Display'; font-style:italic; font-weight:600; color:var(--teal-dk); font-size:20px; margin:0 0 4px; text-align:center; }
+  .acces-card .acces-etat{ font-family:'Josefin Sans'; font-size:12.5px; color:var(--ink-soft); text-align:center; margin:0 0 6px; }
+  .acces-card label{ display:block; margin:14px 0 0; font-size:13px; color:var(--ink-soft); text-align:left; }
+  .acces-card input, .acces-card select{ display:block; margin-top:6px; width:100%; padding:10px 13px; border:1px solid var(--line); border-radius:9px; font-family:'Josefin Sans'; font-size:14px; box-sizing:border-box; }
+  .acces-card input:disabled{ background:var(--paper2); color:var(--ink-soft); }
   .team-add-form{ margin-bottom:18px; }
   .team-add-form label{ display:block; margin-bottom:14px; font-size:13.5px; color:var(--ink-soft); }
   .team-add-form input, .team-add-form select{ display:block; margin-top:6px; width:100%; padding:10px 13px; border:1px solid var(--line); border-radius:9px; font-family:'Poppins'; font-size:14px; color:var(--ink); }
@@ -2005,6 +2014,28 @@
 </div>
 
 <!-- ======================= ZONE CONFIG > ÉQUIPE (niveaux de prix) ======================= -->
+<!-- ======================= EQUIPE : acces au logiciel d'une employee ======================= -->
+<div class="modal-overlay" id="accesOverlay" onclick="if(event.target.id==='accesOverlay') closeAccesModal();">
+  <div class="modal-card acces-card">
+    <button type="button" class="db-slot-close" onclick="closeAccesModal()" aria-label="Fermer">&times;</button>
+    <h3 class="acces-nom" id="accesNom">Employée</h3>
+    <p class="acces-etat" id="accesEtat"></p>
+    <label>Courriel<input id="accesEmail" type="email" placeholder="Ex. sophie@exemple.com" autocomplete="off"></label>
+    <label>Rôle
+      <select id="accesRole">
+        <option value="coiffeuse">Coiffeuse</option>
+        <option value="gestionnaire">Gestionnaire — accès à tout</option>
+      </select>
+    </label>
+    <p class="comptable-pin-error" id="accesErreur"></p>
+    <p class="comptable-pin-success" id="accesSucces"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn-outline" id="accesRetirerBtn" onclick="retirerAcces()" style="display:none;">Retirer l'accès</button>
+      <button type="button" class="btn-solid" id="accesValiderBtn" onclick="validerAcces()">Envoyer l'accès</button>
+    </div>
+  </div>
+</div>
+
 <div class="screen" id="screen-comptable-equipe">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
@@ -2022,6 +2053,12 @@
       <label>Nom<input id="teamAddName" type="text" placeholder="Ex. Sophie"></label>
       <label>Couleur<div class="color-swatch-picker" id="teamAddColorPicker"></div></label>
       <label>Niveau de prix<select id="teamAddLevel"><option value="">— Aucun niveau —</option></select></label>
+      <label>Accès au logiciel<select id="teamAddRole" onchange="majChampCourrielAjout()">
+        <option value="">— Aucun accès —</option>
+        <option value="coiffeuse">Coiffeuse</option>
+        <option value="gestionnaire">Gestionnaire — accès à tout</option>
+      </select></label>
+      <label id="teamAddEmailLabel" style="display:none;">Courriel<input id="teamAddEmail" type="email" placeholder="Ex. sophie@exemple.com" autocomplete="off"></label>
       <p class="comptable-pin-error" id="teamAddError">Le nom est requis.</p>
       <div class="modal-actions">
         <button class="btn-outline" onclick="closeAddEmployeeForm()">Annuler</button>
@@ -2971,10 +3008,27 @@ function availableEmployeeColors(){
 let teamRowsCache = [];
 let teamDraggedId = null;
 
+/* ---------- Équipe : les accès au logiciel ----------
+   Les comptes vivent dans app_users, une table sans aucune policy d'écriture : le navigateur ne
+   peut ni s'y ajouter, ni se promouvoir gestionnaire. Tout passe par la fonction serveur
+   gerer-acces-employee, qui n'obéit qu'à un compte déjà gestionnaire. Le courriel de chaque
+   compte vit dans auth.users, que le navigateur ne voit pas non plus — d'où l'action « lister ». */
+let accesParEmployee = {};
+
+async function chargerAcces(){
+  accesParEmployee = {};
+  const { data, error } = await sbClient.functions.invoke('gerer-acces-employee', { body: { action: 'lister' } });
+  if(error || !data || !data.acces){ console.error('Accès illisibles', error); return; }
+  data.acces.forEach(a => { if(a.employee_id) accesParEmployee[a.employee_id] = a; });
+}
+
 async function loadTeamEdit(){
   const container = document.getElementById('teamEditContainer');
   container.innerHTML = '<div class="list-msg">Chargement...</div>';
-  const { data: employees, error } = await sbClient.from('employees').select('*').order('sort_order');
+  const [{ data: employees, error }] = await Promise.all([
+    sbClient.from('employees').select('*').order('sort_order'),
+    chargerAcces()
+  ]);
   if(error || !employees){
     container.innerHTML = '<div class="list-msg">Erreur de chargement.</div>';
     console.error(error);
@@ -2982,6 +3036,13 @@ async function loadTeamEdit(){
   }
   teamRowsCache = employees;
   renderTeamRows();
+}
+
+function etiquetteAcces(employeeId){
+  const a = accesParEmployee[employeeId];
+  if(!a) return 'Aucun accès';
+  const role = a.role === 'gestionnaire' ? 'Gestionnaire' : 'Coiffeuse';
+  return a.actif ? role : role + ' — invitée';
 }
 
 function renderTeamRows(){
@@ -2998,6 +3059,7 @@ function renderTeamRows(){
         '<option value="">— Aucun niveau —</option>' +
         TIER_ORDER.map((raw, i) => '<option value="'+escapeHtml(raw)+'"'+(emp.tier_level===raw?' selected':'')+'>'+TIER_LEVEL_LABELS[i]+'</option>').join('') +
       '</select>' +
+      '<button type="button" class="team-acces-btn'+(accesParEmployee[emp.id]?'':' aucun')+'" title="Accès au logiciel" onclick="openAccesModal(\''+emp.id+'\')">'+escapeHtml(etiquetteAcces(emp.id))+'</button>' +
       '<span class="save-state"></span>' +
       '<button type="button" class="team-delete-btn" title="Supprimer définitivement" onclick="deleteEmployee(\''+emp.id+'\', \''+escapeHtml(emp.name).replace(/'/g,"\\'")+'\')">&times;</button>' +
       '<span class="drag-handle" title="Glisser pour réordonner">&#9776;</span>' +
@@ -3026,8 +3088,118 @@ async function toggleEmployeeActive(checkbox, employeeId){
 
 // Suppression définitive : retire aussi son horaire personnel (heures, exceptions). Les rendez-vous et
 // factures déjà enregistrés à son nom restent intacts dans l'historique (ils sont liés par nom, pas par id).
+/* ---------- Modale « accès au logiciel » d'une employée ---------- */
+let accesEmployeeId = null;
+
+function openAccesModal(employeeId){
+  accesEmployeeId = employeeId;
+  const emp = teamRowsCache.find(e => e.id === employeeId);
+  const acc = accesParEmployee[employeeId] || null;
+  document.getElementById('accesNom').textContent = emp ? emp.name : 'Employée';
+  document.getElementById('accesEtat').textContent = !acc
+    ? "Pas encore d'accès au logiciel."
+    : (acc.actif ? 'Accès actif.' : "Invitation envoyée — elle n'a pas encore choisi son mot de passe.");
+  const champCourriel = document.getElementById('accesEmail');
+  champCourriel.value = (acc && acc.email) || '';
+  // Changer un courriel voudrait dire déplacer le compte : on retire l'accès et on le renvoie.
+  champCourriel.disabled = !!acc;
+  document.getElementById('accesRole').value = acc ? acc.role : 'coiffeuse';
+  document.getElementById('accesRetirerBtn').style.display = acc ? '' : 'none';
+  document.getElementById('accesValiderBtn').textContent = acc ? 'Enregistrer le rôle' : "Envoyer l'accès";
+  document.getElementById('accesErreur').classList.remove('show');
+  document.getElementById('accesSucces').classList.remove('show');
+  document.getElementById('accesOverlay').classList.add('show');
+}
+
+function closeAccesModal(){
+  document.getElementById('accesOverlay').classList.remove('show');
+  accesEmployeeId = null;
+}
+
+function afficherErreurAcces(texte){
+  const el = document.getElementById('accesErreur');
+  el.textContent = texte;
+  el.classList.add('show');
+}
+
+async function appelerGestionAcces(corps, boutonId, texteEnCours){
+  const btn = document.getElementById(boutonId);
+  const texteInitial = btn.textContent;
+  btn.disabled = true; btn.textContent = texteEnCours;
+  const { data, error } = await sbClient.functions.invoke('gerer-acces-employee', { body: corps });
+  btn.disabled = false; btn.textContent = texteInitial;
+  const msg = await messageErreurFonction(error, data);
+  if(msg || !data || !data.ok){
+    afficherErreurAcces(msg || "L'opération n'a pas fonctionné.");
+    return null;
+  }
+  return data;
+}
+
+async function validerAcces(){
+  if(!accesEmployeeId) return;
+  const acc = accesParEmployee[accesEmployeeId] || null;
+  const role = document.getElementById('accesRole').value;
+  document.getElementById('accesErreur').classList.remove('show');
+  document.getElementById('accesSucces').classList.remove('show');
+
+  let corps;
+  if(acc){
+    if(acc.role === role){ closeAccesModal(); return; }   // rien à enregistrer
+    corps = { action: 'changer_role', employee_id: accesEmployeeId, role };
+  } else {
+    const email = document.getElementById('accesEmail').value.trim();
+    if(!email){ afficherErreurAcces('Écris son courriel pour lui envoyer son accès.'); return; }
+    corps = { action: 'inviter', employee_id: accesEmployeeId, role, email };
+  }
+
+  const data = await appelerGestionAcces(corps, 'accesValiderBtn', 'Envoi…');
+  if(!data) return;
+
+  // Le compte peut être créé sans que le courriel parte (Resend en panne, adresse refusée) :
+  // on le dit clairement plutôt que d'annoncer un succès qui n'en est pas un.
+  if(data.courrielEnvoye === false){
+    await chargerAcces(); renderTeamRows();
+    afficherErreurAcces(data.error || "Le compte est créé, mais le courriel n'est pas parti.");
+    return;
+  }
+
+  const succes = document.getElementById('accesSucces');
+  succes.textContent = acc ? '✓ Rôle enregistré.' : '✓ Courriel d’accès envoyé.';
+  succes.classList.add('show');
+  await chargerAcces();
+  renderTeamRows();
+  setTimeout(closeAccesModal, 1400);
+}
+
+async function retirerAcces(){
+  if(!accesEmployeeId) return;
+  const emp = teamRowsCache.find(e => e.id === accesEmployeeId);
+  const nom = emp ? emp.name : 'cette employée';
+  if(!confirm('Retirer l’accès de ' + nom + ' ?\n\nSon compte sera supprimé et elle ne pourra plus se connecter. Son horaire, ses rendez-vous et ses factures ne sont pas touchés.')) return;
+  document.getElementById('accesErreur').classList.remove('show');
+  const data = await appelerGestionAcces({ action: 'retirer', employee_id: accesEmployeeId }, 'accesRetirerBtn', 'Retrait…');
+  if(!data) return;
+  await chargerAcces();
+  renderTeamRows();
+  closeAccesModal();
+}
+
 async function deleteEmployee(employeeId, employeeName){
-  if(!confirm('Supprimer définitivement ' + employeeName + ' ?\n\nSon horaire personnel (heures, exceptions) sera aussi supprimé. Les rendez-vous et factures déjà enregistrés à son nom resteront dans l\'historique.')) return;
+  if(!confirm('Supprimer définitivement ' + employeeName + ' ?\n\nSon accès au logiciel et son horaire personnel (heures, exceptions) seront aussi supprimés. Les rendez-vous et factures déjà enregistrés à son nom resteront dans l\'historique.')) return;
+  // L'accès doit partir AVANT la fiche : app_users.employee_id est en « on delete set null »,
+  // donc supprimer la fiche d'abord laisserait un compte orphelin qui garde l'accès au logiciel.
+  if(accesParEmployee[employeeId]){
+    const { data, error: accesErr } = await sbClient.functions.invoke('gerer-acces-employee', {
+      body: { action: 'retirer', employee_id: employeeId }
+    });
+    const msg = await messageErreurFonction(accesErr, data);
+    if(msg || !data || !data.ok){
+      alert('Son accès au logiciel n’a pas pu être retiré, donc la fiche n’a pas été supprimée.\n\n' + (msg || ''));
+      return;
+    }
+    delete accesParEmployee[employeeId];
+  }
   const { error } = await sbClient.from('employees').delete().eq('id', employeeId);
   if(error){ alert('Erreur : ' + error.message); return; }
   teamRowsCache = teamRowsCache.filter(e => e.id !== employeeId);
@@ -3108,7 +3280,17 @@ function openAddEmployeeForm(){
   levelSel.innerHTML = '<option value="">— Aucun niveau —</option>' +
     TIER_ORDER.map((raw, i) => '<option value="'+escapeHtml(raw)+'">'+TIER_LEVEL_LABELS[i]+'</option>').join('');
   document.getElementById('teamAddError').classList.remove('show');
+  document.getElementById('teamAddRole').value = '';
+  document.getElementById('teamAddEmail').value = '';
+  majChampCourrielAjout();
   document.getElementById('teamAddForm').style.display = 'block';
+}
+
+// Le courriel ne sert qu'à envoyer l'accès : inutile de le demander pour une fiche sans compte
+// (Réception, par exemple, qui existe pour la facturation mais où personne ne se connecte).
+function majChampCourrielAjout(){
+  const role = document.getElementById('teamAddRole').value;
+  document.getElementById('teamAddEmailLabel').style.display = role ? 'block' : 'none';
 }
 
 function closeAddEmployeeForm(){
@@ -3127,9 +3309,17 @@ async function submitAddEmployee(){
   const level = document.getElementById('teamAddLevel').value || null;
   const { data: existing } = await sbClient.from('employees').select('sort_order').order('sort_order', { ascending:false }).limit(1);
   const nextSort = (existing && existing.length) ? (existing[0].sort_order || 0) + 1 : 1;
-  const { error } = await sbClient.from('employees').insert({
+  const role = document.getElementById('teamAddRole').value;
+  const email = document.getElementById('teamAddEmail').value.trim();
+  if(role && !email){
+    errEl.textContent = 'Écris son courriel, ou remets l’accès à « Aucun accès ».';
+    errEl.classList.add('show');
+    return;
+  }
+
+  const { data: creee, error } = await sbClient.from('employees').insert({
     name, color_hex: teamAddSelectedColor, tier_level: level, sort_order: nextSort, active: true
-  });
+  }).select('id').single();
   if(error){
     errEl.textContent = error.message.includes('duplicate') ? 'Une employée porte déjà ce nom.' : ('Erreur : ' + error.message);
     errEl.classList.add('show');
@@ -3137,6 +3327,23 @@ async function submitAddEmployee(){
   }
   employeeTierLevelCache = null;
   factEmployeesCache = null;
+
+  // La fiche est créée : même si l'envoi de l'accès échoue, on ne la défait pas. On garde le
+  // formulaire ouvert avec le message, et Karine peut réessayer depuis le bouton de la rangée.
+  if(role){
+    const { data, error: accesErr } = await sbClient.functions.invoke('gerer-acces-employee', {
+      body: { action: 'inviter', employee_id: creee.id, role, email }
+    });
+    const msg = await messageErreurFonction(accesErr, data);
+    if(msg || !data || !data.ok || data.courrielEnvoye === false){
+      errEl.textContent = (msg || data && data.error) ||
+        'La fiche est créée, mais l’accès n’a pas pu être envoyé. Réessaie avec le bouton de sa rangée.';
+      errEl.classList.add('show');
+      loadTeamEdit();
+      return;
+    }
+  }
+
   closeAddEmployeeForm();
   loadTeamEdit();
 }
@@ -3683,7 +3890,9 @@ const sbClient = window.supabase.createClient(SUPA_URL, SUPA_KEY);
    supabase-js le transforme en session valide — sans ce drapeau, requireAuth() conclurait que
    la personne est connectée et la laisserait entrer sans jamais lui demander son nouveau mot
    de passe. On lit l'adresse AVANT toute vérification de session. */
-const MODE_RECUPERATION = /type=recovery/.test(location.hash) || /type=recovery/.test(location.search);
+// « recovery » = mot de passe oublié ; « invite » = première connexion d'une employée qui vient
+// de recevoir son courriel d'accès. Les deux mènent au même écran : choisir son mot de passe.
+const MODE_RECUPERATION = /type=(recovery|invite)/.test(location.hash) || /type=(recovery|invite)/.test(location.search);
 
 // Le logo n'est présent qu'une fois dans le fichier (page d'accueil) : on réutilise sa source
 // pour les cartes de connexion, ce qui évite d'alourdir le fichier d'une deuxième copie.
