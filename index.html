@@ -3014,11 +3014,20 @@ let teamDraggedId = null;
    gerer-acces-employee, qui n'obéit qu'à un compte déjà gestionnaire. Le courriel de chaque
    compte vit dans auth.users, que le navigateur ne voit pas non plus — d'où l'action « lister ». */
 let accesParEmployee = {};
+let accesInconnus = false;   // vrai quand la liste n'a pas pu être chargée
 
 async function chargerAcces(){
-  accesParEmployee = {};
   const { data, error } = await sbClient.functions.invoke('gerer-acces-employee', { body: { action: 'lister' } });
-  if(error || !data || !data.acces){ console.error('Accès illisibles', error); return; }
+  // Si le chargement échoue, surtout NE PAS vider le cache : « aucun accès » est un état
+  // réel et parlant, et l'afficher partout ferait croire à Karine que tous les comptes ont
+  // disparu. On garde ce qu'on avait et on dit franchement qu'on ne sait pas.
+  if(error || !data || !data.acces){
+    console.error('Accès illisibles', error);
+    accesInconnus = true;
+    return;
+  }
+  accesInconnus = false;
+  accesParEmployee = {};
   data.acces.forEach(a => { if(a.employee_id) accesParEmployee[a.employee_id] = a; });
 }
 
@@ -3039,6 +3048,7 @@ async function loadTeamEdit(){
 }
 
 function etiquetteAcces(employeeId){
+  if(accesInconnus) return 'Accès — à revérifier';
   const a = accesParEmployee[employeeId];
   if(!a) return 'Aucun accès';
   const role = a.role === 'gestionnaire' ? 'Gestionnaire' : 'Coiffeuse';
@@ -3092,6 +3102,10 @@ async function toggleEmployeeActive(checkbox, employeeId){
 let accesEmployeeId = null;
 
 function openAccesModal(employeeId){
+  if(accesInconnus){
+    alert("Les accès n'ont pas pu être chargés. Reviens sur l'écran Équipe pour réessayer avant de faire un changement.");
+    return;
+  }
   accesEmployeeId = employeeId;
   const emp = teamRowsCache.find(e => e.id === employeeId);
   const acc = accesParEmployee[employeeId] || null;
