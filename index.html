@@ -2495,6 +2495,10 @@ function go(id){
     alert('Cette zone est réservée à la gestionnaire.');
     return;
   }
+  if(id === 'screen-performances' && !estGestionnaire() && !monNom){
+    alert('Ce poste n’est pas rattaché à une coiffeuse. Connecte-toi avec ton propre compte pour voir tes chiffres.');
+    return;
+  }
   if(id.indexOf('screen-comptable') === 0 && currentScreenId.indexOf('screen-comptable') !== 0){
     openComptablePinModal(id);
     return;
@@ -3820,6 +3824,12 @@ function appliquerRole(){
   document.querySelectorAll('[onclick]').forEach(el => {
     const action = el.getAttribute('onclick') || '';
     if(action.indexOf("go('screen-config')") !== -1 || action.indexOf("go('screen-comptable')") !== -1){
+      el.style.display = 'none';
+    }
+    // Un compte de poste — celui de l'ordinateur de la réception — n'est rattaché à aucune
+    // employée : « Mes performances » n'aurait que des zéros à lui montrer. On retire le lien
+    // plutôt que de laisser un écran vide sur la machine que toute l'équipe utilise.
+    if(!monNom && action.indexOf("go('screen-performances')") !== -1){
       el.style.display = 'none';
     }
   });
