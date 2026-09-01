@@ -2363,7 +2363,7 @@
   </div>
   <div class="app-shell">
     <div class="page-head"><h1>Mes performances</h1></div>
-    <p class="crep-hint">Choisis une coiffeuse, puis une période, pour voir ses ventes et ses pourboires.</p>
+    <p class="crep-hint" id="performancesHint">Choisis une coiffeuse, puis une période, pour voir ses ventes et ses pourboires.</p>
 
     <div class="tabs-row" id="performancesTabs"></div>
 
@@ -2489,6 +2489,12 @@ const CONFIG_ZONE_SCREENS = ['screen-config','screen-business-settings','screen-
 // chaque fois qu'on y entre depuis un écran hors de la zone concernée, on doit ressaisir le code
 // (pas de mémorisation de session, et pas de code distinct par zone).
 function go(id){
+  // Barrière d'affichage : une coiffeuse n'a rien à faire dans ces deux zones, et le NIP n'est
+  // pas un raccourci pour y entrer — la fonction serveur refuse aussi son compte.
+  if((id.indexOf('screen-comptable') === 0 || CONFIG_ZONE_SCREENS.indexOf(id) !== -1) && !estGestionnaire()){
+    alert('Cette zone est réservée à la gestionnaire.');
+    return;
+  }
   if(id.indexOf('screen-comptable') === 0 && currentScreenId.indexOf('screen-comptable') !== 0){
     openComptablePinModal(id);
     return;
@@ -2553,20 +2559,41 @@ function onComptablePinKeydown(event){
   if(event.key === 'Enter') submitComptablePin();
 }
 
+// Le NIP est vérifié PAR LE SERVEUR depuis l'étape 2. Il ne descend plus jamais dans le
+// navigateur : il vit dans manager_secrets, une table sans aucune policy RLS, que seules les
+// fonctions serveur peuvent lire. La fonction refuse aussi les comptes non gestionnaires et
+// compte les essais ratés (5 par tranche de 15 minutes).
+let verificationNipEnCours = false;
+
 async function submitComptablePin(){
-  const entered = document.getElementById('comptablePinInput').value.trim();
-  const s = await loadBusinessSettings();
-  const correctPin = (s && s.comptable_pin) || '0000';
-  if(entered === correctPin){
+  if(verificationNipEnCours) return;
+  const input = document.getElementById('comptablePinInput');
+  const errEl = document.getElementById('comptablePinError');
+  const entered = input.value.trim();
+  errEl.classList.remove('show');
+  verificationNipEnCours = true;
+  const { data, error } = await sbClient.functions.invoke('verify-comptable-pin', { body: { pin: entered } });
+  verificationNipEnCours = false;
+
+  if(data && data.ok){
     const target = comptablePinTarget;
     closeComptablePinModal();
     performGo(target);
-  } else {
-    document.getElementById('comptablePinError').classList.add('show');
-    const input = document.getElementById('comptablePinInput');
-    input.value = '';
-    input.focus();
+    return;
   }
+
+  const msg = await messageErreurFonction(error, data);
+  if(msg){
+    errEl.textContent = msg;
+  } else if(data && typeof data.essaisRestants === 'number' && data.essaisRestants > 0){
+    errEl.textContent = 'Code incorrect. Il reste ' + data.essaisRestants +
+      (data.essaisRestants > 1 ? ' essais.' : ' essai.');
+  } else {
+    errEl.textContent = 'Code incorrect.';
+  }
+  errEl.classList.add('show');
+  input.value = '';
+  input.focus();
 }
 
 // Code oublié : envoi automatique et silencieux via une fonction serveur (le code n'est
@@ -2581,12 +2608,7 @@ async function sendComptablePinByEmail(){
   const { data, error } = await sbClient.functions.invoke('send-comptable-pin', { method: 'POST' });
   link.textContent = 'Code oublié? Le recevoir par courriel';
   if(error || !data || data.error){
-    let msg = (data && data.error) || null;
-    // Quand la fonction répond avec un code d'erreur HTTP, supabase-js met le corps de la
-    // réponse dans error.context plutôt que dans data — on va chercher le vrai message là.
-    if(!msg && error && error.context && typeof error.context.json === 'function'){
-      try { const body = await error.context.json(); msg = body && body.error; } catch(e){ /* corps non-JSON, ignorer */ }
-    }
+    const msg = await messageErreurFonction(error, data);
     errorEl.textContent = msg || "Erreur lors de l'envoi. Réessaie plus tard.";
     errorEl.classList.add('show');
     return;
@@ -2626,8 +2648,20 @@ async function submitComptablePinChange(){
     return;
   }
   const recoveryEmail = document.getElementById('comptablePinChangeRecoveryEmail').value.trim() || null;
-  const { error } = await sbClient.from('business_settings').update({ comptable_pin: a, comptable_pin_recovery_email: recoveryEmail, updated_at: new Date().toISOString() }).eq('id', 1);
-  if(error){ alert('Erreur : ' + error.message); return; }
+
+  // Le nouveau code passe par une fonction serveur : le navigateur n'a aucun droit d'écriture
+  // sur manager_secrets. Le courriel de récupération, lui, n'est pas un secret (c'est l'adresse
+  // publique du salon) et reste dans business_settings.
+  const { data: majData, error: majErr } = await sbClient.functions.invoke('set-comptable-pin', { body: { pin: a } });
+  if(!(majData && majData.ok)){
+    const msg = await messageErreurFonction(majErr, majData);
+    errEl.textContent = msg || "Impossible d'enregistrer le nouveau code.";
+    errEl.classList.add('show');
+    return;
+  }
+  const { error } = await sbClient.from('business_settings')
+    .update({ comptable_pin_recovery_email: recoveryEmail, updated_at: new Date().toISOString() }).eq('id', 1);
+  if(error){ alert('Le code est changé, mais le courriel de récupération n\'a pas pu être enregistré : ' + error.message); }
   businessSettingsCache = null;
   document.getElementById('comptablePinChangeSuccess').classList.add('show');
   setTimeout(closeComptablePinChangeModal, 1200);
@@ -3748,6 +3782,57 @@ async function doLogin(){
   // On recharge plutôt que de démarrer l'application à la main : tout le code de démarrage
   // (DOMContentLoaded) se rejoue alors normalement, avec la session en place.
   location.reload();
+}
+
+/* ---------- Étape 2 : qui est connectée, et ce qu'elle a le droit de voir ----------
+   Chaque coiffeuse a maintenant son propre compte. La table app_users fait le lien entre le
+   compte Supabase Auth, la fiche employée et le rôle. Sa policy RLS ne laisse voir que sa
+   propre ligne (la gestionnaire, elle, voit toute l'équipe) : ce chargement ne révèle rien.
+
+   À retenir : ce qui se passe ici est du CONFORT D'AFFICHAGE — on cache ce qui ne sert pas.
+   Ce qui protège vraiment les données, c'est RLS dans la base et les fonctions serveur.
+   Masquer un bouton n'a jamais empêché personne d'ouvrir la console du navigateur. */
+let monRole = null;         // 'gestionnaire' | 'coiffeuse' | null (compte non inscrit)
+let monEmployeeId = null;
+let monNom = null;
+
+function estGestionnaire(){ return monRole === 'gestionnaire'; }
+
+async function chargerMonRole(){
+  monRole = null; monEmployeeId = null; monNom = null;
+  const { data: userData } = await sbClient.auth.getUser();
+  const user = userData && userData.user;
+  if(!user) return;
+  const { data, error } = await sbClient.from('app_users')
+    .select('role, employee_id, employees(name)').eq('user_id', user.id).limit(1);
+  if(error){ console.error('Rôle introuvable', error); return; }
+  const ligne = data && data[0];
+  if(!ligne) return;
+  monRole = ligne.role;
+  monEmployeeId = ligne.employee_id;
+  monNom = ligne.employees ? ligne.employees.name : null;
+}
+
+// Un seul balayage du document : les liens vers les deux zones réservées sont éparpillés dans
+// les 21 barres de navigation et sur la page d'accueil, les chercher un par un serait fragile.
+function appliquerRole(){
+  if(estGestionnaire()) return;
+  document.querySelectorAll('[onclick]').forEach(el => {
+    const action = el.getAttribute('onclick') || '';
+    if(action.indexOf("go('screen-config')") !== -1 || action.indexOf("go('screen-comptable')") !== -1){
+      el.style.display = 'none';
+    }
+  });
+}
+
+// Les fonctions serveur renvoient leur message d'erreur dans le corps de la réponse ; quand le
+// code HTTP n'est pas 2xx, supabase-js le range dans error.context et non dans data.
+async function messageErreurFonction(error, data){
+  let msg = (data && data.error) || null;
+  if(!msg && error && error.context && typeof error.context.json === 'function'){
+    try { const corps = await error.context.json(); msg = corps && corps.error; } catch(e){ /* corps non-JSON */ }
+  }
+  return msg;
 }
 
 async function doLogout(){
@@ -4949,16 +5034,19 @@ function updateFacturePaySummary(){
   if(confirmBtn) confirmBtn.disabled = result.remaining > 0;
 }
 
-// Réserve le prochain numéro de facture configuré dans les réglages d'affaires et incrémente le compteur.
+// Réserve le prochain numéro de facture configuré dans les réglages d'affaires et incrémente le
+// compteur. Depuis l'étape 2 ça passe par une fonction dans la base : business_settings n'est plus
+// modifiable que par la gestionnaire, et l'incrément étant fait d'un seul geste, deux
+// encaissements en même temps ne peuvent plus tirer le même numéro.
 async function nextInvoiceNumber(){
-  const s = await loadBusinessSettings(true);
-  const prefix = (s && s.invoice_prefix) || 'FAC-';
-  const num = (s && s.next_invoice_number) || 1;
-  const label = prefix + String(num).padStart(4,'0');
-  const { error } = await sbClient.from('business_settings').update({ next_invoice_number: num+1 }).eq('id', 1);
-  if(error) console.error(error);
+  const { data, error } = await sbClient.rpc('prochain_numero_facture');
   businessSettingsCache = null;
-  return label;
+  if(error || !data){
+    console.error(error);
+    alert("Impossible de réserver un numéro de facture. Vérifie ta connexion, puis recommence.");
+    return null;
+  }
+  return data;
 }
 
 async function ensureFactureClientId(){
@@ -4987,6 +5075,7 @@ async function confirmFacturePaiement(){
   const rates = await factureTaxRates();
   const totals = computeFactureTotals(factItems, rates);
   const invoiceNumber = await nextInvoiceNumber();
+  if(!invoiceNumber) return;   // le message d'erreur a déjà été montré
   const paymentMethodLabel = usedMethods.join(', ');
 
   const { data: invoice, error: invErr } = await sbClient.from('invoices').insert({
@@ -5545,6 +5634,15 @@ async function loadPerformances(){
   // Madame Patron n'est pas une coiffeuse — pas besoin de son onglet dans Mes performances
   // (même exclusion que pour la liste des employées bookables sur l'Horaire).
   else comptableRepEmployeesCache = (empResult.data || []).filter(e => e.name !== 'Madame Patron');
+  // Depuis l'étape 2 : chacune ne voit que son propre onglet. Seule la gestionnaire garde la
+  // vue d'ensemble sur toute l'équipe.
+  if(!estGestionnaire()){
+    comptableRepEmployeesCache = monNom
+      ? comptableRepEmployeesCache.filter(e => e.name === monNom)
+      : [];
+    const hint = document.getElementById('performancesHint');
+    if(hint) hint.textContent = 'Choisis une période pour voir tes ventes et tes pourboires.';
+  }
   if(!performancesActiveEmployee || !comptableRepEmployeesCache.some(e => e.name === performancesActiveEmployee)){
     performancesActiveEmployee = comptableRepEmployeesCache.length ? comptableRepEmployeesCache[0].name : null;
   }
@@ -5606,9 +5704,22 @@ async function loadComptableCommissions(){
   comptableActiveReport = 'commissions';
   renderComptablePeriodNav('commissions');
   await loadComptableReportData('commissions');
-  const { data: employees, error } = await sbClient.from('employees').select('*').order('sort_order');
+  // Le taux de commission a quitté employees (que toute l'équipe doit pouvoir lire pour
+  // l'horaire) pour employee_pay, dont les policies n'ouvrent qu'à la gestionnaire. On refait
+  // ici le rapprochement des deux tables.
+  const [{ data: employees, error }, { data: pay, error: payErr }] = await Promise.all([
+    sbClient.from('employees').select('*').order('sort_order'),
+    sbClient.from('employee_pay').select('employee_id, commission_rate')
+  ]);
   if(error){ console.error(error); comptableRepEmployeesCache = []; }
-  else comptableRepEmployeesCache = employees || [];
+  else {
+    const tauxParEmploye = {};
+    if(payErr) console.error(payErr);
+    else (pay || []).forEach(r => { tauxParEmploye[r.employee_id] = r.commission_rate; });
+    comptableRepEmployeesCache = (employees || []).map(e => ({
+      ...e, commission_rate: tauxParEmploye[e.id] != null ? tauxParEmploye[e.id] : null
+    }));
+  }
   renderComptableCommissionsTable();
 }
 
@@ -5646,7 +5757,9 @@ async function saveCommissionRate(input){
   const employeeId = input.dataset.empId;
   const v = parseFloat(input.value);
   const rate = (!isNaN(v) && v >= 0) ? v : null;
-  const { error } = await sbClient.from('employees').update({ commission_rate: rate }).eq('id', employeeId);
+  const { error } = await sbClient.from('employee_pay')
+    .upsert({ employee_id: employeeId, commission_rate: rate, updated_at: new Date().toISOString() },
+            { onConflict: 'employee_id' });
   if(error){ alert('Erreur : ' + error.message); return; }
   const emp = comptableRepEmployeesCache.find(e => e.id === employeeId);
   if(emp) emp.commission_rate = rate;
@@ -6025,6 +6138,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // AVANT le premier chargement de données — sinon on tomberait dans une course où loadClients()
   // part avant que supabase-js ait fini de restaurer la session depuis le stockage local.
   if(!(await requireAuth())) return;
+  // Le rôle doit être connu AVANT le premier affichage, sinon les zones réservées apparaissent
+  // une fraction de seconde chez une coiffeuse avant d'être masquées.
+  await chargerMonRole();
+  appliquerRole();
   document.getElementById('clientSearch').addEventListener('input', e => renderClientList(e.target.value));
   document.getElementById('addClientBtn').addEventListener('click', openAddModal);
   document.getElementById('clientModalOverlay').addEventListener('click', e => {
