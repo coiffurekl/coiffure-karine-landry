@@ -779,6 +779,11 @@
   .svc-name-in:focus{ outline:none; border-color:var(--teal-dk); background:#fff; }
   .nom-etat{ font-family:'Josefin Sans'; font-size:11px; color:#4C9A5A; margin-left:6px; }
   .cat-barre{ display:flex; align-items:center; gap:10px; margin:34px 0 16px; }
+  .sed-poignee{ font-size:17px; color:var(--ink-soft); cursor:grab; flex-shrink:0; padding:2px 4px; user-select:none; }
+  .sed-poignee:active{ cursor:grabbing; }
+  .cat-barre.sed-en-vol, tr.sed-en-vol{ opacity:.4; }
+  .cat-barre.sed-survol{ outline:2px dashed var(--teal-dk); outline-offset:4px; border-radius:8px; }
+  tr.sed-survol td{ box-shadow:inset 0 2px 0 var(--teal-dk); }
   .cat-barre .prix-cat{ margin:0; flex:1; min-width:0; }
   .svc-suppr, .cat-suppr{ border:1px solid var(--line); background:#fff; color:var(--ink-soft);
     border-radius:50%; width:26px; height:26px; line-height:1; font-size:15px; cursor:pointer; flex-shrink:0; }
@@ -2830,6 +2835,15 @@ async function loadPrixList(){
 }
 
 /* ---------- Zone Config > Services : édition des prix ---------- */
+/* ---------- Zone Config > Services : le catalogue au complet ----------
+   Le chargement et l'affichage sont séparés : glisser une ligne réordonne la copie en mémoire,
+   redessine tout de suite, puis enregistre — sans repasser par la base entre les deux, sinon la
+   ligne sauterait sous le doigt. Même mécanisme que les rangées de l'écran Équipe. */
+let sedCats = [];
+let sedSvcs = [];
+let sedTiers = [];
+let sedGlisse = null;   // { type:'categorie'|'service', id }
+
 async function loadServicesEdit(){
   const container = document.getElementById('servicesEditContainer');
   container.innerHTML = '<div class="list-msg">Chargement...</div>';
@@ -2843,37 +2857,137 @@ async function loadServicesEdit(){
     console.error(e1||e2||e3);
     return;
   }
-  let html = '<p style="color:var(--ink-soft); font-size:14.5px; margin:-8px 0 22px;">Tout se gère ici : ajoute ou supprime des catégories et des services, corrige les noms, les prix et les durées. Une correction s’enregistre dès que tu quittes la case. Les factures déjà émises gardent l’ancien nom et l’ancien prix — et un service déjà facturé ne peut pas être supprimé.</p>';
-  cats.forEach(cat => {
-    const catServices = svcs.filter(s => s.category_id === cat.id).sort((a,b)=>a.sort_order-b.sort_order);
+  sedCats = cats || [];
+  sedSvcs = svcs || [];
+  sedTiers = tiers || [];
+  renderServicesEdit();
+}
+
+function renderServicesEdit(){
+  const container = document.getElementById('servicesEditContainer');
+  let html = '<p style="color:var(--ink-soft); font-size:14.5px; margin:-8px 0 22px;">Tout se gère ici : ajoute ou supprime des catégories et des services, corrige les noms, les prix et les durées. Glisse une poignée (☰) pour changer l’ordre. Une correction s’enregistre dès que tu quittes la case. Les factures déjà émises gardent l’ancien nom et l’ancien prix — et un service déjà facturé ne peut pas être supprimé.</p>';
+  sedCats.forEach(cat => {
+    const catServices = sedSvcs.filter(s => s.category_id === cat.id);
     // Contrairement à l'écran de consultation, on affiche AUSSI les catégories vides : sans ça,
     // une catégorie qu'on vient de créer serait invisible et on ne pourrait jamais lui ajouter
     // son premier service.
-    html += '<div class="cat-barre"><div class="prix-cat"><input class="cat-name-in" value="'+escapeHtml(cat.name)+'" data-cat-id="'+cat.id+'" data-avant="'+escapeHtml(cat.name)+'" onchange="renommerCategorie(this)"><span class="nom-etat"></span></div>' +
+    html += '<div class="cat-barre" draggable="true"' +
+      ' ondragstart="sedDragStart(event, \'categorie\', \''+cat.id+'\')"' +
+      ' ondragover="sedDragOver(event)" ondragleave="sedDragLeave(event)"' +
+      ' ondrop="sedDrop(event, \'categorie\', \''+cat.id+'\')" ondragend="sedDragEnd(event)">' +
+      '<span class="sed-poignee" title="Glisser pour déplacer la catégorie">&#9776;</span>' +
+      '<div class="prix-cat"><input class="cat-name-in" value="'+escapeHtml(cat.name)+'" data-cat-id="'+cat.id+'" data-avant="'+escapeHtml(cat.name)+'" onchange="renommerCategorie(this)"><span class="nom-etat"></span></div>' +
       '<button type="button" class="cat-suppr" title="Supprimer cette catégorie" onclick="supprimerCategorieService(\''+cat.id+'\')">&times;</button></div>';
     if(catServices.length === 0){
       html += '<div class="list-msg" style="text-align:left; padding:10px 2px;">Aucun service dans cette catégorie — elle n’apparaîtra nulle part tant qu’elle sera vide.</div>';
     } else {
-    html += '<table class="prix-edit"><tr><th>Service</th>'+TIER_LEVEL_LABELS.map(t=>'<th>'+escapeHtml(t)+'</th>').join('')+'</tr>';
-    catServices.forEach(svc => {
-      const svcTiers = tiers.filter(t => t.service_id === svc.id);
-      html += '<tr><td><div class="tier-edit"><input class="svc-name-in" value="'+escapeHtml(svc.name)+'" data-svc-id="'+svc.id+'" data-avant="'+escapeHtml(svc.name)+'" onchange="renommerService(this)"><span class="nom-etat"></span>' +
-        '<button type="button" class="svc-suppr" title="Supprimer ce service" onclick="supprimerServiceDuCatalogue(\''+svc.id+'\')">&times;</button></div></td>';
-      TIER_ORDER.forEach(tierLabel => {
-        const t = svcTiers.find(x => x.tier_label === tierLabel);
-        html += '<td><div class="tier-edit" data-service-id="'+svc.id+'" data-tier-label="'+escapeHtml(tierLabel)+'" data-tier-id="'+(t?t.id:'')+'">' +
-          '<input class="price-in" type="number" step="0.01" placeholder="$" value="'+(t && t.price!==null ? t.price : '')+'" onchange="enregistrerTierDepuisChamp(this)">' +
-          '<input class="dur-in" type="number" step="5" placeholder="min" value="'+(t && t.duration_minutes!==null ? t.duration_minutes : '')+'" onchange="enregistrerTierDepuisChamp(this)">' +
-          '<button class="save-btn" onclick="saveTierEdit(this)">Enreg.</button>' +
-        '</div></td>';
+      html += '<table class="prix-edit"><tr><th>Service</th>'+TIER_LEVEL_LABELS.map(t=>'<th>'+escapeHtml(t)+'</th>').join('')+'</tr>';
+      catServices.forEach(svc => {
+        const svcTiers = sedTiers.filter(t => t.service_id === svc.id);
+        html += '<tr draggable="true"' +
+          ' ondragstart="sedDragStart(event, \'service\', \''+svc.id+'\')"' +
+          ' ondragover="sedDragOver(event)" ondragleave="sedDragLeave(event)"' +
+          ' ondrop="sedDrop(event, \'service\', \''+svc.id+'\')" ondragend="sedDragEnd(event)">' +
+          '<td><div class="tier-edit">' +
+          '<span class="sed-poignee" title="Glisser pour déplacer le service">&#9776;</span>' +
+          '<input class="svc-name-in" value="'+escapeHtml(svc.name)+'" data-svc-id="'+svc.id+'" data-avant="'+escapeHtml(svc.name)+'" onchange="renommerService(this)"><span class="nom-etat"></span>' +
+          '<button type="button" class="svc-suppr" title="Supprimer ce service" onclick="supprimerServiceDuCatalogue(\''+svc.id+'\')">&times;</button></div></td>';
+        TIER_ORDER.forEach(tierLabel => {
+          const t = svcTiers.find(x => x.tier_label === tierLabel);
+          html += '<td><div class="tier-edit" data-service-id="'+svc.id+'" data-tier-label="'+escapeHtml(tierLabel)+'" data-tier-id="'+(t?t.id:'')+'">' +
+            '<input class="price-in" type="number" step="0.01" placeholder="$" value="'+(t && t.price!==null ? t.price : '')+'" onchange="enregistrerTierDepuisChamp(this)">' +
+            '<input class="dur-in" type="number" step="5" placeholder="min" value="'+(t && t.duration_minutes!==null ? t.duration_minutes : '')+'" onchange="enregistrerTierDepuisChamp(this)">' +
+            '<button class="save-btn" onclick="saveTierEdit(this)">Enreg.</button>' +
+          '</div></td>';
+        });
+        html += '</tr>';
       });
-      html += '</tr>';
-    });
-    html += '</table>';
+      html += '</table>';
     }
     html += '<div class="ajout-service"><button type="button" onclick="ajouterServiceDansCategorie(\''+cat.id+'\')">+ Ajouter un service dans « '+escapeHtml(cat.name)+' »</button></div>';
   });
   container.innerHTML = html || '<div class="list-msg">Aucune catégorie pour l\'instant. Commence par en ajouter une.</div>';
+}
+
+/* ---------- Glisser-déposer : ordre des catégories et des services ---------- */
+function sedCible(event){
+  const el = event.currentTarget || (event.target && event.target.closest && event.target.closest('.cat-barre, tr'));
+  return el;
+}
+
+function sedDragStart(event, type, id){
+  sedGlisse = { type, id };
+  if(event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+  const el = sedCible(event);
+  if(el) el.classList.add('sed-en-vol');
+}
+
+function sedDragOver(event){
+  // Sans preventDefault, le navigateur refuse le dépôt.
+  if(event.preventDefault) event.preventDefault();
+  const el = sedCible(event);
+  if(el && sedGlisse) el.classList.add('sed-survol');
+}
+
+function sedDragLeave(event){
+  const el = sedCible(event);
+  if(el) el.classList.remove('sed-survol');
+}
+
+function sedDragEnd(){
+  const c = document.getElementById('servicesEditContainer');
+  if(c) c.querySelectorAll('.sed-en-vol, .sed-survol').forEach(e => {
+    e.classList.remove('sed-en-vol'); e.classList.remove('sed-survol');
+  });
+  sedGlisse = null;
+}
+
+async function sedDrop(event, type, cibleId){
+  if(event.preventDefault) event.preventDefault();
+  const el = sedCible(event);
+  if(el) el.classList.remove('sed-survol');
+  const glisse = sedGlisse;
+  sedGlisse = null;
+  // On ne mélange pas les genres : une catégorie ne se dépose pas sur un service.
+  if(!glisse || glisse.type !== type || glisse.id === cibleId) return;
+
+  if(type === 'categorie'){
+    const de = sedCats.findIndex(c => c.id === glisse.id);
+    const vers = sedCats.findIndex(c => c.id === cibleId);
+    if(de === -1 || vers === -1) return;
+    const [bouge] = sedCats.splice(de, 1);
+    sedCats.splice(vers, 0, bouge);
+    renderServicesEdit();
+    await sedEnregistrerOrdre('service_categories', sedCats);
+  } else {
+    const bouge = sedSvcs.find(s => s.id === glisse.id);
+    const cible = sedSvcs.find(s => s.id === cibleId);
+    // Déplacer un service d'une catégorie à l'autre changerait sa nature et son prix : on refuse.
+    if(!bouge || !cible || bouge.category_id !== cible.category_id) return;
+    // On réordonne la catégorie concernée, puis on reconstruit la liste complète en suivant
+    // l'ordre des catégories. Simple à relire, et impossible de perdre un service en route.
+    const dansLaCategorie = sedSvcs.filter(s => s.category_id === bouge.category_id);
+    const de = dansLaCategorie.findIndex(s => s.id === bouge.id);
+    const vers = dansLaCategorie.findIndex(s => s.id === cible.id);
+    dansLaCategorie.splice(vers, 0, dansLaCategorie.splice(de, 1)[0]);
+    const parCategorie = {};
+    sedSvcs.forEach(sv => { (parCategorie[sv.category_id] = parCategorie[sv.category_id] || []).push(sv); });
+    parCategorie[bouge.category_id] = dansLaCategorie;
+    sedSvcs = sedCats.flatMap(c => parCategorie[c.id] || []);
+    renderServicesEdit();
+    await sedEnregistrerOrdre('services', dansLaCategorie);
+  }
+  viderCachesDeNoms();
+}
+
+async function sedEnregistrerOrdre(table, liste){
+  const ecritures = liste.map((element, index) => {
+    element.sort_order = index;
+    return sbClient.from(table).update({ sort_order: index }).eq('id', element.id);
+  });
+  const resultats = await Promise.all(ecritures);
+  const rate = resultats.find(r => r && r.error);
+  if(rate){ alert('Le nouvel ordre n’a pas pu être enregistré : ' + rate.error.message); loadServicesEdit(); }
 }
 
 /* ---------- Ajouter et supprimer catégories et services ----------
