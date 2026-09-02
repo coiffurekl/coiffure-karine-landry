@@ -995,6 +995,45 @@
   .crep-comm-rate-input{ width:70px; padding:7px 9px; border:1px solid var(--line); border-radius:8px; font-family:'Josefin Sans'; font-size:12.5px; }
   .crep-comm-rate-wrap{ display:flex; align-items:center; gap:5px; }
   .crep-comm-amount{ text-align:right; font-family:'Playfair Display'; font-weight:600; color:var(--teal-dk); }
+  /* ---- Commissions a paliers : une carte par personne, sa grille en dessous ----
+     Le taux n'est plus un simple pourcentage : il depend du montant de services facture
+     dans la periode, et le taux du palier atteint porte sur TOUT le montant. */
+  .comm-produits{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:14px 18px; margin-bottom:18px;
+    border:1px solid var(--line); border-radius:12px; background:#fff; font-family:'Josefin Sans'; font-size:13.5px; }
+  .comm-produits b{ font-family:'Playfair Display'; font-size:15px; }
+  .comm-carte{ border:1px solid var(--line); border-radius:14px; background:#fff; padding:18px 20px; margin-bottom:14px; }
+  .comm-carte-tete{ display:flex; align-items:baseline; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+  .comm-nom{ font-family:'Playfair Display'; font-size:20px; color:var(--ink); }
+  .comm-palier{ font-family:'Josefin Sans'; font-size:12px; letter-spacing:.04em; text-transform:uppercase;
+    color:#fff; background:var(--teal-dk); border-radius:20px; padding:5px 13px; }
+  .comm-palier.sans{ background:var(--ink-soft); }
+  .comm-lignes{ margin-top:14px; font-family:'Josefin Sans'; font-size:13.5px; }
+  .comm-ligne{ display:grid; grid-template-columns:1fr auto auto auto; gap:10px; align-items:baseline; padding:7px 0; }
+  .comm-ligne .mt{ font-variant-numeric:tabular-nums; text-align:right; min-width:92px; }
+  .comm-ligne .tx{ font-variant-numeric:tabular-nums; text-align:right; min-width:62px; color:var(--ink-soft); }
+  .comm-ligne .res{ font-variant-numeric:tabular-nums; text-align:right; min-width:100px;
+    font-family:'Playfair Display'; font-weight:600; color:var(--teal-dk); }
+  .comm-total{ border-top:1px solid var(--line); margin-top:8px; padding-top:11px; font-weight:700; }
+  .comm-total .res{ font-size:17px; }
+  .comm-grille-btn{ margin-top:12px; font-family:'Josefin Sans'; font-size:12.5px; color:var(--teal-dk);
+    cursor:pointer; user-select:none; letter-spacing:.03em; }
+  .comm-grille-btn:hover{ text-decoration:underline; }
+  .comm-grille{ margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
+  /* Meme retrait sur toutes les lignes : sans ca, le palier atteint se decalait vers la droite
+     en recevant sa couleur, et la colonne des seuils n'etait plus alignee. */
+  .comm-grille-ligne{ display:flex; align-items:center; gap:9px; padding:5px 8px; border-radius:8px;
+    font-family:'Josefin Sans'; font-size:13px; }
+  .comm-grille-ligne.actif{ background:var(--sand); font-weight:600; }
+  .comm-grille-ligne input{ width:96px; padding:7px 9px; border:1px solid var(--line); border-radius:8px;
+    font-family:'Josefin Sans'; font-size:13px; text-align:right; font-variant-numeric:tabular-nums; }
+  .comm-grille-ligne .sep{ color:var(--ink-soft); }
+  .comm-grille-x{ margin-left:auto; color:#b04a4a; cursor:pointer; font-size:16px; line-height:1; padding:0 6px; }
+  .comm-grille-ajout{ margin-top:9px; font-family:'Josefin Sans'; font-size:12.5px; color:var(--teal-dk); cursor:pointer; }
+  .comm-grille-ajout:hover{ text-decoration:underline; }
+  @media (max-width: 700px){
+    .comm-ligne{ grid-template-columns:1fr auto; row-gap:2px; }
+    .comm-ligne .tx{ text-align:left; }
+  }
 
   /* ---- Zone Comptable : sélecteur de période personnalisée ---- */
   .crep-range-modal{ width:auto; max-width:94vw; position:relative; overflow:visible; padding:26px 30px; }
@@ -2592,7 +2631,7 @@
   </div>
   <div class="app-shell">
     <div class="page-head"><h1><span class="clickable" onclick="go('screen-comptable')" title="Retour">&larr;</span> Calcul Commissions</h1></div>
-    <p class="crep-hint">Le taux de commission de chaque membre de l’équipe peut être ajusté directement dans le tableau — il est enregistré automatiquement.</p>
+    <p class="crep-hint">Le taux dépend du montant de services facturé dans la période : le taux du palier atteint s’applique à tout le montant. Les grilles se modifient ici même et s’enregistrent toutes seules.</p>
 
     <div class="crep-period-nav">
       <button type="button" class="crep-period-arrow" onclick="comptableRepShift(-1)">&lsaquo;</button>
@@ -2603,12 +2642,11 @@
       <button type="button" class="crep-period-arrow" onclick="comptableRepShift(1)">&rsaquo;</button>
     </div>
 
-    <div class="crep-comm-table-wrap">
-      <div class="crep-comm-row head">
-        <span>Employée</span><span>Ventes</span><span>Taux</span><span style="text-align:right;">Commission</span>
-      </div>
-      <div id="commissionsTableBody"></div>
+    <div class="comm-produits">
+      <span>Produits — même taux pour toute l’équipe :</span>
+      <b><input type="number" id="commProduitTaux" min="0" max="100" step="0.5" style="width:80px; padding:7px 9px; border:1px solid var(--line); border-radius:8px; font-family:'Josefin Sans'; font-size:14px; text-align:right;" onchange="enregistrerTauxProduits(this)"> %</b>
     </div>
+    <div id="commissionsTableBody"></div>
   </div>
 </div>
 
@@ -2754,7 +2792,7 @@ function go(id){
   // Barrière d'affichage : une coiffeuse n'a rien à faire dans ces deux zones, et le NIP n'est
   // pas un raccourci pour y entrer — la fonction serveur refuse aussi son compte.
   if(estDansLaZoneReservee(id) && !estGestionnaire()){
-    alert('Cette zone est réservée à la gestionnaire.');
+    alert('Cette zone est réservée à la gestion.');
     return;
   }
   if(id === 'screen-performances' && !estGestionnaire() && !monNom){
@@ -6185,7 +6223,7 @@ async function confirmFacturePaiement(){
 let comptableActiveReport = null;
 const comptableRepMonthOffset = { ventes:0, vendeurs:0, pourboires:0, commissions:0, taxes:0, performances:0 };
 const comptableRepState = {
-  ventes: { type:'month' }, vendeurs: { type:'month' }, pourboires: { type:'month' }, commissions: { type:'month' }, taxes: { type:'month' }, performances: { type:'preset', key:'today' }
+  ventes: { type:'month' }, vendeurs: { type:'month' }, pourboires: { type:'month' }, commissions: { type:'preset', key:'thisweek' }, taxes: { type:'month' }, performances: { type:'preset', key:'today' }
 };
 let comptableRepInvoicesCache = [];
 let comptableRepItemsCache = [];
@@ -6784,70 +6822,187 @@ function renderPerformancesCards(){
   document.getElementById('perfPourboires').textContent = formatMoney(pourboiresTotal);
 }
 
-/* ---- Calcul Commissions ---- */
+/* ---- Calcul Commissions ----
+   Le taux n'est pas fixe : chaque personne a sa grille de paliers, et le taux du palier atteint
+   s'applique a TOUT le montant de services facture dans la periode (confirme par Martin le
+   2026-09-02) — pas seulement a la tranche au-dessus du seuil. Les produits, eux, sont au meme
+   taux pour toute l'equipe. Grilles reprises du fichier « Commissions 2026.numbers ». */
+let commTiersParEmploye = {};   // employee_id -> [{id, min_amount, rate}] trie par seuil
+let commTauxProduits = 20;
+const commGrillesOuvertes = new Set();   // qui a sa grille depliee, pour survivre au reaffichage
+
 async function loadComptableCommissions(){
   comptableActiveReport = 'commissions';
   renderComptablePeriodNav('commissions');
   await loadComptableReportData('commissions');
-  // Le taux de commission a quitté employees (que toute l'équipe doit pouvoir lire pour
-  // l'horaire) pour employee_pay, dont les policies n'ouvrent qu'à la gestionnaire. On refait
-  // ici le rapprochement des deux tables.
-  const [{ data: employees, error }, { data: pay, error: payErr }] = await Promise.all([
-    sbClient.from('employees').select('*').order('sort_order'),
-    sbClient.from('employee_pay').select('employee_id, commission_rate')
+  // Les chiffres de paye ne sont lisibles que par la gestion : employees est ouvert a toute
+  // l'equipe (l'horaire en depend), commission_tiers et business_settings ne le sont pas.
+  const [emps, tiers, reglages] = await Promise.all([
+    sbClient.from('employees').select('*').eq('active', true).order('sort_order'),
+    sbClient.from('commission_tiers').select('*').order('min_amount'),
+    sbClient.from('business_settings').select('product_commission_rate').eq('id', 1).limit(1)
   ]);
-  if(error){ console.error(error); comptableRepEmployeesCache = []; }
-  else {
-    const tauxParEmploye = {};
-    if(payErr) console.error(payErr);
-    else (pay || []).forEach(r => { tauxParEmploye[r.employee_id] = r.commission_rate; });
-    comptableRepEmployeesCache = (employees || []).map(e => ({
-      ...e, commission_rate: tauxParEmploye[e.id] != null ? tauxParEmploye[e.id] : null
-    }));
+  if(emps.error){ console.error(emps.error); comptableRepEmployeesCache = []; }
+  else comptableRepEmployeesCache = emps.data || [];
+
+  commTiersParEmploye = {};
+  if(tiers.error) console.error(tiers.error);
+  else (tiers.data || []).forEach(t => {
+    (commTiersParEmploye[t.employee_id] = commTiersParEmploye[t.employee_id] || []).push(t);
+  });
+  Object.values(commTiersParEmploye).forEach(l => l.sort((a,b) => a.min_amount - b.min_amount));
+
+  if(!reglages.error && reglages.data && reglages.data[0] && reglages.data[0].product_commission_rate != null){
+    commTauxProduits = Number(reglages.data[0].product_commission_rate);
   }
+  const champ = document.getElementById('commProduitTaux');
+  if(champ) champ.value = commTauxProduits;
+
   renderComptableCommissionsTable();
+}
+
+// Le palier atteint : le dernier dont le seuil est atteint par le montant de services.
+function commPalierAtteint(tiers, ventesServices){
+  let choisi = null;
+  (tiers || []).forEach(t => { if(ventesServices >= Number(t.min_amount)) choisi = t; });
+  return choisi;
+}
+
+// Les seuils sont des montants ronds : « 2 000 $ », sans les cents qui alourdiraient le libelle.
+function commMontantCourt(v){
+  return Math.round(Number(v)).toLocaleString('fr-CA').replace(/\u00a0/g, ' ') + ' $';
+}
+
+// « Moins de 2 000 $ », « 2 000 à 2 599 $ », « 3 200 $ et plus » — deduit des seuils voisins.
+function commLibellePalier(tiers, i){
+  if(i < 0 || !tiers[i]) return 'Aucun palier atteint';
+  const seuil = Number(tiers[i].min_amount);
+  const suivant = tiers[i+1] ? Number(tiers[i+1].min_amount) : null;
+  if(seuil === 0) return suivant != null ? ('Moins de ' + commMontantCourt(suivant)) : 'Tout montant';
+  if(suivant == null) return commMontantCourt(seuil) + ' et plus';
+  return commMontantCourt(seuil) + ' à ' + commMontantCourt(suivant - 1);
 }
 
 function renderComptableCommissionsTable(){
   const box = document.getElementById('commissionsTableBody');
-  // Les ventes de chaque employée se comptent par item (invoice_items.employee_name), pas par
-  // facture au complet : sur une facture à deux coiffeuses, chacune ne doit être commissionnée
-  // que sur ce qu'elle a elle-même facturé, pas sur le sous-total complet de la facture.
+  // Chaque item compte pour la personne qui l'a reellement facture (invoice_items.employee_name),
+  // pas pour celle de la facture au complet : sur une facture a deux, chacune a sa part.
   const invoiceById = {};
   comptableRepInvoicesCache.forEach(inv => { invoiceById[inv.id] = inv; });
-  const salesByEmp = {};
+  const parNom = {};
   comptableRepItemsCache.forEach(it => {
     const inv = invoiceById[it.invoice_id];
-    const name = it.employee_name || (inv && inv.employee_name) || 'Non assigné';
-    salesByEmp[name] = (salesByEmp[name]||0) + (Number(it.line_total)||0);
+    const nom = it.employee_name || (inv && inv.employee_name) || 'Non assigné';
+    const cible = parNom[nom] = parNom[nom] || { services:0, produits:0 };
+    if(it.is_product === true) cible.produits += (Number(it.line_total)||0);
+    else cible.services += (Number(it.line_total)||0);
   });
+
   if(!comptableRepEmployeesCache.length){
     box.innerHTML = '<div class="comptable-invoice-empty">Aucun membre de l’équipe.</div>';
     return;
   }
+
   box.innerHTML = comptableRepEmployeesCache.map(emp => {
-    const sales = salesByEmp[emp.name] || 0;
-    const rate = emp.commission_rate != null ? Number(emp.commission_rate) : 0;
-    const commission = sales * (rate/100);
-    return '<div class="crep-comm-row" data-emp-id="'+emp.id+'">'+
-      '<span>'+escapeHtml(emp.name)+'</span>'+
-      '<span>'+formatMoney(sales)+'</span>'+
-      '<span class="crep-comm-rate-wrap"><input type="number" class="crep-comm-rate-input" min="0" max="100" step="0.5" value="'+(emp.commission_rate!=null?emp.commission_rate:'')+'" data-emp-id="'+emp.id+'" onchange="saveCommissionRate(this)">%</span>'+
-      '<span class="crep-comm-amount">'+formatMoney(commission)+'</span>'+
-      '</div>';
+    const chiffres = parNom[emp.name] || { services:0, produits:0 };
+    const tiers = commTiersParEmploye[emp.id] || [];
+    const palier = commPalierAtteint(tiers, chiffres.services);
+    const tauxServices = palier ? Number(palier.rate) : 0;
+    const commServices = chiffres.services * (tauxServices/100);
+    const commProduits = chiffres.produits * (commTauxProduits/100);
+    const ouverte = commGrillesOuvertes.has(emp.id);
+
+    const badge = !tiers.length
+      ? '<span class="comm-palier sans">Aucune grille</span>'
+      : (palier
+        ? '<span class="comm-palier">' + escapeHtml(commLibellePalier(tiers, tiers.indexOf(palier))) + ' &rarr; ' + tauxServices + ' %</span>'
+        : '<span class="comm-palier sans">Sous le premier palier (' + commMontantCourt(tiers[0].min_amount) + ')</span>');
+
+    const lignesGrille = tiers.map((t, i) =>
+      '<div class="comm-grille-ligne' + (palier && palier.id === t.id ? ' actif' : '') + '">' +
+        '<span>à partir de</span>' +
+        '<input type="number" min="0" step="50" value="' + Number(t.min_amount) + '" onchange="enregistrerPalier(\'' + t.id + '\', \'min_amount\', this)">' +
+        '<span class="sep">$ &rarr;</span>' +
+        '<input type="number" min="0" max="100" step="0.5" value="' + Number(t.rate) + '" onchange="enregistrerPalier(\'' + t.id + '\', \'rate\', this)">' +
+        '<span class="sep">%</span>' +
+        '<span style="color:var(--ink-soft); font-size:12px;">' + escapeHtml(commLibellePalier(tiers, i)) + '</span>' +
+        '<span class="comm-grille-x" title="Supprimer ce palier" onclick="supprimerPalier(\'' + t.id + '\')">&times;</span>' +
+      '</div>').join('');
+
+    return '<div class="comm-carte">' +
+      '<div class="comm-carte-tete"><span class="comm-nom">' + escapeHtml(emp.name) + '</span>' + badge + '</div>' +
+      '<div class="comm-lignes">' +
+        '<div class="comm-ligne"><span>Services</span><span class="mt">' + formatMoney(chiffres.services) + '</span>' +
+          '<span class="tx">' + tauxServices + ' %</span><span class="res">' + formatMoney(commServices) + '</span></div>' +
+        '<div class="comm-ligne"><span>Produits</span><span class="mt">' + formatMoney(chiffres.produits) + '</span>' +
+          '<span class="tx">' + commTauxProduits + ' %</span><span class="res">' + formatMoney(commProduits) + '</span></div>' +
+        '<div class="comm-ligne comm-total"><span>Commission</span><span class="mt"></span><span class="tx"></span>' +
+          '<span class="res">' + formatMoney(commServices + commProduits) + '</span></div>' +
+      '</div>' +
+      '<div class="comm-grille-btn" onclick="basculerGrille(\'' + emp.id + '\')">' +
+        (ouverte ? '&#9662; Masquer la grille' : '&#9656; ' + (tiers.length ? 'Modifier la grille' : 'Créer une grille')) + '</div>' +
+      (ouverte ? '<div class="comm-grille">' + lignesGrille +
+        '<div class="comm-grille-ajout" onclick="ajouterPalier(\'' + emp.id + '\')">+ Ajouter un palier</div></div>' : '') +
+    '</div>';
   }).join('');
 }
 
-async function saveCommissionRate(input){
-  const employeeId = input.dataset.empId;
+function basculerGrille(employeeId){
+  if(commGrillesOuvertes.has(employeeId)) commGrillesOuvertes.delete(employeeId);
+  else commGrillesOuvertes.add(employeeId);
+  renderComptableCommissionsTable();
+}
+
+// Une modification refusee par RLS ne renvoie AUCUNE erreur, juste zero ligne touchee : on
+// relit donc la ligne pour verifier qu'elle a vraiment change avant de dire que c'est enregistre.
+async function enregistrerPalier(tierId, champ, input){
   const v = parseFloat(input.value);
-  const rate = (!isNaN(v) && v >= 0) ? v : null;
-  const { error } = await sbClient.from('employee_pay')
-    .upsert({ employee_id: employeeId, commission_rate: rate, updated_at: new Date().toISOString() },
-            { onConflict: 'employee_id' });
+  if(isNaN(v) || v < 0){ alert('Entre un nombre.'); renderComptableCommissionsTable(); return; }
+  if(champ === 'rate' && v > 100){ alert('Un pourcentage ne peut pas dépasser 100.'); renderComptableCommissionsTable(); return; }
+  const { error } = await sbClient.from('commission_tiers').update({ [champ]: v }).eq('id', tierId);
+  if(error){
+    alert(error.message.includes('duplicate')
+      ? 'Ce seuil existe déjà dans cette grille.'
+      : 'Erreur : ' + error.message);
+    return loadComptableCommissions();
+  }
+  const { data } = await sbClient.from('commission_tiers').select('*').eq('id', tierId).limit(1);
+  if(!data || !data[0] || Number(data[0][champ]) !== v){
+    alert("Le changement n'a pas été enregistré. Vérifie que tu es bien connecté au compte gestionnaire.");
+  }
+  return loadComptableCommissions();
+}
+
+async function ajouterPalier(employeeId){
+  const tiers = commTiersParEmploye[employeeId] || [];
+  // Un premier palier part de 0 $ ; les suivants, 600 $ au-dessus du dernier — juste un point
+  // de depart, Martin ecrit le vrai seuil par-dessus.
+  const seuil = tiers.length ? Number(tiers[tiers.length-1].min_amount) + 600 : 0;
+  const taux  = tiers.length ? Number(tiers[tiers.length-1].rate) : 45;
+  const { error } = await sbClient.from('commission_tiers')
+    .insert({ employee_id: employeeId, min_amount: seuil, rate: taux });
   if(error){ alert('Erreur : ' + error.message); return; }
-  const emp = comptableRepEmployeesCache.find(e => e.id === employeeId);
-  if(emp) emp.commission_rate = rate;
+  commGrillesOuvertes.add(employeeId);
+  return loadComptableCommissions();
+}
+
+async function supprimerPalier(tierId){
+  if(!confirm('Supprimer ce palier?')) return;
+  const { error } = await sbClient.from('commission_tiers').delete().eq('id', tierId);
+  if(error){ alert('Erreur : ' + error.message); return; }
+  const { data } = await sbClient.from('commission_tiers').select('id').eq('id', tierId).limit(1);
+  if(data && data.length){
+    alert("Le palier n'a pas été supprimé. Vérifie que tu es bien connecté au compte gestionnaire.");
+  }
+  return loadComptableCommissions();
+}
+
+async function enregistrerTauxProduits(input){
+  const v = parseFloat(input.value);
+  if(isNaN(v) || v < 0 || v > 100){ alert('Entre un pourcentage entre 0 et 100.'); input.value = commTauxProduits; return; }
+  const { error } = await sbClient.from('business_settings').update({ product_commission_rate: v }).eq('id', 1);
+  if(error){ alert('Erreur : ' + error.message); return; }
+  commTauxProduits = v;
   renderComptableCommissionsTable();
 }
 
