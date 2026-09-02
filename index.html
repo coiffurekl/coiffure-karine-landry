@@ -457,7 +457,10 @@
     font-family:'Poppins'; font-size:13.5px; color:var(--ink); cursor:pointer; white-space:nowrap; }
   .breuvage-chip:hover{ border-color:var(--teal-dk); }
   .breuvage-chip.on{ background:var(--teal-dk); border-color:transparent; color:#fff; }
-  .breuvage-detail-label{ margin-bottom:14px; }
+  .breuvage-detail-fiche{ width:100%; max-width:420px; margin-top:11px; padding:10px 13px;
+    border:1px solid var(--line); border-radius:10px; font-family:'Poppins'; font-size:14px;
+    color:var(--ink); background:transparent; }
+  .breuvage-detail-fiche:focus{ outline:none; border-color:var(--teal-dk); }
   /* Dans la fiche : la tasse annonce la ligne, juste au-dessus des notes. */
   .client-breuvage-block{ padding:14px 0; border-bottom:1px solid var(--line); }
   .client-breuvage-block .detail-label{ display:block; color:var(--ink-soft); font-family:'Josefin Sans';
@@ -1658,16 +1661,6 @@
     <label>Nom<input id="fLast" type="text"></label>
     <label>Téléphone (obligatoire)<input id="fPhone" type="text" placeholder="418-555-0100"></label>
     <label>Courriel<input id="fEmail" type="email"></label>
-    <div id="fBreuvageBloc">
-    <label>Ce qu'elle boit</label>
-    <div class="breuvage-choix" id="fBreuvagePicker">
-      <div class="breuvage-chip" data-breuvage="Café" onclick="choisirBreuvage('Café')">&#9749; Café</div>
-      <div class="breuvage-chip" data-breuvage="Thé" onclick="choisirBreuvage('Thé')">&#127861; Thé</div>
-      <div class="breuvage-chip" data-breuvage="Tisane" onclick="choisirBreuvage('Tisane')">&#127807; Tisane</div>
-      <div class="breuvage-chip" data-breuvage="Eau pétillante" onclick="choisirBreuvage('Eau pétillante')">&#128167; Eau pétillante</div>
-    </div>
-    <label class="breuvage-detail-label">Ce qu'elle met dedans<input id="fBreuvageDetail" type="text" placeholder="Ex. 1 sucre, 2 laits"></label>
-    </div>
     <label>Drapeau</label>
     <div class="client-flag-picker" id="fFlagPicker">
       <div class="client-flag-chip flag-none" data-flag="" title="Aucun" onclick="selectClientFlag('')">
@@ -5020,29 +5013,46 @@ let editingClientFlag = '';
    Deux informations distinctes : le choix (café, thé, tisane, eau pétillante) et ce qu'elle met
    dedans. Les garder séparées évite d'avoir à découper une chaîne à la relecture — et le détail
    sert autant au thé qu'au café : sucre, lait, citron. */
-let editingClientBreuvage = '';
-
-function choisirBreuvage(valeur){
-  // Retoucher le choix déjà sélectionné le retire : c'est la seule façon de dire « rien ».
-  editingClientBreuvage = (editingClientBreuvage === valeur) ? '' : valeur;
-  document.querySelectorAll('#fBreuvagePicker .breuvage-chip').forEach(chip => {
-    chip.classList.toggle('on', chip.dataset.breuvage === editingClientBreuvage);
-  });
-}
+// Le breuvage ne se demande pas quand on cree la fiche : au premier rendez-vous, personne ne
+// sait encore ce que la cliente prend dans son cafe. Il se note dans la fiche, en un clic,
+// le jour ou on l'apprend — comme le drapeau juste au-dessus.
+const BREUVAGES = [['Caf\u00e9','&#9749;'], ['Th\u00e9','&#127861;'], ['Tisane','&#127807;'], ['Eau p\u00e9tillante','&#128167;']];
 
 function buildClientBreuvageHTML(c){
   const choix = c.breuvage || '';
-  const dedans = c.breuvage_detail || '';
-  // La ligne s'affiche TOUJOURS, même vide — comme le téléphone et le courriel. La cacher quand
-  // rien n'est inscrit paraissait plus propre, mais personne ne découvrait qu'on pouvait noter
-  // le breuvage, et rien ne rappelait de poser la question à la cliente.
-  const tasses = { 'Café':'\u2615', 'Thé':'\uD83C\uDF75', 'Tisane':'\uD83C\uDF3F', 'Eau pétillante':'\uD83D\uDCA7' };
-  const tasse = tasses[choix] || '\u2615';
+  const puce = ([val, emoji]) =>
+    '<div class="breuvage-chip' + (choix === val ? ' on' : '') + '"' +
+    ' onclick="setClientBreuvageInline(\'' + c.id + '\', \'' + val + '\')">' + emoji + ' ' + val + '</div>';
   return '<div class="client-breuvage-block"><span class="detail-label">Ce qu\'elle boit</span>' +
-    '<div class="client-breuvage-texte"><span class="tasse">' + tasse + '</span>' +
-    '<span>' + escapeHtml(choix || '—') +
-    (dedans ? ' <span class="quoi-dedans">' + escapeHtml(dedans) + '</span>' : '') +
-    '</span></div></div>';
+    '<div class="breuvage-choix">' + BREUVAGES.map(puce).join('') + '</div>' +
+    '<input class="breuvage-detail-fiche" type="text" value="' + escapeHtml(c.breuvage_detail || '') + '"' +
+    ' placeholder="Ce qu\'elle met dedans \u2014 ex. 1 sucre, 2 laits"' +
+    ' onblur="enregistrerBreuvageDetail(\'' + c.id + '\', this.value)">' +
+    '</div>';
+}
+
+// Recliquer sur le choix deja actif l'enleve : c'est la seule facon de corriger une erreur.
+async function setClientBreuvageInline(clientId, valeur){
+  const c = allClients.find(x => x.id === clientId);
+  if(!c) return;
+  const nouveau = (c.breuvage === valeur) ? null : valeur;
+  const { error } = await sbClient.from('clients')
+    .update({ breuvage: nouveau, updated_at: new Date().toISOString() }).eq('id', clientId);
+  if(error){ alert('Erreur : ' + error.message); return; }
+  c.breuvage = nouveau;
+  selectClient(clientId);
+}
+
+// A la sortie du champ, comme les prix dans Config : rien a cliquer pour enregistrer.
+async function enregistrerBreuvageDetail(clientId, texte){
+  const c = allClients.find(x => x.id === clientId);
+  if(!c) return;
+  const valeur = texte.trim() || null;
+  if(valeur === (c.breuvage_detail || null)) return;
+  const { error } = await sbClient.from('clients')
+    .update({ breuvage_detail: valeur, updated_at: new Date().toISOString() }).eq('id', clientId);
+  if(error){ alert('Erreur : ' + error.message); return; }
+  c.breuvage_detail = valeur;
 }
 
 function selectClientFlag(flag){
@@ -5060,12 +5070,7 @@ function openAddModal(){
   editingClientId = null;
   telephoneAvantEdition = '';
   document.getElementById('modalTitle').textContent = 'Nouvelle fiche client';
-  ['fName','fLast','fPhone','fEmail','fNotes','fBreuvageDetail'].forEach(id => document.getElementById(id).value = '');
-  editingClientBreuvage = '';
-  choisirBreuvage('');
-  // On ne demande pas le breuvage a la creation : au premier rendez-vous, personne ne sait
-  // encore ce que la cliente prend dans son cafe. Ca se note plus tard, dans sa fiche.
-  document.getElementById('fBreuvageBloc').hidden = true;
+  ['fName','fLast','fPhone','fEmail','fNotes'].forEach(id => document.getElementById(id).value = '');
   selectClientFlag('');
   document.getElementById('clientModalOverlay').classList.add('show');
   document.getElementById('fName').focus();
@@ -5082,10 +5087,6 @@ function openEditModal(id){
   telephoneAvantEdition = c.phone || '';
   document.getElementById('fEmail').value = c.email || '';
   document.getElementById('fNotes').value = c.notes || '';
-  document.getElementById('fBreuvageDetail').value = c.breuvage_detail || '';
-  editingClientBreuvage = '';
-  choisirBreuvage(c.breuvage || '');
-  document.getElementById('fBreuvageBloc').hidden = false;
   selectClientFlag(c.flag || '');
   document.getElementById('clientModalOverlay').classList.add('show');
 }
@@ -5101,8 +5102,6 @@ async function saveClient(){
     phone: document.getElementById('fPhone').value.trim(),
     email: document.getElementById('fEmail').value.trim(),
     notes: document.getElementById('fNotes').value.trim(),
-    breuvage: editingClientBreuvage || null,
-    breuvage_detail: document.getElementById('fBreuvageDetail').value.trim() || null,
     flag: editingClientFlag || null,
   };
   if(!payload.first_name || !payload.last_name){
