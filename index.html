@@ -4908,8 +4908,7 @@ async function saveClient(){
       const noms = memeNumero.map(c => '• ' + ((c.first_name||'') + ' ' + (c.last_name||'')).trim()).join('\n');
       const pluriel = memeNumero.length > 1;
       const message = 'Ce numéro est déjà au dossier de ' + (pluriel ? 'ces clientes' : 'cette cliente') + ' :\n\n' + noms +
-        '\n\nC’est normal dans une même famille — un enfant qui a le numéro de ses parents, par exemple.\n\n' +
-        'OK — c’est la même famille, j’enregistre quand même.\n' +
+        '\n\nOK — c’est la même famille, j’enregistre quand même.\n' +
         'Annuler — je corrige le numéro.';
       if(!confirm(message)){ document.getElementById('fPhone').focus(); return; }
     }
