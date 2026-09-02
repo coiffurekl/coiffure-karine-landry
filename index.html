@@ -670,6 +670,18 @@
   .serv-ouvrir{ font-size:12px; color:var(--teal-dk); white-space:nowrap; padding:2px 6px; border-radius:6px; }
   .serv-ouvrir:hover{ background:rgba(39,101,108,.1); text-decoration:underline; }
   .serv-tout{ font-family:'Josefin Sans'; font-size:12.5px; color:var(--teal-dk); text-decoration:underline; cursor:pointer; text-align:left; margin:0 0 10px; }
+  /* Cette fenêtre s'ouvre PAR-DESSUS la fiche client, qui reste visible derrière : sans un
+     z-index supérieur, elle passait dessous et paraissait ne pas s'ouvrir du tout. */
+  #telDoublonOverlay{ z-index:260; }
+  .doublon-card{ width:390px; max-width:100%; text-align:center; }
+  .doublon-icone{ font-size:34px; color:var(--ocre); line-height:1; margin-bottom:10px; }
+  .doublon-titre{ font-family:'Playfair Display'; font-style:italic; font-weight:600;
+    color:var(--teal-dk); font-size:23px; margin:0 0 10px; }
+  .doublon-texte{ font-family:'Josefin Sans'; font-size:14.5px; color:var(--ink-soft); margin:0 0 16px; }
+  .doublon-noms{ background:var(--paper2); border-radius:11px; padding:14px 18px; margin:0 0 22px;
+    font-family:'Josefin Sans'; font-size:16px; font-weight:600; color:var(--ink); line-height:1.7; }
+  .doublon-actions{ display:flex; flex-direction:column; gap:10px; }
+  .doublon-actions button{ width:100%; }
   .acces-card{ width:380px; max-width:100%; }
   .acces-card .acces-nom{ font-family:'Playfair Display'; font-style:italic; font-weight:600; color:var(--teal-dk); font-size:20px; margin:0 0 4px; text-align:center; }
   .acces-card .acces-etat{ font-family:'Josefin Sans'; font-size:12.5px; color:var(--ink-soft); text-align:center; margin:0 0 6px; }
@@ -1555,6 +1567,20 @@
 </div>
 
 <!-- ---- Modale ajout / modification client ---- -->
+<!-- ======================= CLIENTS : numéro de téléphone déjà utilisé ======================= -->
+<div class="modal-overlay" id="telDoublonOverlay">
+  <div class="modal-card doublon-card">
+    <div class="doublon-icone">&#9742;</div>
+    <h3 class="doublon-titre">Numéro déjà utilisé</h3>
+    <p class="doublon-texte" id="telDoublonTexte">Ce numéro est déjà utilisé pour un client :</p>
+    <div class="doublon-noms" id="telDoublonNoms"></div>
+    <div class="doublon-actions">
+      <button type="button" class="btn-solid" onclick="repondreDoublon(true)">Même famille</button>
+      <button type="button" class="btn-outline" onclick="repondreDoublon(false)">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="clientModalOverlay">
   <div class="modal-card">
     <h3 id="modalTitle">Nouvelle fiche client</h3>
@@ -4905,12 +4931,8 @@ async function saveClient(){
   if(telephoneChange){
     const memeNumero = await clientsAvecLeMemeTelephone(payload.phone, editingClientId);
     if(memeNumero.length){
-      const noms = memeNumero.map(c => '• ' + ((c.first_name||'') + ' ' + (c.last_name||'')).trim()).join('\n');
-      const pluriel = memeNumero.length > 1;
-      const message = 'Ce numéro est déjà au dossier de ' + (pluriel ? 'ces clientes' : 'cette cliente') + ' :\n\n' + noms +
-        '\n\nOK — c’est la même famille, j’enregistre quand même.\n' +
-        'Annuler — je corrige le numéro.';
-      if(!confirm(message)){ document.getElementById('fPhone').focus(); return; }
+      const memeFamille = await demanderSiMemeFamille(memeNumero);
+      if(!memeFamille){ document.getElementById('fPhone').focus(); return; }
     }
   }
 
@@ -4929,6 +4951,26 @@ async function saveClient(){
   closeClientModal();
   await loadClients();
   if(savedId) selectClient(savedId);
+}
+
+/* La fenêtre attend une réponse : saveClient() est en pause devant la promesse tant que
+   personne n'a touché « Même famille » ou « Annuler ». */
+let repondreDoublon = null;
+
+function demanderSiMemeFamille(clients){
+  return new Promise(resolve => {
+    const pluriel = clients.length > 1;
+    document.getElementById('telDoublonTexte').textContent =
+      pluriel ? 'Ce numéro est déjà utilisé pour ces clients :' : 'Ce numéro est déjà utilisé pour un client :';
+    document.getElementById('telDoublonNoms').innerHTML = clients
+      .map(c => escapeHtml(((c.first_name||'') + ' ' + (c.last_name||'')).trim())).join('<br>');
+    document.getElementById('telDoublonOverlay').classList.add('show');
+    repondreDoublon = (memeFamille) => {
+      document.getElementById('telDoublonOverlay').classList.remove('show');
+      repondreDoublon = null;
+      resolve(memeFamille);
+    };
+  });
 }
 
 /* Comparaison par les chiffres seulement : « 418-930-5858 », « (418) 930-5858 » et
