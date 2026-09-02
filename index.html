@@ -674,6 +674,31 @@
   /* Cette fenêtre s'ouvre PAR-DESSUS la fiche client, qui reste visible derrière : sans un
      z-index supérieur, elle passait dessous et paraissait ne pas s'ouvrir du tout. */
   #telDoublonOverlay{ z-index:260; }
+  .dh-card{ width:370px; max-width:100%; text-align:center; }
+  .dh-liste-card{ width:440px; max-width:100%; }
+  .dh-nom{ font-family:'Playfair Display'; font-style:italic; font-weight:600; color:var(--teal-dk); font-size:22px; margin:0 0 2px; }
+  .dh-date{ font-family:'Josefin Sans'; font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-soft); margin:0 0 20px; }
+  .dh-choix{ display:flex; flex-direction:column; gap:10px; }
+  .dh-option{ display:flex; align-items:center; gap:13px; width:100%; padding:15px 17px; border:1px solid var(--line);
+    border-radius:13px; background:#fff; cursor:pointer; text-align:left; font-family:'Josefin Sans'; font-size:15.5px; color:var(--ink); }
+  .dh-option:hover{ border-color:var(--teal-dk); background:var(--paper2); }
+  .dh-option.on{ border-color:var(--teal-dk); background:rgba(39,101,108,.09); }
+  .dh-rond{ width:20px; height:20px; border-radius:50%; border:2px solid var(--line-strong, #B9C7C4); flex-shrink:0; position:relative; }
+  .dh-option.on .dh-rond{ border-color:var(--teal-dk); }
+  .dh-option.on .dh-rond::after{ content:''; position:absolute; inset:3px; border-radius:50%; background:var(--teal-dk); }
+  .dh-etiquette{ display:flex; flex-direction:column; gap:2px; }
+  .dh-etiquette small{ font-size:12px; color:var(--ink-soft); }
+  .dh-info{ font-family:'Josefin Sans'; font-size:12.5px; color:var(--ink-soft); margin:16px 0 0; line-height:1.5; }
+  .ecol2-hours-badge.en-attente{ box-shadow:0 0 0 3px var(--ocre); }
+  .dl-item{ display:flex; align-items:center; gap:12px; padding:14px 0; border-bottom:1px solid var(--line); }
+  .dl-item:last-child{ border-bottom:none; }
+  .dl-qui{ flex:1; min-width:0; font-family:'Josefin Sans'; font-size:14.5px; color:var(--ink); }
+  .dl-qui b{ font-weight:600; }
+  .dl-quand{ display:block; font-size:12.5px; color:var(--ink-soft); }
+  .dl-oui, .dl-non{ border:none; border-radius:9px; padding:9px 14px; font-family:'Josefin Sans'; font-size:13px; cursor:pointer; flex-shrink:0; }
+  .dl-oui{ background:var(--teal-dk); color:#fff; }
+  .dl-non{ background:#fff; border:1px solid var(--line); color:var(--ink-soft); }
+  .dl-non:hover{ border-color:#B23A3A; color:#B23A3A; }
   .doublon-card{ width:390px; max-width:100%; text-align:center; }
   .doublon-icone{ font-size:34px; color:var(--ocre); line-height:1; margin-bottom:10px; }
   .doublon-titre{ font-family:'Playfair Display'; font-style:italic; font-weight:600;
@@ -2246,6 +2271,37 @@
       <button class="btn-outline" onclick="openWeeklyHoursEditor()">Modifier l'horaire régulier</button>
     </div>
     <div class="sched-week-grid" id="schedWeekGrid"></div>
+  </div>
+</div>
+
+<!-- ============ HORAIRE : statut d'une journée, touché depuis la pastille ronde ============ -->
+<div class="modal-overlay" id="demandeHoraireOverlay" onclick="if(event.target.id==='demandeHoraireOverlay') fermerDemandeHoraire();">
+  <div class="modal-card dh-card">
+    <button type="button" class="db-slot-close" onclick="fermerDemandeHoraire()" aria-label="Fermer">&times;</button>
+    <h3 class="dh-nom" id="dhNom">Employée</h3>
+    <p class="dh-date" id="dhDate"></p>
+    <div class="dh-choix">
+      <button type="button" class="dh-option" data-statut="regular" onclick="choisirStatutJournee('regular')">
+        <span class="dh-rond"></span><span class="dh-etiquette">Horaire régulier<small id="dhRegulierDetail"></small></span>
+      </button>
+      <button type="button" class="dh-option" data-statut="absent" onclick="choisirStatutJournee('absent')">
+        <span class="dh-rond"></span><span class="dh-etiquette">Absent(e)</span>
+      </button>
+      <button type="button" class="dh-option" data-statut="vacation" onclick="choisirStatutJournee('vacation')">
+        <span class="dh-rond"></span><span class="dh-etiquette">En vacances</span>
+      </button>
+    </div>
+    <p class="dh-info" id="dhInfo"></p>
+    <p class="comptable-pin-error" id="dhErreur"></p>
+  </div>
+</div>
+
+<!-- ============ HORAIRE : les demandes en attente, côté gestionnaire ============ -->
+<div class="modal-overlay" id="demandesListeOverlay" onclick="if(event.target.id==='demandesListeOverlay') fermerListeDemandes();">
+  <div class="modal-card dh-liste-card">
+    <button type="button" class="db-slot-close" onclick="fermerListeDemandes()" aria-label="Fermer">&times;</button>
+    <h3 class="dh-nom" id="dlTitre">Demandes d'horaire</h3>
+    <div id="dlItems"></div>
   </div>
 </div>
 
@@ -7136,6 +7192,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadClients();
   applyThemeOnLoad();
   majPastilleAnnulations();
+  chargerDemandesEnAttente();
   // Après un refresh (F5), on revient sur la page où on était plutôt que de retourner
   // systématiquement à la page d'accueil. Les zones protégées par un code PIN redemandent
   // quand même ce code, puisque go() gère déjà cette vérification normalement.
@@ -7233,6 +7290,186 @@ setInterval(verifierNouvelleVersion, VERSION_INTERVALLE_MS);
 document.addEventListener('visibilitychange', function(){
   if(!document.hidden) verifierNouvelleVersion();
 });
+
+/* ---------- Demandes de changement d'horaire ----------
+   Une coiffeuse touche la pastille ronde sous son nom et demande a etre absente ou en vacances.
+   Rien ne change tant que Karine n'a pas accepte : la demande est enregistree, la pastille se
+   cercle d'ocre, et une pastille de notification apparait dans la barre du haut de Karine.
+   Quand c'est la gestionnaire qui touche une pastille, ca s'applique tout de suite — elle n'a
+   pas a s'approuver elle-meme. */
+let demandesEnAttente = [];
+let dhContexte = null;   // { employe, iso, override }
+
+function demandeEnAttentePour(employeeId, iso){
+  return demandesEnAttente.find(d => d.employee_id === employeeId && d.date === iso) || null;
+}
+
+async function chargerDemandesEnAttente(){
+  const { data, error } = await sbClient
+    .from('demandes_horaire')
+    .select('id, employee_id, date, statut, note, demande_le, employees(name)')
+    .eq('etat', 'en_attente')
+    .order('date');
+  if(error){ console.warn('Demandes d’horaire :', error); return; }
+  demandesEnAttente = data || [];
+  majPastilleDemandes();
+}
+
+const DH_LIBELLE = { regular: 'Horaire régulier', absent: 'Absent(e)', vacation: 'En vacances' };
+
+function ouvrirDemandeHoraire(employe, iso, override){
+  dhContexte = { employe, iso, override };
+  const d = new Date(iso + 'T00:00:00');
+  document.getElementById('dhNom').textContent = employe.name;
+  document.getElementById('dhDate').textContent =
+    d.toLocaleDateString('fr-CA', { weekday:'long', day:'numeric', month:'long' });
+  document.getElementById('dhErreur').classList.remove('show');
+
+  const statutActuel = override ? override.status : 'regular';
+  const enAttente = demandeEnAttentePour(employe.id, iso);
+  document.querySelectorAll('#demandeHoraireOverlay .dh-option').forEach(b => {
+    b.classList.toggle('on', b.dataset.statut === (enAttente ? enAttente.statut : statutActuel));
+  });
+
+  const info = document.getElementById('dhInfo');
+  if(estGestionnaire()){
+    info.textContent = enAttente
+      ? 'Demande en attente de ' + employe.name + ' : ' + DH_LIBELLE[enAttente.statut] + '. Ton choix ici tranche la question.'
+      : 'Ton choix s’applique immédiatement.';
+  } else {
+    info.textContent = enAttente
+      ? 'Ta demande « ' + DH_LIBELLE[enAttente.statut] + ' » attend l’approbation de Karine. Touche un autre choix pour la changer.'
+      : 'Ton choix sera envoyé à Karine pour approbation. Rien ne change tant qu’elle n’a pas accepté.';
+  }
+  document.getElementById('demandeHoraireOverlay').classList.add('show');
+}
+
+function fermerDemandeHoraire(){
+  document.getElementById('demandeHoraireOverlay').classList.remove('show');
+  dhContexte = null;
+}
+
+async function choisirStatutJournee(statut){
+  if(!dhContexte) return;
+  const { employe, iso } = dhContexte;
+  const err = document.getElementById('dhErreur');
+  err.classList.remove('show');
+
+  // On ne reecrit pas le passe : une absence d'il y a deux semaines ne se demande plus.
+  if(!estGestionnaire() && iso < jourMontreal(new Date())){
+    err.textContent = 'On ne peut pas changer une journée déjà passée.';
+    err.classList.add('show');
+    return;
+  }
+
+  if(estGestionnaire()){
+    const erreur = await appliquerStatutJournee(employe.id, iso, statut);
+    if(erreur){ err.textContent = erreur; err.classList.add('show'); return; }
+    // La gestionnaire tranche : une demande en attente pour ce jour devient sans objet.
+    const enAttente = demandeEnAttentePour(employe.id, iso);
+    if(enAttente) await deciderDemande(enAttente.id, statut === enAttente.statut, true);
+  } else {
+    const enAttente = demandeEnAttentePour(employe.id, iso);
+    let erreur = null;
+    if(enAttente){
+      ({ error: erreur } = await sbClient.from('demandes_horaire')
+        .update({ statut, demande_le: new Date().toISOString() }).eq('id', enAttente.id));
+    } else {
+      const { data: userData } = await sbClient.auth.getUser();
+      ({ error: erreur } = await sbClient.from('demandes_horaire').insert({
+        employee_id: employe.id, date: iso, statut,
+        demande_par: userData && userData.user ? userData.user.id : null
+      }));
+    }
+    if(erreur){ err.textContent = 'Envoi impossible : ' + erreur.message; err.classList.add('show'); return; }
+  }
+
+  await chargerDemandesEnAttente();
+  fermerDemandeHoraire();
+  if(currentScreenId === 'screen-horaire') loadHoraire();
+}
+
+/* Ecrit pour de vrai dans l'horaire. « Regulier » veut dire « aucune exception » : on efface la
+   ligne au lieu d'en ecrire une, sinon la journee resterait marquee a tort. */
+async function appliquerStatutJournee(employeeId, iso, statut){
+  let error;
+  if(statut === 'regular'){
+    ({ error } = await sbClient.from('employee_day_overrides')
+      .delete().eq('employee_id', employeeId).eq('date', iso));
+  } else {
+    ({ error } = await sbClient.from('employee_day_overrides')
+      .upsert({ employee_id: employeeId, date: iso, status: statut, start_time: null, end_time: null },
+              { onConflict: 'employee_id,date' }));
+  }
+  return error ? ('Enregistrement impossible : ' + error.message) : null;
+}
+
+/* ---------- Pastille des demandes, cote gestionnaire ---------- */
+function poserPastillesDemandes(){
+  document.querySelectorAll('.app-nav').forEach(nav => {
+    if(nav.querySelector('.demande-pastille')) return;
+    const p = document.createElement('div');
+    p.className = 'annul-pastille demande-pastille';
+    p.innerHTML = '<span class="ap-nb">0</span><span class="ap-txt"></span>';
+    p.addEventListener('click', ouvrirListeDemandes);
+    const liens = nav.querySelector(':scope > .nav-links');
+    if(liens) nav.insertBefore(p, liens); else nav.appendChild(p);
+  });
+}
+
+function majPastilleDemandes(){
+  if(!estGestionnaire()) return;      // seule Karine a des demandes a trancher
+  poserPastillesDemandes();
+  const n = demandesEnAttente.length;
+  document.querySelectorAll('.demande-pastille').forEach(p => {
+    p.classList.toggle('on', n > 0);
+    p.querySelector('.ap-nb').textContent = n;
+    p.querySelector('.ap-txt').textContent = n > 1 ? 'demandes d’horaire' : 'demande d’horaire';
+  });
+}
+
+function ouvrirListeDemandes(){
+  const box = document.getElementById('dlItems');
+  document.getElementById('dlTitre').textContent =
+    demandesEnAttente.length > 1 ? 'Demandes d’horaire' : 'Demande d’horaire';
+  box.innerHTML = demandesEnAttente.length ? demandesEnAttente.map(d => {
+    const jour = new Date(d.date + 'T00:00:00')
+      .toLocaleDateString('fr-CA', { weekday:'long', day:'numeric', month:'long' });
+    const nom = d.employees ? d.employees.name : 'Employée';
+    return '<div class="dl-item">' +
+      '<span class="dl-qui"><b>' + escapeHtml(nom) + '</b> — ' + escapeHtml(DH_LIBELLE[d.statut] || d.statut) +
+      '<span class="dl-quand">' + escapeHtml(jour) + '</span></span>' +
+      '<button type="button" class="dl-oui" onclick="deciderDemande(\'' + d.id + '\', true)">Accepter</button>' +
+      '<button type="button" class="dl-non" onclick="deciderDemande(\'' + d.id + '\', false)">Refuser</button>' +
+      '</div>';
+  }).join('') : '<div class="list-msg">Aucune demande en attente.</div>';
+  document.getElementById('demandesListeOverlay').classList.add('show');
+}
+
+function fermerListeDemandes(){
+  document.getElementById('demandesListeOverlay').classList.remove('show');
+}
+
+async function deciderDemande(id, accepter, silencieux){
+  const demande = demandesEnAttente.find(d => d.id === id);
+  if(!demande) return;
+  if(accepter && !silencieux){
+    const erreur = await appliquerStatutJournee(demande.employee_id, demande.date, demande.statut);
+    if(erreur){ alert(erreur); return; }
+  }
+  const { data: userData } = await sbClient.auth.getUser();
+  const { error } = await sbClient.from('demandes_horaire').update({
+    etat: accepter ? 'acceptee' : 'refusee',
+    decide_par: userData && userData.user ? userData.user.id : null,
+    decide_le: new Date().toISOString()
+  }).eq('id', id);
+  if(error){ alert('Décision impossible : ' + error.message); return; }
+  await chargerDemandesEnAttente();
+  if(!silencieux){
+    if(demandesEnAttente.length) ouvrirListeDemandes(); else fermerListeDemandes();
+    if(currentScreenId === 'screen-horaire') loadHoraire();
+  }
+}
 
 /* ---------- Pastille d'annulations ----------
    Signale les rendez-vous annules par une cliente, pour aujourd'hui et les jours suivants.
@@ -9605,7 +9842,7 @@ function employeeHoursForBadge(weeklyRow, overrideRow){
   return null;
 }
 
-function renderHoursBadge(weeklyRow, overrideRow){
+function renderHoursBadge(weeklyRow, overrideRow, employe, isoDate){
   const badge = document.createElement('div');
   badge.className = 'ecol2-hours-wrap';
   const circle = document.createElement('div');
@@ -9616,8 +9853,26 @@ function renderHoursBadge(weeklyRow, overrideRow){
   } else {
     circle.innerHTML = '<span class="off">&ndash;</span>';
   }
+
+  // Toucher la pastille ouvre le petit menu de statut du jour. La gestionnaire peut le faire
+  // pour n'importe qui ; une coiffeuse, seulement pour elle-même, et son choix part en demande.
+  if(employe && isoDate && peutToucherLaPastille(employe)){
+    circle.classList.add('clickable');
+    circle.title = 'Changer le statut de cette journée';
+    circle.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      ouvrirDemandeHoraire(employe, isoDate, overrideRow || null);
+    });
+    if(demandeEnAttentePour(employe.id, isoDate)) circle.classList.add('en-attente');
+  }
   badge.appendChild(circle);
   return badge;
+}
+
+// Une coiffeuse ne touche que sa propre colonne ; la gestionnaire, toutes.
+function peutToucherLaPastille(employe){
+  if(estGestionnaire()) return true;
+  return !!monEmployeeId && employe.id === monEmployeeId;
 }
 
 function patronStatusText(weeklyRow, overrideRow){
@@ -9679,6 +9934,9 @@ async function loadHoraire(){
   buildAxis();
   updateHoraireDateLabel();
   updatePatronBadge();
+  // Les pastilles doivent savoir ce qui est en attente AVANT d'être dessinées, sinon le cercle
+  // ocre n'apparaît qu'au rechargement suivant.
+  await chargerDemandesEnAttente();
   const wrap = document.getElementById('ecolsWrap');
   if(!wrap) return;
   if(horaireViewMode === 'week' && horaireFocusEmployee){
@@ -9757,7 +10015,7 @@ async function loadHoraire(){
     head.addEventListener('click', function(){ showEmployeeWeek(emp.name, emp.color_hex); });
     col.appendChild(head);
 
-    col.appendChild(renderHoursBadge(weeklyByEmp[emp.id], overrideByEmp[emp.id]));
+    col.appendChild(renderHoursBadge(weeklyByEmp[emp.id], overrideByEmp[emp.id], emp, horDateISO(currentViewDate)));
 
     const body = document.createElement('div');
     body.className = 'ecol2-body';
@@ -9895,7 +10153,7 @@ async function loadHoraireWeek(wrap){
     head.textContent = dayDate.toLocaleDateString('fr-CA', { weekday:'short', day:'numeric' });
     col.appendChild(head);
 
-    col.appendChild(renderHoursBadge(weeklyByWeekday[dayDate.getDay()], overrideByDate[dayISO]));
+    col.appendChild(renderHoursBadge(weeklyByWeekday[dayDate.getDay()], overrideByDate[dayISO], employee, dayISO));
 
     const body = document.createElement('div');
     body.className = 'ecol2-body';
