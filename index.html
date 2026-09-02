@@ -651,6 +651,25 @@
   .team-row .team-acces-btn{ flex-shrink:0; border:none; border-radius:999px; padding:5px 12px; font-family:'Josefin Sans'; font-size:12px; font-weight:600; letter-spacing:.4px; cursor:pointer; background:rgba(255,255,255,.22); color:#fff; white-space:nowrap; }
   .team-row .team-acces-btn:hover{ background:rgba(255,255,255,.38); }
   .team-row .team-acces-btn.aucun{ opacity:.72; font-weight:400; }
+  .team-row .team-serv-btn{ flex-shrink:0; border:none; border-radius:999px; padding:5px 12px; font-family:'Josefin Sans'; font-size:12px; font-weight:600; letter-spacing:.4px; cursor:pointer; background:rgba(255,255,255,.22); color:#fff; white-space:nowrap; }
+  .team-row .team-serv-btn:hover{ background:rgba(255,255,255,.38); }
+  .serv-card{ width:420px; max-width:100%; }
+  .serv-card .acces-nom{ font-family:'Playfair Display'; font-style:italic; font-weight:600; color:var(--teal-dk); font-size:20px; margin:0 0 4px; text-align:center; }
+  .serv-card .serv-hint{ font-family:'Josefin Sans'; font-size:12.5px; color:var(--ink-soft); text-align:center; margin:0 0 14px; }
+  .serv-liste{ display:grid; gap:2px; text-align:left; max-height:46vh; overflow-y:auto; margin-bottom:6px; }
+  .serv-liste label{ display:flex; align-items:center; gap:11px; padding:9px 10px; border-radius:8px; cursor:pointer; font-family:'Josefin Sans'; font-size:14.5px; color:var(--ink); }
+  .serv-liste label:hover{ background:var(--paper2); }
+  .serv-liste input{ width:19px; height:19px; accent-color:var(--teal-dk); flex-shrink:0; cursor:pointer; }
+  .serv-liste .serv-vide{ font-size:11.5px; color:var(--ink-soft); font-style:italic; }
+  .serv-retour{ font-family:'Josefin Sans'; font-size:13px; color:var(--teal-dk); cursor:pointer; padding:6px 2px 10px; }
+  .serv-retour:hover{ text-decoration:underline; }
+  .serv-sous-titre{ font-family:'Playfair Display'; font-style:italic; font-weight:600; color:var(--ink); font-size:16px; padding:0 2px 8px; }
+  .serv-liste label.serv-cat-ligne{ gap:10px; }
+  .serv-cat-nom{ flex:1; min-width:0; }
+  .serv-cat-compte{ font-size:11.5px; color:var(--ink-soft); white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .serv-ouvrir{ font-size:12px; color:var(--teal-dk); white-space:nowrap; padding:2px 6px; border-radius:6px; }
+  .serv-ouvrir:hover{ background:rgba(39,101,108,.1); text-decoration:underline; }
+  .serv-tout{ font-family:'Josefin Sans'; font-size:12.5px; color:var(--teal-dk); text-decoration:underline; cursor:pointer; text-align:left; margin:0 0 10px; }
   .acces-card{ width:380px; max-width:100%; }
   .acces-card .acces-nom{ font-family:'Playfair Display'; font-style:italic; font-weight:600; color:var(--teal-dk); font-size:20px; margin:0 0 4px; text-align:center; }
   .acces-card .acces-etat{ font-family:'Josefin Sans'; font-size:12.5px; color:var(--ink-soft); text-align:center; margin:0 0 6px; }
@@ -747,6 +766,18 @@
   .tier-edit input{ padding:7px 8px; border:1px solid var(--line); border-radius:7px; font-family:'Poppins'; font-size:13px; color:var(--ink); }
   .tier-edit .save-btn{ background:var(--ocre); color:#fff; border:none; border-radius:7px; padding:7px 10px; font-size:11.5px; font-family:'Josefin Sans'; font-weight:600; white-space:nowrap; cursor:pointer; }
   .tier-edit .save-btn.saved{ background:#4C9A5A; }
+  /* Noms modifiables sur place : discrets tant qu'on ne les survole pas, pour que l'écran reste
+     une grille de prix et pas un formulaire. */
+  .cat-name-in{ font-family:'Playfair Display'; font-style:italic; font-size:33px; color:var(--teal-dk);
+    background:transparent; border:none; border-bottom:1px dashed transparent; padding:2px 0;
+    width:100%; max-width:560px; }
+  .cat-name-in:hover{ border-bottom-color:var(--line); }
+  .cat-name-in:focus{ outline:none; border-bottom-color:var(--teal-dk); }
+  .svc-name-in{ font-family:'Poppins'; font-size:14px; color:var(--ink); background:transparent;
+    border:1px solid transparent; border-radius:7px; padding:6px 8px; width:100%; min-width:130px; }
+  .svc-name-in:hover{ border-color:var(--line); }
+  .svc-name-in:focus{ outline:none; border-color:var(--teal-dk); background:#fff; }
+  .nom-etat{ font-family:'Josefin Sans'; font-size:11px; color:#4C9A5A; margin-left:6px; }
 
   /* ---- CONFIG / COMPTABLE ---- */
   .tabs-row{ display:flex; gap:10px; margin-bottom:30px; flex-wrap:wrap; }
@@ -1565,7 +1596,7 @@
   <div class="modal-card">
     <h3 id="qaModalTitle">Ajouter un rendez-vous</h3>
     <label>Employée
-      <select id="qaEmployeeName">
+      <select id="qaEmployeeName" onchange="onQaEmployeeChange()">
         <option>Ann-So</option>
         <option>Audrey</option>
         <option>Catherine</option>
@@ -2032,6 +2063,23 @@
 </div>
 
 <!-- ======================= ZONE CONFIG > ÉQUIPE (niveaux de prix) ======================= -->
+<!-- ======================= EQUIPE : services offerts par une employee ======================= -->
+<div class="modal-overlay" id="servOverlay" onclick="if(event.target.id==='servOverlay') closeServicesModal();">
+  <div class="modal-card serv-card">
+    <button type="button" class="db-slot-close" onclick="closeServicesModal()" aria-label="Fermer">&times;</button>
+    <h3 class="acces-nom" id="servNom">Employée</h3>
+    <p class="serv-hint">Coche ce qu'elle offre. À la prise de rendez-vous, les catégories décochées ne lui seront pas proposées.</p>
+    <p class="serv-tout"><span id="servToutBtn" onclick="basculerTousLesServices()">Tout cocher</span></p>
+    <div class="serv-liste" id="servListe" onchange="onServListeChange(event)"></div>
+    <p class="comptable-pin-error" id="servErreur"></p>
+    <p class="comptable-pin-success" id="servSucces"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn-outline" onclick="closeServicesModal()">Annuler</button>
+      <button type="button" class="btn-solid" id="servSaveBtn" onclick="enregistrerServicesEmployee()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <!-- ======================= EQUIPE : acces au logiciel d'une employee ======================= -->
 <div class="modal-overlay" id="accesOverlay" onclick="if(event.target.id==='accesOverlay') closeAccesModal();">
   <div class="modal-card acces-card">
@@ -2786,15 +2834,15 @@ async function loadServicesEdit(){
     console.error(e1||e2||e3);
     return;
   }
-  let html = '';
+  let html = '<p style="color:var(--ink-soft); font-size:14.5px; margin:-8px 0 22px;">Les noms des catégories et des services se modifient directement ici : clique dessus, corrige, et le nom s’enregistre en quittant la case. Les factures déjà émises gardent l’ancien nom.</p>';
   cats.forEach(cat => {
     const catServices = svcs.filter(s => s.category_id === cat.id).sort((a,b)=>a.sort_order-b.sort_order);
     if(catServices.length === 0) return;
-    html += '<div class="prix-cat">'+escapeHtml(cat.name)+'</div>';
+    html += '<div class="prix-cat"><input class="cat-name-in" value="'+escapeHtml(cat.name)+'" data-cat-id="'+cat.id+'" data-avant="'+escapeHtml(cat.name)+'" onchange="renommerCategorie(this)"><span class="nom-etat"></span></div>';
     html += '<table class="prix-edit"><tr><th>Service</th>'+TIER_LEVEL_LABELS.map(t=>'<th>'+escapeHtml(t)+'</th>').join('')+'</tr>';
     catServices.forEach(svc => {
       const svcTiers = tiers.filter(t => t.service_id === svc.id);
-      html += '<tr><td>'+escapeHtml(svc.name)+'</td>';
+      html += '<tr><td><input class="svc-name-in" value="'+escapeHtml(svc.name)+'" data-svc-id="'+svc.id+'" data-avant="'+escapeHtml(svc.name)+'" onchange="renommerService(this)"><span class="nom-etat"></span></td>';
       TIER_ORDER.forEach(tierLabel => {
         const t = svcTiers.find(x => x.tier_label === tierLabel);
         html += '<td><div class="tier-edit" data-service-id="'+svc.id+'" data-tier-label="'+escapeHtml(tierLabel)+'" data-tier-id="'+(t?t.id:'')+'">' +
@@ -2809,6 +2857,45 @@ async function loadServicesEdit(){
   });
   container.innerHTML = html || '<div class="list-msg">Aucun service pour l\'instant.</div>';
 }
+
+/* ---------- Renommer une catégorie ou un service ----------
+   Les noms sont modifiés sur place dans la grille des prix. Deux choses à savoir :
+   les factures déjà émises gardent l'ancien nom (invoice_items.description en garde une copie
+   au moment de la vente, ce qui est le comportement voulu — une facture ne doit pas changer
+   après coup) ; et tous les caches qui contiennent des noms doivent être vidés, sinon l'ancien
+   nom reste affiché à la prise de rendez-vous jusqu'au prochain rechargement complet. */
+function viderCachesDeNoms(){
+  qaServicesLoaded = false;
+  servCategoriesCache = null;
+  servServicesTous = null;
+  const prix = document.getElementById('prixContainer');
+  if(prix) prix.dataset.loaded = '';
+}
+
+async function enregistrerNom(input, table, colonneId){
+  const etat = input.parentElement.querySelector('.nom-etat');
+  const nouveau = input.value.trim();
+  const avant = input.dataset.avant;
+  if(nouveau === avant) return;
+  if(!nouveau){
+    input.value = avant;
+    if(etat){ etat.style.color = 'var(--terracotta)'; etat.textContent = 'Le nom ne peut pas être vide.'; }
+    return;
+  }
+  if(etat){ etat.style.color = ''; etat.textContent = '…'; }
+  const { error } = await sbClient.from(table).update({ name: nouveau }).eq('id', input.dataset[colonneId]);
+  if(error){
+    input.value = avant;
+    if(etat){ etat.style.color = 'var(--terracotta)'; etat.textContent = 'Erreur : ' + error.message; }
+    return;
+  }
+  input.dataset.avant = nouveau;
+  viderCachesDeNoms();
+  if(etat){ etat.textContent = '✓'; setTimeout(()=>{ etat.textContent = ''; }, 1600); }
+}
+
+async function renommerCategorie(input){ await enregistrerNom(input, 'service_categories', 'catId'); }
+async function renommerService(input){ await enregistrerNom(input, 'services', 'svcId'); }
 
 async function saveTierEdit(btn){
   const cell = btn.closest('.tier-edit');
@@ -3054,7 +3141,9 @@ async function loadTeamEdit(){
   container.innerHTML = '<div class="list-msg">Chargement...</div>';
   const [{ data: employees, error }] = await Promise.all([
     sbClient.from('employees').select('*').order('sort_order'),
-    chargerAcces()
+    chargerAcces(),
+    chargerCategoriesDuSalon(),
+    chargerServicesOfferts(true)
   ]);
   if(error || !employees){
     container.innerHTML = '<div class="list-msg">Erreur de chargement.</div>';
@@ -3087,6 +3176,7 @@ function renderTeamRows(){
         '<option value="">— Aucun niveau —</option>' +
         TIER_ORDER.map((raw, i) => '<option value="'+escapeHtml(raw)+'"'+(emp.tier_level===raw?' selected':'')+'>'+TIER_LEVEL_LABELS[i]+'</option>').join('') +
       '</select>' +
+      '<button type="button" class="team-serv-btn" title="Services offerts" onclick="openServicesModal(\''+emp.id+'\')">'+escapeHtml(etiquetteServices(emp.id))+'</button>' +
       '<button type="button" class="team-acces-btn'+(accesParEmployee[emp.id]?'':' aucun')+'" title="Accès au logiciel" onclick="openAccesModal(\''+emp.id+'\')">'+escapeHtml(etiquetteAcces(emp.id))+'</button>' +
       '<span class="save-state"></span>' +
       '<button type="button" class="team-delete-btn" title="Supprimer définitivement" onclick="deleteEmployee(\''+emp.id+'\', \''+escapeHtml(emp.name).replace(/'/g,"\\'")+'\')">&times;</button>' +
@@ -3116,6 +3206,195 @@ async function toggleEmployeeActive(checkbox, employeeId){
 
 // Suppression définitive : retire aussi son horaire personnel (heures, exceptions). Les rendez-vous et
 // factures déjà enregistrés à son nom restent intacts dans l'historique (ils sont liés par nom, pas par id).
+/* ---------- Services offerts par une employée ----------
+   Toutes les coiffeuses ne font pas tout. Ce que Karine coche ici décide de ce qui lui sera
+   proposé à la prise de rendez-vous : une catégorie décochée n'apparaît tout simplement pas.
+   Rien n'est bloqué à la facturation — sur une facture, on doit pouvoir inscrire n'importe
+   quel service, ne serait-ce que pour une facture à deux coiffeuses. */
+let servEmployeeId = null;
+let servCategoriesCache = null;  // toutes les catégories du salon
+let servServicesTous = null;     // tous les services, avec leur category_id
+let servNiveauxParService = {};  // les niveaux où chaque service a un VRAI prix
+
+async function chargerCategoriesDuSalon(){
+  if(servCategoriesCache) return;
+  const [{ data: cats, error: e1 }, { data: svcs, error: e2 }, { data: tiers, error: e3 }] = await Promise.all([
+    sbClient.from('service_categories').select('id, name').order('sort_order'),
+    sbClient.from('services').select('id, category_id, name, sort_order'),
+    sbClient.from('service_tiers').select('service_id, tier_label, price')
+  ]);
+  if(e1 || e2 || e3){ console.error(e1||e2||e3); return; }
+  servCategoriesCache = cats || [];
+  servServicesTous = (svcs || []).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  // Pour chaque service, les niveaux où il a un VRAI prix. Une ligne de tarif vide ne compte pas :
+  // le service s'afficherait à la prise de rendez-vous avec un « — » à la place du montant, et
+  // se retrouverait sur la facture sans prix. C'est le cas des cinq coupes au Niveau 3.
+  servNiveauxParService = {};
+  (tiers||[]).forEach(t => {
+    if(t.price === null || t.price === undefined) return;
+    (servNiveauxParService[t.service_id] = servNiveauxParService[t.service_id] || new Set()).add(t.tier_label);
+  });
+}
+
+function etiquetteServices(employeeId){
+  const emp = teamRowsCache.find(e => e.id === employeeId);
+  const nom = emp && emp.name;
+  if(!servicesOffertsParNom || !servServicesTous) return 'Services';
+  const offerts = nom ? servicesOffertsParNom[nom] : null;
+  const n = offerts ? offerts.size : 0;
+  const total = servServicesTous.length;
+  if(n === 0) return 'Aucun service';
+  if(n === total) return 'Tous les services';
+  return n + ' / ' + total + ' services';
+}
+
+/* La fenêtre a deux niveaux, comme la liste de prix : les catégories, puis les services de la
+   catégorie ouverte. La case d'une catégorie est un raccourci — la cocher coche tous ses
+   services, et elle s'affiche en état intermédiaire quand seuls certains le sont.
+   Rien n'est écrit en base tant qu'on n'a pas cliqué Enregistrer : on travaille sur une copie. */
+let servSelection = null;        // Set des service_id coches, en cours d'edition
+let servVueCategorie = null;     // null = liste des categories ; sinon l'id de celle ouverte
+
+async function openServicesModal(employeeId){
+  servEmployeeId = employeeId;
+  servVueCategorie = null;
+  const emp = teamRowsCache.find(e => e.id === employeeId);
+  document.getElementById('servNom').textContent = emp ? emp.name : 'Employée';
+  document.getElementById('servErreur').classList.remove('show');
+  document.getElementById('servSucces').classList.remove('show');
+  document.getElementById('servListe').innerHTML = '<div class="list-msg">Chargement…</div>';
+  document.getElementById('servOverlay').classList.add('show');
+
+  await Promise.all([chargerCategoriesDuSalon(), chargerServicesOfferts(true)]);
+  const dejaOfferts = (emp && servicesOffertsParNom && servicesOffertsParNom[emp.name]) || new Set();
+  servSelection = new Set(dejaOfferts);
+  renderServListe();
+}
+
+function servServicesDe(categorieId){
+  return (servServicesTous || []).filter(sv => sv.category_id === categorieId);
+}
+
+function renderServListe(){
+  const boite = document.getElementById('servListe');
+  const emp = teamRowsCache.find(e => e.id === servEmployeeId);
+  const niveau = emp && emp.tier_level;
+
+  if(servVueCategorie){
+    const cat = (servCategoriesCache||[]).find(c => c.id === servVueCategorie);
+    const services = servServicesDe(servVueCategorie);
+    boite.innerHTML =
+      '<div class="serv-retour" onclick="servRetourAuxCategories()">&lsaquo; Toutes les catégories</div>' +
+      '<div class="serv-sous-titre">' + escapeHtml(cat ? cat.name : '') + '</div>' +
+      services.map(sv => {
+        const sansPrix = niveau && !(servNiveauxParService[sv.id] || new Set()).has(niveau);
+        const note = sansPrix ? ' <span class="serv-vide">— aucun prix à son niveau</span>' : '';
+        return '<label><input type="checkbox" data-service="'+sv.id+'"'+(servSelection.has(sv.id)?' checked':'')+'>' +
+               '<span>'+escapeHtml(sv.name)+note+'</span></label>';
+      }).join('') || '<div class="list-msg">Aucun service dans cette catégorie.</div>';
+  } else {
+    boite.innerHTML = (servCategoriesCache||[]).map(c => {
+      const services = servServicesDe(c.id);
+      const coches = services.filter(sv => servSelection.has(sv.id)).length;
+      const etat = services.length ? coches + ' / ' + services.length : 'aucun service';
+      return '<label class="serv-cat-ligne">' +
+        '<input type="checkbox" data-categorie="'+c.id+'"'+(services.length && coches===services.length?' checked':'')+'>' +
+        '<span class="serv-cat-nom">'+escapeHtml(c.name)+'</span>' +
+        '<span class="serv-cat-compte">'+etat+'</span>' +
+        (services.length ? '<span class="serv-ouvrir" onclick="servOuvrirCategorie(event, \''+c.id+'\')">Voir &rsaquo;</span>' : '') +
+        '</label>';
+    }).join('') || '<div class="list-msg">Aucune catégorie de service.</div>';
+    // État intermédiaire : « certains services cochés », qui ne s'exprime pas en HTML seul.
+    (servCategoriesCache||[]).forEach(c => {
+      const services = servServicesDe(c.id);
+      const coches = services.filter(sv => servSelection.has(sv.id)).length;
+      const cas = document.querySelector('#servListe input[data-categorie="'+c.id+'"]');
+      if(cas) cas.indeterminate = coches > 0 && coches < services.length;
+    });
+  }
+  majTexteToutCocher();
+}
+
+function servOuvrirCategorie(ev, categorieId){
+  ev.preventDefault();
+  ev.stopPropagation();
+  servVueCategorie = categorieId;
+  renderServListe();
+}
+
+function servRetourAuxCategories(){
+  servVueCategorie = null;
+  renderServListe();
+}
+
+// Une case cochée met à jour la sélection en mémoire, puis on redessine pour que les compteurs
+// et les états intermédiaires suivent.
+function onServListeChange(ev){
+  const el = ev && ev.target;
+  if(!el || el.type !== 'checkbox') return;
+  if(el.dataset.service){
+    if(el.checked) servSelection.add(el.dataset.service); else servSelection.delete(el.dataset.service);
+  } else if(el.dataset.categorie){
+    servServicesDe(el.dataset.categorie).forEach(sv => {
+      if(el.checked) servSelection.add(sv.id); else servSelection.delete(sv.id);
+    });
+  }
+  renderServListe();
+}
+
+function majTexteToutCocher(){
+  const bouton = document.getElementById('servToutBtn');
+  const enJeu = servVueCategorie ? servServicesDe(servVueCategorie) : (servServicesTous || []);
+  const toutes = enJeu.length && enJeu.every(sv => servSelection.has(sv.id));
+  bouton.textContent = toutes
+    ? (servVueCategorie ? 'Tout décocher dans cette catégorie' : 'Tout décocher')
+    : (servVueCategorie ? 'Tout cocher dans cette catégorie' : 'Tout cocher');
+}
+
+function basculerTousLesServices(){
+  const enJeu = servVueCategorie ? servServicesDe(servVueCategorie) : (servServicesTous || []);
+  const toutes = enJeu.length && enJeu.every(sv => servSelection.has(sv.id));
+  enJeu.forEach(sv => { if(toutes) servSelection.delete(sv.id); else servSelection.add(sv.id); });
+  renderServListe();
+}
+
+function closeServicesModal(){
+  document.getElementById('servOverlay').classList.remove('show');
+  servEmployeeId = null;
+  servVueCategorie = null;
+  servSelection = null;
+}
+
+async function enregistrerServicesEmployee(){
+  if(!servEmployeeId || !servSelection) return;
+  const choisis = [...servSelection];
+  const errEl = document.getElementById('servErreur');
+  const btn = document.getElementById('servSaveBtn');
+  errEl.classList.remove('show');
+  btn.disabled = true; btn.textContent = 'Enregistrement…';
+
+  // On repart à neuf pour cette employée : plus simple et plus sûr que de calculer les écarts.
+  const { error: delErr } = await sbClient.from('employee_services').delete().eq('employee_id', servEmployeeId);
+  let insErr = null;
+  if(!delErr && choisis.length){
+    ({ error: insErr } = await sbClient.from('employee_services')
+      .insert(choisis.map(id => ({ employee_id: servEmployeeId, service_id: id }))));
+  }
+  btn.disabled = false; btn.textContent = 'Enregistrer';
+
+  if(delErr || insErr){
+    errEl.textContent = 'Enregistrement impossible : ' + ((delErr||insErr).message || '');
+    errEl.classList.add('show');
+    return;
+  }
+  await chargerServicesOfferts(true);
+  renderTeamRows();
+  const ok = document.getElementById('servSucces');
+  ok.textContent = '✓ Services enregistrés.';
+  ok.classList.add('show');
+  setTimeout(closeServicesModal, 1100);
+}
+
 /* ---------- Modale « accès au logiciel » d'une employée ---------- */
 let accesEmployeeId = null;
 
@@ -7270,8 +7549,20 @@ async function openQuickAdd(employeeName, timeStr, dateOverride){
   document.getElementById('quickAddModalOverlay').classList.add('show');
   const levelMap = await getEmployeeTierLevelMap();
   qaEmployeeTierLevel = levelMap[employeeName] || null;
-  await loadQaServiceOptions();
+  await Promise.all([loadQaServiceOptions(), chargerServicesOfferts()]);
   renderQaCategoryList();
+}
+
+/* Changer de coiffeuse en cours de route doit tout recalculer : son niveau de prix ET les
+   categories qu'elle offre. Sans ça, les prix affichés restaient ceux de la coiffeuse
+   précédente — un bug qui existait déjà avant le filtre par services. */
+async function onQaEmployeeChange(){
+  const nom = document.getElementById('qaEmployeeName').value;
+  const levelMap = await getEmployeeTierLevelMap();
+  qaEmployeeTierLevel = levelMap[nom] || null;
+  await Promise.all([loadQaServiceOptions(), chargerServicesOfferts()]);
+  renderQaCategoryList();
+  qaSetServiceView('categories');
 }
 
 // Affiche ou cache les liens « Voir la fiche client » / « Rendez-vous à venir » selon
@@ -7825,7 +8116,7 @@ async function openEditAppointment(a, knownClientId){
   document.getElementById('quickAddModalOverlay').classList.add('show');
   const levelMap = await getEmployeeTierLevelMap();
   qaEmployeeTierLevel = levelMap[a.employee_name] || null;
-  await loadQaServiceOptions();
+  await Promise.all([loadQaServiceOptions(), chargerServicesOfferts()]);
   renderQaCategoryList();
   // Retrouve les services déjà choisis pour ce rendez-vous (à partir des tarifs sauvegardés) pour
   // qu'ils réapparaissent dans le résumé au lieu de repartir à zéro — les services supprimés du
@@ -7973,6 +8264,28 @@ async function goFacturerFromAppt(){
   go('screen-facture');
 }
 
+/* ---------- Qui offre quoi ----------
+   Toutes les coiffeuses ne font pas tout : celle qui ne pose pas de rallonges ne doit pas
+   pouvoir se faire reserver une pose. La table employee_categories dit, pour chaque employee,
+   les categories qu'elle offre ; Karine coche et decoche depuis l'ecran Equipe.
+   En cas d'echec de chargement, on ne filtre RIEN : mieux vaut proposer trop que de vider
+   l'horaire du salon sur une coupure de reseau. */
+let servicesOffertsParNom = null;
+
+async function chargerServicesOfferts(forcer){
+  if(servicesOffertsParNom && !forcer) return;
+  const { data, error } = await sbClient
+    .from('employee_services').select('service_id, employees(name)');
+  if(error){ console.error('Services offerts illisibles', error); return; }
+  const parNom = {};
+  (data||[]).forEach(l => {
+    const nom = l.employees && l.employees.name;
+    if(!nom) return;
+    (parNom[nom] = parNom[nom] || new Set()).add(l.service_id);
+  });
+  servicesOffertsParNom = parNom;
+}
+
 async function loadQaServiceOptions(){
   if(qaServicesLoaded) return;
   const [{ data: cats, error: e1 }, { data: svcs, error: e2 }, { data: tiers, error: e3 }] = await Promise.all([
@@ -7987,20 +8300,36 @@ async function loadQaServiceOptions(){
 
 function renderQaCategoryList(){
   const list = document.getElementById('qaCategoryList');
+  const nomChoisi = document.getElementById('qaEmployeeName').value;
+  const offerts = servicesOffertsParNom ? servicesOffertsParNom[nomChoisi] : null;
   let html = '';
+  let masqueesFauteDOffre = 0;
   qaCats.forEach(cat=>{
-    const catServiceIds = qaSvcs.filter(s=>s.category_id===cat.id).map(s=>s.id);
+    let catServiceIds = qaSvcs.filter(s=>s.category_id===cat.id).map(s=>s.id);
+    const avantFiltre = catServiceIds.length;
+    // Le filtre ne s'applique que si on a pu lire la liste : sinon on laisse tout passer.
+    if(offerts) catServiceIds = catServiceIds.filter(id => offerts.has(id));
     const hasServices = qaTiers.some(t => catServiceIds.includes(t.service_id)
       && (!qaEmployeeTierLevel || t.tier_label===qaEmployeeTierLevel));
-    if(!hasServices) return;
+    if(!hasServices){ if(avantFiltre && !catServiceIds.length) masqueesFauteDOffre++; return; }
     html += '<div class="qa-cat-chip" data-cat-id="'+cat.id+'">'+escapeHtml(cat.name)+'</div>';
   });
-  list.innerHTML = html || '<div class="list-msg">Aucun service configuré pour le niveau de cette employée.</div>';
+  if(html){
+    list.innerHTML = html;
+  } else if(masqueesFauteDOffre){
+    list.innerHTML = '<div class="list-msg">'+escapeHtml(nomChoisi)+' n’offre aucun de ces services. Modifie sa liste dans Zone Gestionnaire &rsaquo; Équipe.</div>';
+  } else {
+    list.innerHTML = '<div class="list-msg">Aucun service configuré pour le niveau de cette employée.</div>';
+  }
 }
 
 function showQaCategory(catId){
   const cat = qaCats.find(c=>c.id===catId);
-  const catServices = qaSvcs.filter(s=>s.category_id===catId).sort((a,b)=>a.sort_order-b.sort_order);
+  const offerts = servicesOffertsParNom
+    ? servicesOffertsParNom[document.getElementById('qaEmployeeName').value] : null;
+  const catServices = qaSvcs
+    .filter(s=>s.category_id===catId && (!offerts || offerts.has(s.id)))
+    .sort((a,b)=>a.sort_order-b.sort_order);
   let html = '<div class="qa-svc-back" data-back="1">&lsaquo; Retour aux catégories</div>';
   catServices.forEach(svc=>{
     let svcTiers = qaTiers.filter(t=>t.service_id===svc.id);
