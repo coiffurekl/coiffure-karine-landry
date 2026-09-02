@@ -431,6 +431,7 @@
   .client-row.active{ background:var(--paper2); border-radius:10px; }
   .client-row .nm{ font-weight:600; font-size:18px; font-family:'Josefin Sans'; }
   .client-row .ph{ font-size:14px; color:var(--ink-soft); margin-top:2px; }
+  .client-row .nm .qa-flag-icon{ margin-left:8px; vertical-align:-1px; }
   .client-row span{ font-size:20px; color:var(--sage); }
   .list-msg{ padding:20px 10px; color:var(--ink-soft); font-size:14px; }
   .clients-detail{ flex:1; display:flex; }
@@ -4687,7 +4688,10 @@ function renderClientList(filter){
     const row = document.createElement('div');
     row.className = 'client-row clickable' + (c.id === selectedClientId ? ' active' : '');
     row.onclick = () => selectClient(c.id);
-    row.innerHTML = '<div><div class="nm">'+escapeHtml(c.last_name)+', '+escapeHtml(c.first_name)+'</div><div class="ph">'+escapeHtml(c.phone||'')+'</div></div><span>&rsaquo;</span>';
+    // Le drapeau suit le nom jusque dans la liste : sans ça, il fallait ouvrir la fiche pour
+    // savoir qu'il y avait quelque chose à lire dans les notes. Même icône qu'à la recherche
+    // de cliente au moment de planifier un rendez-vous.
+    row.innerHTML = '<div><div class="nm">'+escapeHtml(c.last_name)+', '+escapeHtml(c.first_name)+qaResultFlagIconHTML(c.flag)+'</div><div class="ph">'+escapeHtml(c.phone||'')+'</div></div><span>&rsaquo;</span>';
     wrap.appendChild(row);
   });
 }
