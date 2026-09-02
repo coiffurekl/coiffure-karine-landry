@@ -1514,7 +1514,7 @@
       </div>
     </div>
     <div class="horaire-emp-bar" id="horaireEmpBar" style="display:none;">
-      <span class="hb-back clickable" onclick="showAllEmployeesDay()" title="Retour à toutes les employées">
+      <span class="hb-back clickable" onclick="showAllEmployeesDay()" title="Retour à toute l’équipe">
         <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
       </span>
       <span class="hb-name" id="horaireEmpBarName"></span>
@@ -1536,12 +1536,12 @@
     <div class="page-head"><h1>Rendez-vous en ligne</h1></div>
     <div class="card config-card big" style="max-width:760px;">
       <h3>Lien de réservation</h3>
-      <p>Les clientes peuvent prendre rendez-vous directement selon les disponibilités de l'équipe, sans appel.</p>
+      <p>Les clients peuvent prendre rendez-vous directement selon les disponibilités de l'équipe, sans appel.</p>
       <div class="search-box" style="justify-content:space-between;"><span>lacoiffure-karinelandry.reservez.ca</span><span style="color:var(--teal); font-weight:600;">Copier</span></div>
     </div>
     <div class="config-grid" style="margin-top:24px;">
-      <div class="card config-card big"><h3>Services offerts en ligne</h3><p>Choisis quels services sont réservables par les clientes elles-mêmes.</p></div>
-      <div class="card config-card big"><h3>Plages disponibles</h3><p>Basées sur l'horaire de chaque employée, mises à jour automatiquement.</p></div>
+      <div class="card config-card big"><h3>Services offerts en ligne</h3><p>Choisis quels services sont réservables par les clients eux-mêmes.</p></div>
+      <div class="card config-card big"><h3>Plages disponibles</h3><p>Basées sur l'horaire de chaque membre de l'équipe, mises à jour automatiquement.</p></div>
     </div>
   </div>
 </div>
@@ -2044,7 +2044,7 @@
         <input id="naDurationM" type="number" min="0" max="45" step="15" value="0" oninput="renderNaDurationChips()"><span class="qa-duration-unit">min</span>
       </div>
     </label>
-    <label>Coiffeuse
+    <label>Coiffeur / Coiffeuse
       <div class="qa-cat-list" id="naEmpChips"></div>
     </label>
     <div id="naResultsWrap" style="display:none;">
@@ -2186,7 +2186,7 @@
   <div class="modal-card serv-card">
     <button type="button" class="db-slot-close" onclick="closeServicesModal()" aria-label="Fermer">&times;</button>
     <h3 class="acces-nom" id="servNom">Employée</h3>
-    <p class="serv-hint">Coche ce qu'elle offre. À la prise de rendez-vous, les catégories décochées ne lui seront pas proposées.</p>
+    <p class="serv-hint">Coche les services offerts. À la prise de rendez-vous, les catégories décochées ne seront pas proposées.</p>
     <p class="serv-tout"><span id="servToutBtn" onclick="basculerTousLesServices()">Tout cocher</span></p>
     <div class="serv-liste" id="servListe" onchange="onServListeChange(event)"></div>
     <p class="comptable-pin-error" id="servErreur"></p>
@@ -2207,7 +2207,7 @@
     <label>Courriel<input id="accesEmail" type="email" placeholder="Ex. sophie@exemple.com" autocomplete="off"></label>
     <label>Rôle
       <select id="accesRole">
-        <option value="coiffeuse">Coiffeuse</option>
+        <option value="coiffeuse">Coiffeur / Coiffeuse</option>
         <option value="gestionnaire">Gestionnaire — accès à tout</option>
       </select>
     </label>
@@ -2228,18 +2228,18 @@
   <div class="app-shell wide">
     <div class="page-head">
       <h1><span class="clickable" onclick="go('screen-comptable')" title="Retour">&larr;</span> Équipe</h1>
-      <button type="button" class="btn-outline" onclick="openAddEmployeeForm()">+ Ajouter une employée</button>
+      <button type="button" class="btn-outline" onclick="openAddEmployeeForm()">+ Ajouter un membre</button>
     </div>
     <p style="color:var(--ink-soft); font-size:14.5px; margin-top:-14px; margin-bottom:6px;">Active et positionne les membres de ton équipe dans l'ordre que tu désires les voir sur ton Horaire. Glisse une carte (&#9776;) pour la déplacer.</p>
-    <p style="color:var(--ink-soft); font-size:14.5px; margin-top:0; margin-bottom:24px;">Le niveau de prix détermine les prix affichés pour chaque employée lors de la prise d'un rendez-vous.</p>
+    <p style="color:var(--ink-soft); font-size:14.5px; margin-top:0; margin-bottom:24px;">Le niveau de prix détermine les prix affichés pour chaque membre de l'équipe lors de la prise d'un rendez-vous.</p>
     <div class="card team-add-form" id="teamAddForm" style="display:none;">
-      <div class="bset-section-title">Nouvelle employée</div>
+      <div class="bset-section-title">Nouveau membre</div>
       <label>Nom<input id="teamAddName" type="text" placeholder="Ex. Sophie"></label>
       <label>Couleur<div class="color-swatch-picker" id="teamAddColorPicker"></div></label>
       <label>Niveau de prix<select id="teamAddLevel"><option value="">— Aucun niveau —</option></select></label>
       <label>Accès au logiciel<select id="teamAddRole" onchange="majChampCourrielAjout()">
         <option value="">— Aucun accès —</option>
-        <option value="coiffeuse">Coiffeuse</option>
+        <option value="coiffeuse">Coiffeur / Coiffeuse</option>
         <option value="gestionnaire">Gestionnaire — accès à tout</option>
       </select></label>
       <label id="teamAddEmailLabel" style="display:none;">Courriel<input id="teamAddEmail" type="email" placeholder="Ex. sophie@exemple.com" autocomplete="off"></label>
@@ -2290,10 +2290,10 @@
   </div>
   <div class="app-shell wide">
     <div class="page-head">
-      <h1><span class="clickable" onclick="go('screen-comptable')" title="Retour">&larr;</span> Mon horaire — Choisir une employée</h1>
+      <h1><span class="clickable" onclick="go('screen-comptable')" title="Retour">&larr;</span> Mon horaire — Choisir un membre de l’équipe</h1>
       <span class="db-badge">&#9679; base de données en direct</span>
     </div>
-    <p style="color:var(--ink-soft); font-size:14.5px; margin-top:-14px; margin-bottom:24px;">Clique sur une employée pour gérer son horaire régulier, ses horaires spéciaux et ses vacances.</p>
+    <p style="color:var(--ink-soft); font-size:14.5px; margin-top:-14px; margin-bottom:24px;">Clique sur un membre de l’équipe pour gérer son horaire régulier, ses horaires spéciaux et ses vacances.</p>
     <div id="scheduleEmployeesContainer"><div class="list-msg">Chargement...</div></div>
   </div>
 </div>
@@ -2495,7 +2495,7 @@
 
     <div class="comptable-section">
       <h2 class="comptable-section-title">Historique des factures</h2>
-      <input type="text" id="comptableSearch" class="comptable-search" placeholder="Chercher une cliente ou un numéro de facture…" oninput="onComptableSearchInput()">
+      <input type="text" id="comptableSearch" class="comptable-search" placeholder="Chercher un client ou un numéro de facture…" oninput="onComptableSearchInput()">
       <div class="comptable-invoice-wrap">
         <div class="comptable-invoice-row head">
           <span>Date</span><span>Cliente</span><span># Facture</span><span>Employée</span><span>Paiement</span><span style="text-align:right;">Total</span>
@@ -2551,7 +2551,7 @@
     </div>
 
     <div class="comptable-section">
-      <h2 class="comptable-section-title">Par employée</h2>
+      <h2 class="comptable-section-title">Par personne</h2>
       <div id="pourboiresEmpBreakdown" class="comptable-emp-list"></div>
     </div>
   </div>
@@ -2592,7 +2592,7 @@
   </div>
   <div class="app-shell">
     <div class="page-head"><h1><span class="clickable" onclick="go('screen-comptable')" title="Retour">&larr;</span> Calcul Commissions</h1></div>
-    <p class="crep-hint">Le taux de commission de chaque employée peut être ajusté directement dans le tableau — il est enregistré automatiquement.</p>
+    <p class="crep-hint">Le taux de commission de chaque membre de l’équipe peut être ajusté directement dans le tableau — il est enregistré automatiquement.</p>
 
     <div class="crep-period-nav">
       <button type="button" class="crep-period-arrow" onclick="comptableRepShift(-1)">&lsaquo;</button>
@@ -2620,7 +2620,7 @@
   </div>
   <div class="app-shell">
     <div class="page-head"><h1>Mes performances</h1></div>
-    <p class="crep-hint" id="performancesHint">Choisis une coiffeuse, puis une période, pour voir ses ventes et ses pourboires.</p>
+    <p class="crep-hint" id="performancesHint">Choisis un membre de l’équipe, puis une période, pour voir ses ventes et ses pourboires.</p>
 
     <div class="tabs-row" id="performancesTabs"></div>
 
@@ -2758,7 +2758,7 @@ function go(id){
     return;
   }
   if(id === 'screen-performances' && !estGestionnaire() && !monNom){
-    alert('Ce poste n’est pas rattaché à une coiffeuse. Connecte-toi avec ton propre compte pour voir tes chiffres.');
+    alert('Ce poste n’est rattaché à personne. Connecte-toi avec ton propre compte pour voir tes chiffres.');
     return;
   }
   if(estDansLaZoneReservee(id) && !estDansLaZoneReservee(currentScreenId)){
@@ -3560,8 +3560,8 @@ function etiquetteAcces(employeeId){
   if(accesInconnus) return 'Accès — à revérifier';
   const a = accesParEmployee[employeeId];
   if(!a) return 'Aucun accès';
-  const role = a.role === 'gestionnaire' ? 'Gestionnaire' : 'Coiffeuse';
-  return a.actif ? role : role + ' — invitée';
+  const role = a.role === 'gestionnaire' ? 'Gestionnaire' : 'Coiffeur / Coiffeuse';
+  return a.actif ? role : role + ' — invitation envoyée';
 }
 
 function renderTeamRows(){
@@ -3585,7 +3585,7 @@ function renderTeamRows(){
       '<span class="drag-handle" title="Glisser pour réordonner">&#9776;</span>' +
     '</div>';
   });
-  container.innerHTML = html || '<div class="list-msg">Aucune employée.</div>';
+  container.innerHTML = html || '<div class="list-msg">Aucun membre de l’équipe.</div>';
 }
 
 async function toggleEmployeeActive(checkbox, employeeId){
@@ -3661,7 +3661,7 @@ async function openServicesModal(employeeId){
   servEmployeeId = employeeId;
   servVueCategorie = null;
   const emp = teamRowsCache.find(e => e.id === employeeId);
-  document.getElementById('servNom').textContent = emp ? emp.name : 'Employée';
+  document.getElementById('servNom').textContent = emp ? emp.name : 'Personne';
   document.getElementById('servErreur').classList.remove('show');
   document.getElementById('servSucces').classList.remove('show');
   document.getElementById('servListe').innerHTML = '<div class="list-msg">Chargement…</div>';
@@ -3808,7 +3808,7 @@ function openAccesModal(employeeId){
   accesEmployeeId = employeeId;
   const emp = teamRowsCache.find(e => e.id === employeeId);
   const acc = accesParEmployee[employeeId] || null;
-  document.getElementById('accesNom').textContent = emp ? emp.name : 'Employée';
+  document.getElementById('accesNom').textContent = emp ? emp.name : 'Personne';
   document.getElementById('accesEtat').textContent = !acc
     ? "Pas encore d'accès au logiciel."
     : (acc.actif ? 'Accès actif.' : "Invitation envoyée — elle n'a pas encore choisi son mot de passe.");
@@ -3888,7 +3888,7 @@ async function validerAcces(){
 async function retirerAcces(){
   if(!accesEmployeeId) return;
   const emp = teamRowsCache.find(e => e.id === accesEmployeeId);
-  const nom = emp ? emp.name : 'cette employée';
+  const nom = emp ? emp.name : 'cette personne';
   if(!confirm('Retirer l’accès de ' + nom + ' ?\n\nSon compte sera supprimé et elle ne pourra plus se connecter. Son horaire, ses rendez-vous et ses factures ne sont pas touchés.')) return;
   document.getElementById('accesErreur').classList.remove('show');
   const data = await appelerGestionAcces({ action: 'retirer', employee_id: accesEmployeeId }, 'accesRetirerBtn', 'Retrait…');
@@ -4034,7 +4034,7 @@ async function submitAddEmployee(){
     name, color_hex: teamAddSelectedColor, tier_level: level, sort_order: nextSort, active: true
   }).select('id').single();
   if(error){
-    errEl.textContent = error.message.includes('duplicate') ? 'Une employée porte déjà ce nom.' : ('Erreur : ' + error.message);
+    errEl.textContent = error.message.includes('duplicate') ? 'Quelqu\'un porte déjà ce nom.' : ('Erreur : ' + error.message);
     errEl.classList.add('show');
     return;
   }
@@ -4212,7 +4212,7 @@ async function loadScheduleEmployees(){
     row.addEventListener('click', function(){ openEmployeeSchedule(emp); });
     container.appendChild(row);
   });
-  if(!employees.length) container.innerHTML = '<div class="list-msg">Aucune employée.</div>';
+  if(!employees.length) container.innerHTML = '<div class="list-msg">Aucun membre de l’équipe.</div>';
 }
 
 function openEmployeeSchedule(emp){
@@ -4372,7 +4372,7 @@ function closeDayStatusModal(){
 async function saveDayStatus(){
   const statusInput = document.querySelector('#dayStatusModalOverlay input[name="dsStatus"]:checked');
   const status = statusInput ? statusInput.value : 'regular';
-  if(!schedCurrentEmployee || !schedCurrentEmployee.id){ alert('Erreur : aucune employée sélectionnée. Ferme la fenêtre et réessaie.'); return; }
+  if(!schedCurrentEmployee || !schedCurrentEmployee.id){ alert('Erreur : personne n\'est sélectionné. Ferme la fenêtre et réessaie.'); return; }
   const empId = schedCurrentEmployee.id;
   let error;
 
@@ -4428,7 +4428,7 @@ async function saveDayStatus(){
 // journée, sans avoir à repasser par « Horaire régulier » + Enregistrer. Même appel DB que la
 // branche status==='regular' de saveDayStatus() (delete de la ligne employee_day_overrides).
 async function deleteDayStatus(){
-  if(!schedCurrentEmployee || !schedCurrentEmployee.id){ alert('Erreur : aucune employée sélectionnée. Ferme la fenêtre et réessaie.'); return; }
+  if(!schedCurrentEmployee || !schedCurrentEmployee.id){ alert('Erreur : personne n\'est sélectionné. Ferme la fenêtre et réessaie.'); return; }
   if(!dsSelectedDateISO){ alert('Erreur : aucune date sélectionnée. Ferme la fenêtre et réessaie.'); return; }
   if(!confirm('Supprimer cette zone de non-disponibilité ?')) return;
   const empId = schedCurrentEmployee.id;
@@ -5023,10 +5023,10 @@ function buildClientBreuvageHTML(c){
   const puce = ([val, emoji]) =>
     '<div class="breuvage-chip' + (choix === val ? ' on' : '') + '"' +
     ' onclick="setClientBreuvageInline(\'' + c.id + '\', \'' + val + '\')">' + emoji + ' ' + val + '</div>';
-  return '<div class="client-breuvage-block"><span class="detail-label">Ce qu\'elle boit</span>' +
+  return '<div class="client-breuvage-block"><span class="detail-label">Ce qu\'on lui sert</span>' +
     '<div class="breuvage-choix">' + BREUVAGES.map(puce).join('') + '</div>' +
     '<input class="breuvage-detail-fiche" type="text" value="' + escapeHtml(c.breuvage_detail || '') + '"' +
-    ' placeholder="Ce qu\'elle met dedans \u2014 ex. 1 sucre, 2 laits"' +
+    ' placeholder="Ce qu\'on met dedans \u2014 ex. 1 sucre, 2 laits"' +
     ' onblur="enregistrerBreuvageDetail(\'' + c.id + '\', this.value)">' +
     '</div>';
 }
@@ -5306,7 +5306,7 @@ async function openFactureServicePicker(employeeName){
   // rattaché à une coiffeuse — on bloque donc l'ouverture du sélecteur de services tant qu'aucune
   // coiffeuse n'a été choisie sur la facture, et on l'explique à l'utilisatrice.
   if(!employeeName){
-    alert("Choisis d'abord une coiffeuse avant d'ajouter un service.");
+    alert("Choisis d'abord un membre de l'équipe avant d'ajouter un service.");
     return;
   }
   closeFactureAddProduct();
@@ -5340,7 +5340,7 @@ async function openFactureAddProduct(){
   // ce soit sur la facture, produit compris (changement de directive — auparavant les produits
   // étaient vendables sans coiffeuse assignée).
   if(!factActiveEmployeeName){
-    alert("Choisis d'abord une coiffeuse avant d'ajouter un produit.");
+    alert("Choisis d'abord un membre de l'équipe avant d'ajouter un produit.");
     return;
   }
   closeFactureServicePicker();
@@ -5554,7 +5554,7 @@ function renderFactCategoryList(tierLevel){
     if(!hasServices) return;
     html += '<div class="qa-cat-chip" data-cat-id="'+cat.id+'">'+escapeHtml(cat.name)+'</div>';
   });
-  list.innerHTML = html || '<div class="list-msg">Aucun service configuré pour le niveau de cette employée.</div>';
+  list.innerHTML = html || '<div class="list-msg">Aucun service configuré pour le niveau de cette personne.</div>';
 }
 
 function showFactCategory(catId){
@@ -5773,7 +5773,7 @@ async function runFactClientSearch(q){
     const fullName = ((c.first_name||'') + ' ' + (c.last_name||'')).trim();
     html += '<div class="qa-result" data-id="'+c.id+'" data-name="'+escapeHtml(fullName)+'">'+escapeHtml(fullName)+'</div>';
   });
-  html += '<div class="qa-result qa-new" data-new="1" data-name="'+escapeHtml(q)+'">+ Créer « '+escapeHtml(q)+' » comme nouvelle cliente</div>';
+  html += '<div class="qa-result qa-new" data-new="1" data-name="'+escapeHtml(q)+'">+ Créer « '+escapeHtml(q)+' » comme nouveau client</div>';
   box.innerHTML = html;
 }
 
@@ -5892,7 +5892,7 @@ async function sendReceiptEmail(){
   const statusEl = document.getElementById('receiptEmailStatus');
   if(!receiptEmailInvoiceId) return;
   if(!receiptEmailClientEmail){
-    if(statusEl){ statusEl.textContent = 'Aucun courriel dans le dossier de cette cliente.'; statusEl.classList.add('show-error'); }
+    if(statusEl){ statusEl.textContent = 'Aucun courriel dans le dossier de ce client.'; statusEl.classList.add('show-error'); }
     return;
   }
   if(btn){ btn.disabled = true; btn.textContent = 'Envoi en cours...'; }
@@ -5958,7 +5958,7 @@ function factInvoiceIsProductsOnly(){
 
 async function openFacturePaiement(){
   if(!factItems.length){ alert('Ajoute au moins un item à la facture avant de procéder au paiement.'); return; }
-  if(!factInvoiceIsProductsOnly() && !factSelectedClientId && !factSelectedClientName){ alert('Sélectionne une cliente avant de procéder au paiement.'); return; }
+  if(!factInvoiceIsProductsOnly() && !factSelectedClientId && !factSelectedClientName){ alert('Sélectionne un client avant de procéder au paiement.'); return; }
   const s = await loadBusinessSettings();
   factPayMethodsList = (s && s.payment_methods && s.payment_methods.length) ? s.payment_methods : PAYMENT_METHOD_CATALOG;
   const rates = await factureTaxRates();
@@ -6112,7 +6112,7 @@ async function confirmFacturePaiement(){
 
   const productsOnly = factInvoiceIsProductsOnly();
   const clientId = await ensureFactureClientId();
-  if(!clientId && !productsOnly){ alert('Impossible de déterminer la cliente.'); return; }
+  if(!clientId && !productsOnly){ alert('Impossible de déterminer le client.'); return; }
   const rates = await factureTaxRates();
   const totals = computeFactureTotals(factItems, rates);
   const invoiceNumber = await nextInvoiceNumber();
@@ -6608,7 +6608,7 @@ function computeInvoiceAmountSplitByEmployee(invoice, items, amount){
   const byEmp = {};
   let sum = 0;
   invItems.forEach(it => {
-    const name = it.employee_name || invoice.employee_name || 'Sans employée';
+    const name = it.employee_name || invoice.employee_name || 'Non assigné';
     const amt = Number(it.line_total) || 0;
     byEmp[name] = (byEmp[name] || 0) + amt;
     sum += amt;
@@ -6617,7 +6617,7 @@ function computeInvoiceAmountSplitByEmployee(invoice, items, amount){
   if(!names.length || sum <= 0){
     // Aucun item (ou items à 0$) -> impossible de calculer un prorata ; tout le montant va à
     // l'employée de la facture, comme avant.
-    result[invoice.employee_name || 'Sans employée'] = amount;
+    result[invoice.employee_name || 'Non assigné'] = amount;
     return result;
   }
   let allocated = 0;
@@ -6738,7 +6738,7 @@ async function loadPerformances(){
 function renderPerformancesTabs(){
   const wrap = document.getElementById('performancesTabs');
   if(!comptableRepEmployeesCache.length){
-    wrap.innerHTML = '<div class="list-msg">Aucune employée.</div>';
+    wrap.innerHTML = '<div class="list-msg">Aucun membre de l’équipe.</div>';
     return;
   }
   // Chaque coiffeuse garde sa propre couleur (celle de l'Horaire) sur son onglet, pour la
@@ -6818,11 +6818,11 @@ function renderComptableCommissionsTable(){
   const salesByEmp = {};
   comptableRepItemsCache.forEach(it => {
     const inv = invoiceById[it.invoice_id];
-    const name = it.employee_name || (inv && inv.employee_name) || 'Sans employée';
+    const name = it.employee_name || (inv && inv.employee_name) || 'Non assigné';
     salesByEmp[name] = (salesByEmp[name]||0) + (Number(it.line_total)||0);
   });
   if(!comptableRepEmployeesCache.length){
-    box.innerHTML = '<div class="comptable-invoice-empty">Aucune employée.</div>';
+    box.innerHTML = '<div class="comptable-invoice-empty">Aucun membre de l’équipe.</div>';
     return;
   }
   box.innerHTML = comptableRepEmployeesCache.map(emp => {
@@ -7104,7 +7104,7 @@ function buildCaisseReceiptHTML(invs, items, settings, dayStart, payments){
   // ---- Sommaire des ventes par vendeur (avant taxes) ----
   const byEmpItems = {};
   items.forEach(it => {
-    const name = it.employee_name || 'Sans employée';
+    const name = it.employee_name || 'Non assigné';
     if(!byEmpItems[name]) byEmpItems[name] = { services:0, produits:0 };
     if(it.is_product) byEmpItems[name].produits += Number(it.line_total)||0;
     else byEmpItems[name].services += Number(it.line_total)||0;
@@ -7537,7 +7537,7 @@ async function appliquerStatutJournee(employeeId, iso, statut){
   // entre tous les onglets du même site : ouvrir une session de coiffeuse dans un onglet fait
   // basculer les autres sans prévenir. Le message technique n'aidait personne.
   if(/row-level security|permission denied/i.test(error.message || '')){
-    return 'Ce changement demande le compte de la gestionnaire. Si tu as ouvert le logiciel dans '
+    return 'Ce changement demande le compte gestionnaire. Si tu as ouvert le logiciel dans '
          + 'une autre fenêtre avec un autre compte, ferme-la et reconnecte-toi ici.';
   }
   return 'Enregistrement impossible : ' + error.message;
@@ -7574,7 +7574,7 @@ function ouvrirListeDemandes(){
   box.innerHTML = demandesEnAttente.length ? demandesEnAttente.map(d => {
     const jour = new Date(d.date + 'T00:00:00')
       .toLocaleDateString('fr-CA', { weekday:'long', day:'numeric', month:'long' });
-    const nom = d.employees ? d.employees.name : 'Employée';
+    const nom = d.employees ? d.employees.name : 'Personne';
     return '<div class="dl-item">' +
       '<span class="dl-qui"><b>' + escapeHtml(nom) + '</b> — ' + escapeHtml(DH_LIBELLE[d.statut] || d.statut) +
       '<span class="dl-quand">' + escapeHtml(jour) + '</span></span>' +
@@ -8633,9 +8633,9 @@ function openDupUnavailablePopup(year, month, day, evt){
   const dateLabel = dateObj.toLocaleDateString('fr-CA', { weekday:'long', day:'numeric', month:'long' });
   let html = '<div class="dup-unavail-head"><b>'+escapeHtml(srcName)+'</b> n\'est pas disponible le '+escapeHtml(dateLabel)+'.</div>';
   if(!alts.length){
-    html += '<div class="dup-unavail-empty">Aucune autre coiffeuse disponible ce jour-là.</div>';
+    html += '<div class="dup-unavail-empty">Personne d’autre n’est disponible ce jour-là.</div>';
   } else {
-    html += '<div class="dup-unavail-sub">Choisir une autre coiffeuse pour cette date</div>';
+    html += '<div class="dup-unavail-sub">Choisir quelqu’un d’autre pour cette date</div>';
     html += alts.map(e => '<button type="button" class="dup-unavail-emp-btn" style="--dot:'+escapeHtml(e.color_hex||'#999')+'" onclick="chooseDupAltEmployee('+year+','+month+','+day+',\''+String(e.name).replace(/'/g,"\\'")+'\')"><span class="dup-unavail-dot"></span>'+escapeHtml(e.name)+'</button>').join('');
   }
   const listEl = document.getElementById('clientDayPopupList');
@@ -8700,7 +8700,7 @@ function placeClientDupGhost(src, dateObj, clientId, clientName, overrideEmploye
     return head && head.textContent === targetEmployeeName;
   });
   if(!col){
-    alert(targetEmployeeName + " n'apparaît plus dans l'Horaire (retirée de l'équipe?) — impossible de placer la duplication.");
+    alert(targetEmployeeName + " n'apparaît plus dans l'Horaire (plus dans l'équipe?) — impossible de placer la duplication.");
     return;
   }
   const body = col.querySelector('.ecol2-body');
@@ -9067,7 +9067,7 @@ function renderQaCategoryList(){
   } else if(masqueesFauteDOffre){
     list.innerHTML = '<div class="list-msg">'+escapeHtml(nomChoisi)+' n’offre aucun de ces services. Modifie sa liste dans Zone Gestionnaire &rsaquo; Équipe.</div>';
   } else {
-    list.innerHTML = '<div class="list-msg">Aucun service configuré pour le niveau de cette employée.</div>';
+    list.innerHTML = '<div class="list-msg">Aucun service configuré pour le niveau de cette personne.</div>';
   }
 }
 
@@ -9190,7 +9190,7 @@ async function runQaClientSearch(q){
     html += '<div class="qa-result" data-id="'+c.id+'" data-name="'+escapeHtml(fullName.trim())+'">'+
       '<span>'+escapeHtml(fullName.trim())+'</span>'+qaResultFlagIconHTML(c.flag)+'</div>';
   });
-  html += '<div class="qa-result qa-new" data-new="1" data-name="'+escapeHtml(q)+'">+ Créer « '+escapeHtml(q)+' » comme nouvelle cliente</div>';
+  html += '<div class="qa-result qa-new" data-new="1" data-name="'+escapeHtml(q)+'">+ Créer « '+escapeHtml(q)+' » comme nouveau client</div>';
   box.innerHTML = html;
 }
 
@@ -9210,7 +9210,7 @@ async function saveQuickAdd(){
   const note = document.getElementById('qaNote').value.trim();
 
   if(!date || !time){ alert('Choisis une date et une heure.'); return; }
-  if(!clientName){ alert('Indique le nom de la cliente.'); return; }
+  if(!clientName){ alert('Indique le nom du client.'); return; }
 
   const startAt = new Date(date+'T'+time+':00');
   const endAt = new Date(startAt.getTime() + duration*60000);
@@ -9606,7 +9606,7 @@ function renderNaDurationChips(){
 async function populateNaEmployeeChips(){
   const wrap = document.getElementById('naEmpChips');
   if(!wrap) return;
-  wrap.innerHTML = '<div class="qa-cat-chip na-chip active" data-emp-id="">Toutes les coiffeuses</div>';
+  wrap.innerHTML = '<div class="qa-cat-chip na-chip active" data-emp-id="">Toute l’équipe</div>';
   naSelectedEmpId = null;
   const { data, error } = await sbClient.from('employees').select('*').order('sort_order');
   if(error){ console.error(error); return; }
@@ -9669,7 +9669,7 @@ async function searchNextAvailability(){
   if(eErr){ resultsEl.innerHTML = '<div class="list-msg">Erreur de chargement.</div>'; console.error(eErr); return; }
   let candidates = (employeesData||[]).filter(isBookableEmployee);
   if(naSelectedEmpId) candidates = candidates.filter(e => e.id === naSelectedEmpId);
-  if(!candidates.length){ resultsEl.innerHTML = '<div class="list-msg">Aucune coiffeuse à chercher.</div>'; return; }
+  if(!candidates.length){ resultsEl.innerHTML = '<div class="list-msg">Personne à chercher.</div>'; return; }
 
   const empIds = candidates.map(e => e.id);
   const empNames = candidates.map(e => e.name);
@@ -9848,7 +9848,7 @@ function isMinuteBlocked(mins, result){
 function blockReasonText(overrideRow){
   if(!overrideRow) return '';
   if(overrideRow.status === 'vacation') return ' (en vacances)';
-  if(overrideRow.status === 'absent') return overrideRow.note ? ' (' + overrideRow.note + ')' : ' (absente)';
+  if(overrideRow.status === 'absent') return overrideRow.note ? ' (' + overrideRow.note + ')' : ' (absence)';
   return '';
 }
 
