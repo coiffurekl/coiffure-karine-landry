@@ -1560,7 +1560,7 @@
     <h3 id="modalTitle">Nouvelle fiche client</h3>
     <label>Prénom<input id="fName" type="text"></label>
     <label>Nom<input id="fLast" type="text"></label>
-    <label>Téléphone<input id="fPhone" type="text" placeholder="418-555-0100"></label>
+    <label>Téléphone (obligatoire)<input id="fPhone" type="text" placeholder="418-555-0100"></label>
     <label>Courriel<input id="fEmail" type="email"></label>
     <label>Drapeau</label>
     <div class="client-flag-picker" id="fFlagPicker">
@@ -4846,8 +4846,13 @@ function selectClientFlag(flag){
   });
 }
 
+// Le numéro tel qu'il était en ouvrant la fiche : on ne réavertit pas d'un doublon déjà accepté
+// tant que le numéro n'a pas été modifié.
+let telephoneAvantEdition = '';
+
 function openAddModal(){
   editingClientId = null;
+  telephoneAvantEdition = '';
   document.getElementById('modalTitle').textContent = 'Nouvelle fiche client';
   ['fName','fLast','fPhone','fEmail','fNotes'].forEach(id => document.getElementById(id).value = '');
   selectClientFlag('');
@@ -4863,6 +4868,7 @@ function openEditModal(id){
   document.getElementById('fName').value = c.first_name || '';
   document.getElementById('fLast').value = c.last_name || '';
   document.getElementById('fPhone').value = c.phone || '';
+  telephoneAvantEdition = c.phone || '';
   document.getElementById('fEmail').value = c.email || '';
   document.getElementById('fNotes').value = c.notes || '';
   selectClientFlag(c.flag || '');
@@ -4886,6 +4892,29 @@ async function saveClient(){
     alert('Le prénom et le nom sont requis.');
     return;
   }
+  if(!payload.phone){
+    alert('Le numéro de téléphone est requis.\n\nPour un enfant qui n’a pas de téléphone, inscris celui d’un parent : le logiciel te laissera le mettre deux fois.');
+    document.getElementById('fPhone').focus();
+    return;
+  }
+
+  // Un même numéro dans deux fiches est presque toujours une erreur de saisie — sauf en famille,
+  // où l'enfant porte le numéro du parent. On ne bloque donc pas : on montre à QUI le numéro est
+  // déjà rattaché, et on laisse trancher.
+  const telephoneChange = chiffresDuTelephone(payload.phone) !== chiffresDuTelephone(telephoneAvantEdition);
+  if(telephoneChange){
+    const memeNumero = await clientsAvecLeMemeTelephone(payload.phone, editingClientId);
+    if(memeNumero.length){
+      const noms = memeNumero.map(c => '• ' + ((c.first_name||'') + ' ' + (c.last_name||'')).trim()).join('\n');
+      const pluriel = memeNumero.length > 1;
+      const message = 'Ce numéro est déjà au dossier de ' + (pluriel ? 'ces clientes' : 'cette cliente') + ' :\n\n' + noms +
+        '\n\nC’est normal dans une même famille — un enfant qui a le numéro de ses parents, par exemple.\n\n' +
+        'OK — c’est la même famille, j’enregistre quand même.\n' +
+        'Annuler — je corrige le numéro.';
+      if(!confirm(message)){ document.getElementById('fPhone').focus(); return; }
+    }
+  }
+
   let error;
   if(editingClientId){
     payload.updated_at = new Date().toISOString();
@@ -4901,6 +4930,21 @@ async function saveClient(){
   closeClientModal();
   await loadClients();
   if(savedId) selectClient(savedId);
+}
+
+/* Comparaison par les chiffres seulement : « 418-930-5858 », « (418) 930-5858 » et
+   « 4189305858 » sont le même numéro. Sans ça, la même personne saisie deux fois avec deux
+   mises en forme différentes passerait inaperçue. */
+function chiffresDuTelephone(valeur){
+  return String(valeur || '').replace(/\D/g, '');
+}
+
+async function clientsAvecLeMemeTelephone(telephone, saufId){
+  const chiffres = chiffresDuTelephone(telephone);
+  if(chiffres.length < 10) return [];   // trop court pour être un vrai numéro : on ne compare pas
+  const { data, error } = await sbClient.from('clients').select('id, first_name, last_name, phone');
+  if(error){ console.error('Vérification des doublons impossible', error); return []; }
+  return (data || []).filter(c => c.id !== saufId && chiffresDuTelephone(c.phone) === chiffres);
 }
 
 async function deleteClient(id){
