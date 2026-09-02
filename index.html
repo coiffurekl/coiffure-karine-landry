@@ -778,6 +778,15 @@
   .svc-name-in:hover{ border-color:var(--line); }
   .svc-name-in:focus{ outline:none; border-color:var(--teal-dk); background:#fff; }
   .nom-etat{ font-family:'Josefin Sans'; font-size:11px; color:#4C9A5A; margin-left:6px; }
+  .cat-barre{ display:flex; align-items:center; gap:10px; margin:34px 0 16px; }
+  .cat-barre .prix-cat{ margin:0; flex:1; min-width:0; }
+  .svc-suppr, .cat-suppr{ border:1px solid var(--line); background:#fff; color:var(--ink-soft);
+    border-radius:50%; width:26px; height:26px; line-height:1; font-size:15px; cursor:pointer; flex-shrink:0; }
+  .svc-suppr:hover, .cat-suppr:hover{ background:#B23A3A; border-color:#B23A3A; color:#fff; }
+  .ajout-service{ margin:10px 0 0; }
+  .ajout-service button{ background:none; border:1px dashed var(--line); color:var(--teal-dk);
+    border-radius:9px; padding:8px 14px; font-family:'Josefin Sans'; font-size:13px; cursor:pointer; }
+  .ajout-service button:hover{ border-color:var(--teal-dk); background:var(--paper2); }
 
   /* ---- CONFIG / COMPTABLE ---- */
   .tabs-row{ display:flex; gap:10px; margin-bottom:30px; flex-wrap:wrap; }
@@ -2054,8 +2063,8 @@
   </div>
   <div class="app-shell wide">
     <div class="page-head">
-      <h1><span class="clickable" onclick="go('screen-config')" title="Retour">&larr;</span> Modifier les prix — Services</h1>
-      <span class="db-badge">&#9679; base de données en direct</span>
+      <h1><span class="clickable" onclick="go('screen-config')" title="Retour">&larr;</span> Services et prix</h1>
+      <button type="button" class="btn-outline" onclick="ajouterCategorieService()">+ Ajouter une catégorie</button>
     </div>
     <p style="color:var(--ink-soft); font-size:14.5px; margin-top:-14px; margin-bottom:24px;">Change un prix ou un temps puis clique sur « Enregistrer » à côté. Laisse vide pour retirer une valeur.</p>
     <div id="servicesEditContainer"><div class="list-msg">Chargement...</div></div>
@@ -2834,15 +2843,22 @@ async function loadServicesEdit(){
     console.error(e1||e2||e3);
     return;
   }
-  let html = '<p style="color:var(--ink-soft); font-size:14.5px; margin:-8px 0 22px;">Tout se modifie directement ici — les noms, les prix, les durées. Corrige, puis quitte la case : c’est enregistré. Les factures déjà émises gardent l’ancien nom et l’ancien prix.</p>';
+  let html = '<p style="color:var(--ink-soft); font-size:14.5px; margin:-8px 0 22px;">Tout se gère ici : ajoute ou supprime des catégories et des services, corrige les noms, les prix et les durées. Une correction s’enregistre dès que tu quittes la case. Les factures déjà émises gardent l’ancien nom et l’ancien prix — et un service déjà facturé ne peut pas être supprimé.</p>';
   cats.forEach(cat => {
     const catServices = svcs.filter(s => s.category_id === cat.id).sort((a,b)=>a.sort_order-b.sort_order);
-    if(catServices.length === 0) return;
-    html += '<div class="prix-cat"><input class="cat-name-in" value="'+escapeHtml(cat.name)+'" data-cat-id="'+cat.id+'" data-avant="'+escapeHtml(cat.name)+'" onchange="renommerCategorie(this)"><span class="nom-etat"></span></div>';
+    // Contrairement à l'écran de consultation, on affiche AUSSI les catégories vides : sans ça,
+    // une catégorie qu'on vient de créer serait invisible et on ne pourrait jamais lui ajouter
+    // son premier service.
+    html += '<div class="cat-barre"><div class="prix-cat"><input class="cat-name-in" value="'+escapeHtml(cat.name)+'" data-cat-id="'+cat.id+'" data-avant="'+escapeHtml(cat.name)+'" onchange="renommerCategorie(this)"><span class="nom-etat"></span></div>' +
+      '<button type="button" class="cat-suppr" title="Supprimer cette catégorie" onclick="supprimerCategorieService(\''+cat.id+'\')">&times;</button></div>';
+    if(catServices.length === 0){
+      html += '<div class="list-msg" style="text-align:left; padding:10px 2px;">Aucun service dans cette catégorie — elle n’apparaîtra nulle part tant qu’elle sera vide.</div>';
+    } else {
     html += '<table class="prix-edit"><tr><th>Service</th>'+TIER_LEVEL_LABELS.map(t=>'<th>'+escapeHtml(t)+'</th>').join('')+'</tr>';
     catServices.forEach(svc => {
       const svcTiers = tiers.filter(t => t.service_id === svc.id);
-      html += '<tr><td><input class="svc-name-in" value="'+escapeHtml(svc.name)+'" data-svc-id="'+svc.id+'" data-avant="'+escapeHtml(svc.name)+'" onchange="renommerService(this)"><span class="nom-etat"></span></td>';
+      html += '<tr><td><div class="tier-edit"><input class="svc-name-in" value="'+escapeHtml(svc.name)+'" data-svc-id="'+svc.id+'" data-avant="'+escapeHtml(svc.name)+'" onchange="renommerService(this)"><span class="nom-etat"></span>' +
+        '<button type="button" class="svc-suppr" title="Supprimer ce service" onclick="supprimerServiceDuCatalogue(\''+svc.id+'\')">&times;</button></div></td>';
       TIER_ORDER.forEach(tierLabel => {
         const t = svcTiers.find(x => x.tier_label === tierLabel);
         html += '<td><div class="tier-edit" data-service-id="'+svc.id+'" data-tier-label="'+escapeHtml(tierLabel)+'" data-tier-id="'+(t?t.id:'')+'">' +
@@ -2854,8 +2870,86 @@ async function loadServicesEdit(){
       html += '</tr>';
     });
     html += '</table>';
+    }
+    html += '<div class="ajout-service"><button type="button" onclick="ajouterServiceDansCategorie(\''+cat.id+'\')">+ Ajouter un service dans « '+escapeHtml(cat.name)+' »</button></div>';
   });
-  container.innerHTML = html || '<div class="list-msg">Aucun service pour l\'instant.</div>';
+  container.innerHTML = html || '<div class="list-msg">Aucune catégorie pour l\'instant. Commence par en ajouter une.</div>';
+}
+
+/* ---------- Ajouter et supprimer catégories et services ----------
+   La base protège l'historique toute seule : invoice_items.service_id est en « no action », donc
+   Postgres REFUSE de supprimer un service déjà facturé. On traduit ce refus en français plutôt
+   que de laisser passer un message technique. Supprimer une catégorie emporte ses services (et
+   leurs prix) en cascade — d'où la confirmation qui annonce le nombre. */
+async function ajouterCategorieService(){
+  const nom = (prompt('Nom de la nouvelle catégorie :') || '').trim();
+  if(!nom) return;
+  const { data: dernier } = await sbClient.from('service_categories')
+    .select('sort_order').order('sort_order', { ascending:false }).limit(1);
+  const rang = (dernier && dernier.length) ? (dernier[0].sort_order || 0) + 1 : 0;
+  const { error } = await sbClient.from('service_categories').insert({ name: nom, sort_order: rang });
+  if(error){ alert('Impossible d’ajouter la catégorie : ' + error.message); return; }
+  viderCachesDeNoms();
+  alert('Catégorie « ' + nom + ' » ajoutée. Ajoute-lui maintenant au moins un service — une catégorie vide n’apparaît nulle part ailleurs.');
+  loadServicesEdit();
+}
+
+async function ajouterServiceDansCategorie(categorieId){
+  const nom = (prompt('Nom du nouveau service :') || '').trim();
+  if(!nom) return;
+  const { data: dernier } = await sbClient.from('services')
+    .select('sort_order').eq('category_id', categorieId).order('sort_order', { ascending:false }).limit(1);
+  const rang = (dernier && dernier.length) ? (dernier[0].sort_order || 0) + 1 : 0;
+  const { data: cree, error } = await sbClient.from('services')
+    .insert({ category_id: categorieId, name: nom, sort_order: rang }).select('id').single();
+  if(error){ alert('Impossible d’ajouter le service : ' + error.message); return; }
+  // Un nouveau service est offert par toute l'équipe au départ, comme le reste du catalogue.
+  const { data: equipe } = await sbClient.from('employees').select('id');
+  if(cree && equipe && equipe.length){
+    await sbClient.from('employee_services')
+      .insert(equipe.map(e => ({ employee_id: e.id, service_id: cree.id })));
+  }
+  viderCachesDeNoms();
+  servicesOffertsParNom = null;
+  loadServicesEdit();
+}
+
+function messageDeSuppression(error){
+  // 23503 = violation de clé étrangère : le service figure sur au moins une facture.
+  if(error && (error.code === '23503' || /foreign key/i.test(error.message || ''))){
+    return 'Impossible de supprimer : ce service apparaît sur au moins une facture déjà émise. ' +
+           'Les factures ne doivent pas changer après coup. Tu peux le renommer, ou retirer son prix pour qu’il ne soit plus proposé.';
+  }
+  return 'Suppression impossible : ' + ((error && error.message) || 'raison inconnue');
+}
+
+async function supprimerServiceDuCatalogue(serviceId){
+  const { data: svc } = await sbClient.from('services').select('name').eq('id', serviceId).limit(1);
+  const nom = (svc && svc[0] && svc[0].name) || 'ce service';
+  if(!confirm('Supprimer « ' + nom + ' » ?\n\nSes prix par niveau seront supprimés aussi. Les rendez-vous et factures déjà enregistrés gardent le nom du service tel qu’il était.')) return;
+  const { error } = await sbClient.from('services').delete().eq('id', serviceId);
+  if(error){ alert(messageDeSuppression(error)); return; }
+  viderCachesDeNoms();
+  servicesOffertsParNom = null;
+  loadServicesEdit();
+}
+
+async function supprimerCategorieService(categorieId){
+  const [{ data: cat }, { data: dedans }] = await Promise.all([
+    sbClient.from('service_categories').select('name').eq('id', categorieId).limit(1),
+    sbClient.from('services').select('name').eq('category_id', categorieId)
+  ]);
+  const nom = (cat && cat[0] && cat[0].name) || 'cette catégorie';
+  const nb = (dedans || []).length;
+  const detail = nb
+    ? '\n\nSes ' + nb + ' service' + (nb>1?'s':'') + ' seront supprimés avec elle :\n' + (dedans||[]).map(s=>'• '+s.name).join('\n')
+    : '';
+  if(!confirm('Supprimer la catégorie « ' + nom + ' » ?' + detail)) return;
+  const { error } = await sbClient.from('service_categories').delete().eq('id', categorieId);
+  if(error){ alert(messageDeSuppression(error)); return; }
+  viderCachesDeNoms();
+  servicesOffertsParNom = null;
+  loadServicesEdit();
 }
 
 /* ---------- Renommer une catégorie ou un service ----------
