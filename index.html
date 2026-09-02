@@ -887,6 +887,12 @@
   .comptable-hub-btn-taxes{ background:#8C5A3E; }
   .comptable-hub-btn-equipe{ background:#5A6B8C; }
   .comptable-hub-btn-theme{ background:#8C5A7A; }
+  .comptable-hub-btn-horaires{ background:#4E7C8C; }
+  .comptable-hub-btn-services{ background:#6E7C5A; }
+  .comptable-hub-btn-produits{ background:#8C7A4E; }
+  .comptable-hub-btn-coordonnees{ background:#6B5A8C; }
+  .comptable-hub-separateur{ font-family:'Josefin Sans'; font-size:11px; letter-spacing:.16em;
+    text-transform:uppercase; color:rgba(255,255,255,.55); text-align:center; margin:12px 0 -2px; }
   .comptable-hub-shortcut{ display:flex; align-items:center; justify-content:center; gap:12px; margin-top:30px; }
   .comptable-hub-shortcut-label{ font-family:'Josefin Sans'; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:rgba(255,255,255,.6); }
   .comptable-hub-commissions-btn{ padding:11px 20px; border-radius:10px; border:1px solid rgba(255,255,255,.3); background:rgba(255,255,255,.08); color:#fff; font-family:'Josefin Sans'; font-size:12.5px; font-weight:600; letter-spacing:.03em; cursor:pointer; }
@@ -1375,7 +1381,6 @@
       </div>
     </div>
     <div class="bottombar">
-      <div class="zone-link clickable" onclick="go('screen-config')">&#128274; Zone Configuration</div>
       <div class="zone-link clickable" onclick="go('screen-comptable')">Zone Gestionnaire &#128274;</div>
     </div>
     <div class="footer-note">La Coiffure par Karine Landry — maquette</div>
@@ -1386,7 +1391,7 @@
 <div class="screen" id="screen-horaire">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="on">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="app-shell wide">
     <div class="page-head horaire-head">
@@ -1440,7 +1445,7 @@
 <div class="screen" id="screen-rdv">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="app-shell wide">
     <div class="page-head"><h1>Rendez-vous en ligne</h1></div>
@@ -1460,7 +1465,7 @@
 <div class="screen" id="screen-facture">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="on">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="app-shell wide">
     <div class="page-head"><h1>Nouvelle facture</h1></div>
@@ -1526,7 +1531,7 @@
 <div class="screen" id="screen-clients">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="on">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="app-shell wide">
     <div class="page-head">
@@ -1958,7 +1963,7 @@
 <div class="screen" id="screen-prix">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="on">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="app-shell wide">
     <div class="page-head">
@@ -1974,7 +1979,7 @@
 <div class="screen" id="screen-caisse">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="app-shell">
     <div class="page-head"><h1>Fermer la caisse</h1></div>
@@ -2000,7 +2005,7 @@
 <div class="screen" id="screen-config">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="on">Config</span><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="app-shell wide">
     <div class="page-head"><h1>Zone Configuration</h1></div>
@@ -2019,10 +2024,10 @@
 <div class="screen" id="screen-business-settings">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="app-shell">
-    <div class="page-head"><h1><span class="clickable" onclick="go('screen-config')" title="Retour">&larr;</span> Coordonnées d'affaires &amp; facturation</h1></div>
+    <div class="page-head"><h1><span class="clickable" onclick="go('screen-comptable')" title="Retour">&larr;</span> Coordonnées d'affaires &amp; facturation</h1></div>
     <div class="card bset-card">
       <div class="bset-section-title">Coordonnées</div>
       <label>Nom du salon<input id="bsetName" type="text"></label>
@@ -2064,11 +2069,11 @@
 <div class="screen" id="screen-services-edit">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="app-shell wide">
     <div class="page-head">
-      <h1><span class="clickable" onclick="go('screen-config')" title="Retour">&larr;</span> Services et prix</h1>
+      <h1><span class="clickable" onclick="go('screen-comptable')" title="Retour">&larr;</span> Services et prix</h1>
       <button type="button" class="btn-outline" onclick="ajouterCategorieService()">+ Ajouter une catégorie</button>
     </div>
     <p style="color:var(--ink-soft); font-size:14.5px; margin-top:-14px; margin-bottom:24px;">Change un prix ou un temps puis clique sur « Enregistrer » à côté. Laisse vide pour retirer une valeur.</p>
@@ -2119,7 +2124,7 @@
 <div class="screen" id="screen-comptable-equipe">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="on">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="on">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="app-shell wide">
     <div class="page-head">
@@ -2153,11 +2158,11 @@
 <div class="screen" id="screen-produits">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="app-shell wide">
     <div class="page-head">
-      <h1><span class="clickable" onclick="go('screen-config')" title="Retour">&larr;</span> Produits</h1>
+      <h1><span class="clickable" onclick="go('screen-comptable')" title="Retour">&larr;</span> Produits</h1>
       <button type="button" class="btn-outline" onclick="openAddProductForm()">+ Ajouter un produit</button>
     </div>
     <p style="color:var(--ink-soft); font-size:14.5px; margin-top:-14px; margin-bottom:24px;">Ajoute ici les produits vendus en salon — ils pourront ensuite être choisis rapidement lors d'une facturation.</p>
@@ -2182,11 +2187,11 @@
 <div class="screen" id="screen-schedule-employees">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="app-shell wide">
     <div class="page-head">
-      <h1><span class="clickable" onclick="go('screen-config')" title="Retour">&larr;</span> Mon horaire — Choisir une employée</h1>
+      <h1><span class="clickable" onclick="go('screen-comptable')" title="Retour">&larr;</span> Mon horaire — Choisir une employée</h1>
       <span class="db-badge">&#9679; base de données en direct</span>
     </div>
     <p style="color:var(--ink-soft); font-size:14.5px; margin-top:-14px; margin-bottom:24px;">Clique sur une employée pour gérer son horaire régulier, ses horaires spéciaux et ses vacances.</p>
@@ -2198,7 +2203,7 @@
 <div class="screen" id="screen-schedule-edit">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="app-shell wide">
     <div class="page-head">
@@ -2289,7 +2294,7 @@
 <div class="screen" id="screen-comptable">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="on">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="on">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="comptable-hub">
     <div class="comptable-hub-inner">
@@ -2301,6 +2306,11 @@
         <button type="button" class="comptable-hub-btn comptable-hub-btn-taxes" onclick="go('screen-comptable-taxes')">Rapport de taxes</button>
         <button type="button" class="comptable-hub-btn comptable-hub-btn-equipe" onclick="go('screen-comptable-equipe')">Équipe</button>
         <button type="button" class="comptable-hub-btn comptable-hub-btn-theme" onclick="go('screen-comptable-theme')">Thème saisonnier</button>
+        <div class="comptable-hub-separateur">Réglages</div>
+        <button type="button" class="comptable-hub-btn comptable-hub-btn-horaires" onclick="go('screen-schedule-employees')">Horaires de l'équipe</button>
+        <button type="button" class="comptable-hub-btn comptable-hub-btn-services" onclick="go('screen-services-edit')">Services et prix</button>
+        <button type="button" class="comptable-hub-btn comptable-hub-btn-produits" onclick="go('screen-produits')">Produits</button>
+        <button type="button" class="comptable-hub-btn comptable-hub-btn-coordonnees" onclick="go('screen-business-settings')">Coordonnées d'affaires</button>
       </div>
       <div class="comptable-hub-shortcut">
         <span class="comptable-hub-shortcut-label">Raccourci utile :</span>
@@ -2316,7 +2326,7 @@
 <div class="screen" id="screen-comptable-theme">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="on">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="on">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="app-shell">
     <div class="page-head"><h1><span class="clickable" onclick="go('screen-comptable')" title="Retour">&larr;</span> Thème saisonnier</h1></div>
@@ -2331,7 +2341,7 @@
 <div class="screen" id="screen-comptable-ventes">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="app-shell">
     <div class="page-head"><h1><span class="clickable" onclick="go('screen-comptable')" title="Retour">&larr;</span> Rapport de Ventes</h1></div>
@@ -2370,7 +2380,7 @@
 <div class="screen" id="screen-comptable-vendeurs">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="app-shell">
     <div class="page-head"><h1><span class="clickable" onclick="go('screen-comptable')" title="Retour">&larr;</span> Rapport Vendeurs</h1></div>
@@ -2392,7 +2402,7 @@
 <div class="screen" id="screen-comptable-pourboires">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="app-shell">
     <div class="page-head"><h1><span class="clickable" onclick="go('screen-comptable')" title="Retour">&larr;</span> Rapport Pourboires</h1></div>
@@ -2421,7 +2431,7 @@
 <div class="screen" id="screen-comptable-taxes">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="app-shell">
     <div class="page-head"><h1><span class="clickable" onclick="go('screen-comptable')" title="Retour">&larr;</span> Rapport de taxes</h1></div>
@@ -2448,7 +2458,7 @@
 <div class="screen" id="screen-comptable-commissions">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
   </div>
   <div class="app-shell">
     <div class="page-head"><h1><span class="clickable" onclick="go('screen-comptable')" title="Retour">&larr;</span> Calcul Commissions</h1></div>
@@ -2476,7 +2486,7 @@
 <div class="screen" id="screen-performances">
   <div class="app-nav">
     <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
-    <div class="nav-links"><span class="clickable" onclick="go('screen-config')">Config</span><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="on">Mes performances</span></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="on">Mes performances</span></div>
   </div>
   <div class="app-shell">
     <div class="page-head"><h1>Mes performances</h1></div>
@@ -2602,13 +2612,18 @@ let comptablePinTarget = null;
 // revenant à screen-config depuis un de ses sous-écrans).
 const CONFIG_ZONE_SCREENS = ['screen-config','screen-business-settings','screen-services-edit','screen-produits','screen-schedule-employees','screen-schedule-edit'];
 
-// Zone Gestionnaire ET Zone Configuration sont verrouillées par le MÊME code à 4 chiffres :
-// chaque fois qu'on y entre depuis un écran hors de la zone concernée, on doit ressaisir le code
-// (pas de mémorisation de session, et pas de code distinct par zone).
+// Gestionnaire et Configuration ne forment plus qu'UNE seule zone protégée (2026-09-02) : le
+// code à 4 chiffres est demandé en y entrant, puis on circule librement entre les rapports et
+// les réglages. Avant, passer de l'un à l'autre le redemandait chaque fois — pour rien, puisque
+// c'était déjà le même code.
+function estDansLaZoneReservee(id){
+  return id.indexOf('screen-comptable') === 0 || CONFIG_ZONE_SCREENS.indexOf(id) !== -1;
+}
+
 function go(id){
   // Barrière d'affichage : une coiffeuse n'a rien à faire dans ces deux zones, et le NIP n'est
   // pas un raccourci pour y entrer — la fonction serveur refuse aussi son compte.
-  if((id.indexOf('screen-comptable') === 0 || CONFIG_ZONE_SCREENS.indexOf(id) !== -1) && !estGestionnaire()){
+  if(estDansLaZoneReservee(id) && !estGestionnaire()){
     alert('Cette zone est réservée à la gestionnaire.');
     return;
   }
@@ -2616,11 +2631,7 @@ function go(id){
     alert('Ce poste n’est pas rattaché à une coiffeuse. Connecte-toi avec ton propre compte pour voir tes chiffres.');
     return;
   }
-  if(id.indexOf('screen-comptable') === 0 && currentScreenId.indexOf('screen-comptable') !== 0){
-    openComptablePinModal(id);
-    return;
-  }
-  if(CONFIG_ZONE_SCREENS.indexOf(id) !== -1 && CONFIG_ZONE_SCREENS.indexOf(currentScreenId) === -1){
+  if(estDansLaZoneReservee(id) && !estDansLaZoneReservee(currentScreenId)){
     openComptablePinModal(id);
     return;
   }
@@ -2661,7 +2672,7 @@ function performGo(id){
 
 function openComptablePinModal(targetId){
   comptablePinTarget = targetId;
-  document.getElementById('comptablePinTitle').textContent = CONFIG_ZONE_SCREENS.indexOf(targetId) !== -1 ? 'Zone Configuration' : 'Zone Gestionnaire';
+  document.getElementById('comptablePinTitle').textContent = 'Zone Gestionnaire';
   const input = document.getElementById('comptablePinInput');
   input.value = '';
   document.getElementById('comptablePinError').classList.remove('show');
