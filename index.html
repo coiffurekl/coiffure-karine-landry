@@ -1260,6 +1260,24 @@
   @media (max-width:640px){
     #versionBanner{ font-size:12.5px; padding:10px 12px; }
   }
+  /* ---------- Équipe au téléphone ----------
+     La rangée alignait six éléments sur une seule ligne : à 375px, le bouton de suppression et
+     la poignée sortaient de l'écran depuis toujours, et la pastille d'accès ajoutée le
+     1er septembre a empiré les choses (jusqu'à 229px hors cadre). On passe donc sur deux
+     lignes : l'identité et les actions en haut, les deux menus en dessous. Le ::after à
+     flex-basis:100% force la coupure au bon endroit, sans toucher au HTML ni à l'affichage
+     ordinateur. */
+  @media (max-width:640px){
+    .team-row{ flex-wrap:wrap; gap:11px 12px; padding:13px 14px; }
+    .team-row::after{ content:""; flex-basis:100%; height:0; order:5; }
+    .team-row .team-check{ order:1; }
+    .team-row .name{ order:2; flex:1 1 auto; min-width:0; font-size:17.5px; }
+    .team-row .team-delete-btn{ order:3; }
+    .team-row .drag-handle{ order:4; }
+    .team-row select.level-select{ order:6; flex:1 1 auto; min-width:0; }
+    .team-row .team-acces-btn{ order:7; flex:0 0 auto; }
+    .team-row .save-state{ order:8; flex:0 0 auto; width:auto; }
+  }
 </style>
 </head>
 <body>
