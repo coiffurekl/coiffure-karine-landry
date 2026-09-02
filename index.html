@@ -7401,7 +7401,16 @@ async function appliquerStatutJournee(employeeId, iso, statut){
       .upsert({ employee_id: employeeId, date: iso, status: statut, start_time: null, end_time: null },
               { onConflict: 'employee_id,date' }));
   }
-  return error ? ('Enregistrement impossible : ' + error.message) : null;
+  if(!error) return null;
+  // Refus des permissions : presque toujours parce qu'une autre fenêtre du logiciel s'est
+  // connectée avec un autre compte. Supabase garde la session dans le navigateur et la partage
+  // entre tous les onglets du même site : ouvrir une session de coiffeuse dans un onglet fait
+  // basculer les autres sans prévenir. Le message technique n'aidait personne.
+  if(/row-level security|permission denied/i.test(error.message || '')){
+    return 'Ce changement demande le compte de la gestionnaire. Si tu as ouvert le logiciel dans '
+         + 'une autre fenêtre avec un autre compte, ferme-la et reconnecte-toi ici.';
+  }
+  return 'Enregistrement impossible : ' + error.message;
 }
 
 /* ---------- Pastille des demandes, cote gestionnaire ---------- */
