@@ -452,6 +452,19 @@
   .client-flag-block{ padding:14px 0; border-bottom:1px solid var(--line); }
   .client-flag-block .detail-label{ display:block; color:var(--ink-soft); font-family:'Josefin Sans'; font-size:12.5px; letter-spacing:.04em; text-transform:uppercase; margin-bottom:11px; }
   .client-flag-block .client-flag-picker{ margin:0; }
+  .breuvage-choix{ display:flex; flex-wrap:wrap; gap:9px; margin:-6px 0 12px; }
+  .breuvage-chip{ padding:9px 14px; border:1px solid var(--line); border-radius:20px;
+    font-family:'Poppins'; font-size:13.5px; color:var(--ink); cursor:pointer; white-space:nowrap; }
+  .breuvage-chip:hover{ border-color:var(--teal-dk); }
+  .breuvage-chip.on{ background:var(--teal-dk); border-color:transparent; color:#fff; }
+  .breuvage-detail-label{ margin-bottom:14px; }
+  /* Dans la fiche : la tasse annonce la ligne, juste au-dessus des notes. */
+  .client-breuvage-block{ padding:14px 0; border-bottom:1px solid var(--line); }
+  .client-breuvage-block .detail-label{ display:block; color:var(--ink-soft); font-family:'Josefin Sans';
+    font-size:12.5px; letter-spacing:.04em; text-transform:uppercase; margin-bottom:9px; }
+  .client-breuvage-texte{ font-size:16px; color:var(--ink); display:flex; align-items:baseline; gap:9px; }
+  .client-breuvage-texte .tasse{ font-size:19px; line-height:1; }
+  .client-breuvage-texte .quoi-dedans{ color:var(--ink-soft); font-size:14.5px; }
   .client-flag-picker{ display:flex; flex-wrap:wrap; gap:10px; margin:-6px 0 16px; }
   .client-flag-chip{ display:flex; align-items:center; gap:6px; padding:9px 15px; border:1px solid var(--line); border-radius:20px; font-family:'Poppins'; font-size:13.5px; cursor:pointer; user-select:none; color:var(--ink-soft); }
   .client-flag-chip .flag-icon{ flex-shrink:0; }
@@ -1645,6 +1658,14 @@
     <label>Nom<input id="fLast" type="text"></label>
     <label>Téléphone (obligatoire)<input id="fPhone" type="text" placeholder="418-555-0100"></label>
     <label>Courriel<input id="fEmail" type="email"></label>
+    <label>Ce qu'elle boit</label>
+    <div class="breuvage-choix" id="fBreuvagePicker">
+      <div class="breuvage-chip" data-breuvage="Café" onclick="choisirBreuvage('Café')">&#9749; Café</div>
+      <div class="breuvage-chip" data-breuvage="Thé" onclick="choisirBreuvage('Thé')">&#127861; Thé</div>
+      <div class="breuvage-chip" data-breuvage="Tisane" onclick="choisirBreuvage('Tisane')">&#127807; Tisane</div>
+      <div class="breuvage-chip" data-breuvage="Eau pétillante" onclick="choisirBreuvage('Eau pétillante')">&#128167; Eau pétillante</div>
+    </div>
+    <label class="breuvage-detail-label">Ce qu'elle met dedans<input id="fBreuvageDetail" type="text" placeholder="Ex. 1 sucre, 2 laits"></label>
     <label>Drapeau</label>
     <div class="client-flag-picker" id="fFlagPicker">
       <div class="client-flag-chip flag-none" data-flag="" title="Aucun" onclick="selectClientFlag('')">
@@ -4869,6 +4890,7 @@ function selectClient(id){
       '<div class="detail-row"><span>Téléphone</span><b>'+escapeHtml(c.phone||'—')+'</b></div>' +
       '<div class="detail-row"><span>Courriel</span><b>'+escapeHtml(c.email||'—')+'</b></div>' +
       buildClientFlagRowHTML(c) +
+      buildClientBreuvageHTML(c) +
       '<div class="client-notes-block"><span class="detail-label">Notes</span><div class="client-notes-text">'+escapeHtml(c.notes||'—')+'</div></div>' +
       '<div class="detail-actions">' +
         '<button class="btn-outline" onclick="openEditModal(\''+c.id+'\')">Modifier</button>' +
@@ -4992,6 +5014,33 @@ async function deleteRdv(id, clientId){
 // boutons radio. Sert à signaler d'un coup d'œil qu'il faut aller lire les notes de la cliente.
 let editingClientFlag = '';
 
+/* ---------- Ce que la cliente boit ----------
+   Deux informations distinctes : le choix (café, thé, tisane, eau pétillante) et ce qu'elle met
+   dedans. Les garder séparées évite d'avoir à découper une chaîne à la relecture — et le détail
+   sert autant au thé qu'au café : sucre, lait, citron. */
+let editingClientBreuvage = '';
+
+function choisirBreuvage(valeur){
+  // Retoucher le choix déjà sélectionné le retire : c'est la seule façon de dire « rien ».
+  editingClientBreuvage = (editingClientBreuvage === valeur) ? '' : valeur;
+  document.querySelectorAll('#fBreuvagePicker .breuvage-chip').forEach(chip => {
+    chip.classList.toggle('on', chip.dataset.breuvage === editingClientBreuvage);
+  });
+}
+
+function buildClientBreuvageHTML(c){
+  const choix = c.breuvage || '';
+  const dedans = c.breuvage_detail || '';
+  if(!choix && !dedans) return '';
+  const tasses = { 'Café':'\u2615', 'Thé':'\uD83C\uDF75', 'Tisane':'\uD83C\uDF3F', 'Eau pétillante':'\uD83D\uDCA7' };
+  const tasse = tasses[choix] || '\u2615';
+  return '<div class="client-breuvage-block"><span class="detail-label">Ce qu\'elle boit</span>' +
+    '<div class="client-breuvage-texte"><span class="tasse">' + tasse + '</span>' +
+    '<span>' + escapeHtml(choix || '—') +
+    (dedans ? ' <span class="quoi-dedans">' + escapeHtml(dedans) + '</span>' : '') +
+    '</span></div></div>';
+}
+
 function selectClientFlag(flag){
   editingClientFlag = flag || '';
   document.querySelectorAll('#fFlagPicker .client-flag-chip').forEach(chip => {
@@ -5007,7 +5056,9 @@ function openAddModal(){
   editingClientId = null;
   telephoneAvantEdition = '';
   document.getElementById('modalTitle').textContent = 'Nouvelle fiche client';
-  ['fName','fLast','fPhone','fEmail','fNotes'].forEach(id => document.getElementById(id).value = '');
+  ['fName','fLast','fPhone','fEmail','fNotes','fBreuvageDetail'].forEach(id => document.getElementById(id).value = '');
+  editingClientBreuvage = '';
+  choisirBreuvage('');
   selectClientFlag('');
   document.getElementById('clientModalOverlay').classList.add('show');
   document.getElementById('fName').focus();
@@ -5024,6 +5075,9 @@ function openEditModal(id){
   telephoneAvantEdition = c.phone || '';
   document.getElementById('fEmail').value = c.email || '';
   document.getElementById('fNotes').value = c.notes || '';
+  document.getElementById('fBreuvageDetail').value = c.breuvage_detail || '';
+  editingClientBreuvage = '';
+  choisirBreuvage(c.breuvage || '');
   selectClientFlag(c.flag || '');
   document.getElementById('clientModalOverlay').classList.add('show');
 }
@@ -5039,6 +5093,8 @@ async function saveClient(){
     phone: document.getElementById('fPhone').value.trim(),
     email: document.getElementById('fEmail').value.trim(),
     notes: document.getElementById('fNotes').value.trim(),
+    breuvage: editingClientBreuvage || null,
+    breuvage_detail: document.getElementById('fBreuvageDetail').value.trim() || null,
     flag: editingClientFlag || null,
   };
   if(!payload.first_name || !payload.last_name){
