@@ -279,6 +279,13 @@
   @media (max-width:640px){
     .annul-pastille{ align-self:center; font-size:11.5px; padding:4px 10px 4px 6px; }
   }
+  /* Demandes d'horaire : le vert sauge de Catherine (#8FA09B), demande de Karine — le rouge
+     des annulations criait l'urgence pour une simple demande de congé. Texte foncé et non
+     blanc : sur ce vert clair, le blanc tombe à 2,7 pour 1 de contraste et le petit chiffre
+     devient illisible au téléphone ; en foncé on est à 5,5 pour 1. */
+  .demande-pastille{ background:#8FA09B; color:#1E2A27; }
+  .demande-pastille:hover{ background:#7E9089; }
+  .demande-pastille .ap-nb{ background:rgba(30,42,39,.18); }
 
   /* Liste des annulations, ouverte en touchant la pastille. */
   #annulListe{
