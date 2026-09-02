@@ -1374,6 +1374,30 @@
     .team-row .team-acces-btn{ order:7; flex:0 0 auto; }
     .team-row .save-state{ order:8; flex:0 0 auto; width:auto; }
   }
+  /* ---------- Feuille à cocher, pour l'impression ----------
+     Une page à remettre à chaque coiffeuse : elle coche ce qu'elle offre, Karine reporte
+     ensuite dans l'écran Équipe. Volontairement sans prix ni niveaux — c'est une liste de
+     services, pas une grille tarifaire. Deux colonnes pour tenir sur une seule feuille. */
+  #feuilleServices{ display:none; }
+  @media print{
+    body > *{ display:none !important; }
+    body{ background:#fff !important; padding:0 !important; }
+    #feuilleServices{ display:block !important; padding:0; color:#000; font-family:Georgia, serif; }
+    #feuilleServices .fs-titre{ font-size:20pt; margin:0 0 2mm; }
+    #feuilleServices .fs-nom{ font-size:11pt; margin:0 0 6mm; }
+    #feuilleServices .fs-nom span{ display:inline-block; min-width:70mm; border-bottom:1px solid #000; }
+    #feuilleServices .fs-consigne{ font-size:9pt; margin:0 0 7mm; font-style:italic; }
+    #feuilleServices .fs-colonnes{ column-count:2; column-gap:12mm; }
+    #feuilleServices .fs-cat{ break-inside:avoid; margin:0 0 5mm; }
+    #feuilleServices .fs-cat h2{ font-size:11.5pt; margin:0 0 1.5mm; border-bottom:1px solid #000; padding-bottom:1mm; }
+    #feuilleServices .fs-svc{ font-size:10.5pt; line-height:2.1; display:flex; align-items:baseline; gap:2.5mm; break-inside:avoid; }
+    #feuilleServices .fs-case{ width:4mm; height:4mm; border:1px solid #000; flex-shrink:0; align-self:center; }
+    #feuilleServices .fs-nom-svc{ flex:0 1 auto; }
+    #feuilleServices .fs-pointille{ flex:1 1 auto; border-bottom:1px dotted #999; min-width:3mm; }
+    #feuilleServices .fs-duree{ width:13mm; border-bottom:1px solid #000; flex-shrink:0; }
+    #feuilleServices .fs-min{ font-size:8.5pt; color:#444; flex-shrink:0; }
+    @page{ margin:14mm; }
+  }
 </style>
 </head>
 <body>
@@ -2133,6 +2157,7 @@
   <div class="app-shell wide">
     <div class="page-head">
       <h1><span class="clickable" onclick="go('screen-comptable')" title="Retour">&larr;</span> Services et prix</h1>
+      <button type="button" class="btn-outline" onclick="imprimerFeuilleServices()">Imprimer la feuille à cocher</button>
       <button type="button" class="btn-outline" onclick="ajouterCategorieService()">+ Ajouter une catégorie</button>
     </div>
     <p style="color:var(--ink-soft); font-size:14.5px; margin-top:-14px; margin-bottom:24px;">Change un prix ou un temps puis clique sur « Enregistrer » à côté. Laisse vide pour retirer une valeur.</p>
@@ -3096,6 +3121,42 @@ async function sedEnregistrerOrdre(table, liste){
    Postgres REFUSE de supprimer un service déjà facturé. On traduit ce refus en français plutôt
    que de laisser passer un message technique. Supprimer une catégorie emporte ses services (et
    leurs prix) en cascade — d'où la confirmation qui annonce le nombre. */
+/* ---------- Feuille à cocher ----------
+   Karine remet la feuille à chaque coiffeuse : une case pour dire « je fais ce service », et
+   une ligne pour écrire le temps que ça lui prend — deux coiffeuses ne mettent pas le même
+   temps pour la même coupe. Elle reporte ensuite dans l'écran Équipe et dans les durées.
+   La feuille se construit à partir de ce qui est affiché à l'écran, donc elle est toujours à
+   jour : pas de liste figée qui se périme au premier service ajouté. */
+function imprimerFeuilleServices(){
+  if(!sedCats.length){ alert('La liste des services n’est pas encore chargée. Réessaie dans un instant.'); return; }
+  let feuille = document.getElementById('feuilleServices');
+  if(!feuille){
+    feuille = document.createElement('div');
+    feuille.id = 'feuilleServices';
+    document.body.appendChild(feuille);   // enfant direct de body : le style d'impression en dépend
+  }
+  const colonnes = sedCats.map(cat => {
+    const services = sedSvcs.filter(sv => sv.category_id === cat.id);
+    if(!services.length) return '';       // une catégorie vide n'a rien à cocher
+    return '<div class="fs-cat"><h2>' + escapeHtml(cat.name) + '</h2>' +
+      services.map(sv =>
+        '<div class="fs-svc">' +
+          '<span class="fs-case"></span>' +
+          '<span class="fs-nom-svc">' + escapeHtml(sv.name) + '</span>' +
+          '<span class="fs-pointille"></span>' +
+          '<span class="fs-duree"></span><span class="fs-min">min</span>' +
+        '</div>').join('') +
+      '</div>';
+  }).join('');
+
+  feuille.innerHTML =
+    '<h1 class="fs-titre">Services offerts</h1>' +
+    '<p class="fs-nom">Nom : <span></span></p>' +
+    '<p class="fs-consigne">Coche les services que tu offres, et inscris le temps qu’ils te prennent.</p>' +
+    '<div class="fs-colonnes">' + colonnes + '</div>';
+  window.print();
+}
+
 async function ajouterCategorieService(){
   const nom = (prompt('Nom de la nouvelle catégorie :') || '').trim();
   if(!nom) return;
