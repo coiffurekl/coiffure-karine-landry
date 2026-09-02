@@ -6067,8 +6067,34 @@ function comptableRepRangeFor(report){
 function comptableRepTitleFor(report){
   const st = comptableRepState[report];
   if(st.type === 'preset') return COMPTABLE_PRESETS[st.key] || '';
-  if(st.type === 'custom') return 'PÉRIODE PERSONNALISÉE';
+  if(st.type === 'custom') return comptableTitreDePlage(st.start, st.end);
   return comptableMonthTitle(comptableRepMonthOffset[report]);
+}
+
+/* Décalage par le calendrier plutôt que par les millisecondes : ajouter 86 400 000 ms à une
+   date dérape d'une heure aux changements d'heure du printemps et de l'automne, et la journée
+   affichée se décalerait d'un cran deux fois par année. */
+function comptableDecalerJours(d, n){
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+}
+
+function comptableEstMoisCivil(debut, fin){
+  return debut.getDate() === 1 && fin.getDate() === 1 &&
+    (fin.getFullYear()*12 + fin.getMonth()) - (debut.getFullYear()*12 + debut.getMonth()) === 1;
+}
+
+// Une période déplacée à la flèche garde un titre parlant, au lieu de devenir « personnalisée ».
+function comptableTitreDePlage(debut, fin){
+  const jours = Math.max(1, Math.round((fin - debut) / 86400000));
+  const aujourdhui = comptableDayStart(new Date());
+  if(jours === 1){
+    if(debut.getTime() === aujourdhui.getTime()) return "AUJOURD'HUI";
+    if(debut.getTime() === comptableDecalerJours(aujourdhui, -1).getTime()) return 'HIER';
+    if(debut.getTime() === comptableDecalerJours(aujourdhui, 1).getTime()) return 'DEMAIN';
+    return 'JOURNÉE';
+  }
+  if(jours === 7) return 'SEMAINE';
+  return 'PÉRIODE PERSONNALISÉE';
 }
 
 function comptableFormatRangeLabel(start, end){
@@ -6086,10 +6112,28 @@ function renderComptablePeriodNav(report){
   if(rangeEl) rangeEl.textContent = comptableFormatRangeLabel(range.start, range.end);
 }
 
+/* Les flèches décalent de la durée RÉELLEMENT affichée : une journée reste une journée, une
+   semaine reste une semaine. Avant, elles basculaient systématiquement en navigation par mois —
+   on partait d'« Aujourd'hui » et on se retrouvait à parcourir des mois entiers. */
 function comptableRepShift(delta){
   if(!comptableActiveReport) return;
-  comptableRepMonthOffset[comptableActiveReport] += delta;
-  comptableRepState[comptableActiveReport] = { type:'month' };
+  const rapport = comptableActiveReport;
+  const plage = comptableRepRangeFor(rapport);
+
+  // Un mois civil garde sa navigation de mois en mois : janvier mène à février, et non à
+  // « 31 jours plus tard », qui tomberait au milieu du mois suivant.
+  if(comptableEstMoisCivil(plage.start, plage.end)){
+    comptableRepMonthOffset[rapport] += delta;
+    comptableRepState[rapport] = { type:'month' };
+    return reloadComptableActiveReport();
+  }
+
+  const jours = Math.max(1, Math.round((plage.end - plage.start) / 86400000));
+  comptableRepState[rapport] = {
+    type: 'custom',
+    start: comptableDecalerJours(plage.start, delta * jours),
+    end:   comptableDecalerJours(plage.end,   delta * jours)
+  };
   return reloadComptableActiveReport();
 }
 
