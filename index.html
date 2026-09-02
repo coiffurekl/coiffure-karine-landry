@@ -5031,7 +5031,9 @@ function choisirBreuvage(valeur){
 function buildClientBreuvageHTML(c){
   const choix = c.breuvage || '';
   const dedans = c.breuvage_detail || '';
-  if(!choix && !dedans) return '';
+  // La ligne s'affiche TOUJOURS, même vide — comme le téléphone et le courriel. La cacher quand
+  // rien n'est inscrit paraissait plus propre, mais personne ne découvrait qu'on pouvait noter
+  // le breuvage, et rien ne rappelait de poser la question à la cliente.
   const tasses = { 'Café':'\u2615', 'Thé':'\uD83C\uDF75', 'Tisane':'\uD83C\uDF3F', 'Eau pétillante':'\uD83D\uDCA7' };
   const tasse = tasses[choix] || '\u2615';
   return '<div class="client-breuvage-block"><span class="detail-label">Ce qu\'elle boit</span>' +
