@@ -283,9 +283,9 @@
      des annulations criait l'urgence pour une simple demande de congé. Texte foncé et non
      blanc : sur ce vert clair, le blanc tombe à 2,7 pour 1 de contraste et le petit chiffre
      devient illisible au téléphone ; en foncé on est à 5,5 pour 1. */
-  .demande-pastille{ background:#8FA09B; color:#1E2A27; }
+  .demande-pastille{ background:#8FA09B; color:#fff; }
   .demande-pastille:hover{ background:#7E9089; }
-  .demande-pastille .ap-nb{ background:rgba(30,42,39,.18); }
+  .demande-pastille .ap-nb{ background:rgba(255,255,255,.26); }
 
   /* Liste des annulations, ouverte en touchant la pastille. */
   #annulListe{
@@ -2160,7 +2160,6 @@
       <button type="button" class="btn-outline" onclick="imprimerFeuilleServices()">Imprimer la feuille à cocher</button>
       <button type="button" class="btn-outline" onclick="ajouterCategorieService()">+ Ajouter une catégorie</button>
     </div>
-    <p style="color:var(--ink-soft); font-size:14.5px; margin-top:-14px; margin-bottom:24px;">Change un prix ou un temps puis clique sur « Enregistrer » à côté. Laisse vide pour retirer une valeur.</p>
     <div id="servicesEditContainer"><div class="list-msg">Chargement...</div></div>
   </div>
 </div>
@@ -7593,7 +7592,10 @@ async function majPastilleAnnulations(){
   annulationsCache = (data || []).filter(a => jourMontreal(new Date(a.start_at)) >= aujourdhui);
 
   const n = annulationsCache.length;
-  document.querySelectorAll('.annul-pastille').forEach(p => {
+  // « :not(.demande-pastille) » est essentiel : la pastille des demandes d'horaire emprunte la
+  // classe .annul-pastille pour son style, donc sans cette exclusion elle se faisait réécrire
+  // ici et affichait « 2 annulations » elle aussi.
+  document.querySelectorAll('.annul-pastille:not(.demande-pastille)').forEach(p => {
     p.classList.toggle('on', n > 0);
     p.querySelector('.ap-nb').textContent = n;
     p.querySelector('.ap-txt').textContent = n > 1 ? 'annulations' : 'annulation';
