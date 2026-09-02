@@ -2834,7 +2834,7 @@ async function loadServicesEdit(){
     console.error(e1||e2||e3);
     return;
   }
-  let html = '<p style="color:var(--ink-soft); font-size:14.5px; margin:-8px 0 22px;">Les noms des catégories et des services se modifient directement ici : clique dessus, corrige, et le nom s’enregistre en quittant la case. Les factures déjà émises gardent l’ancien nom.</p>';
+  let html = '<p style="color:var(--ink-soft); font-size:14.5px; margin:-8px 0 22px;">Tout se modifie directement ici — les noms, les prix, les durées. Corrige, puis quitte la case : c’est enregistré. Les factures déjà émises gardent l’ancien nom et l’ancien prix.</p>';
   cats.forEach(cat => {
     const catServices = svcs.filter(s => s.category_id === cat.id).sort((a,b)=>a.sort_order-b.sort_order);
     if(catServices.length === 0) return;
@@ -2846,8 +2846,8 @@ async function loadServicesEdit(){
       TIER_ORDER.forEach(tierLabel => {
         const t = svcTiers.find(x => x.tier_label === tierLabel);
         html += '<td><div class="tier-edit" data-service-id="'+svc.id+'" data-tier-label="'+escapeHtml(tierLabel)+'" data-tier-id="'+(t?t.id:'')+'">' +
-          '<input class="price-in" type="number" step="0.01" placeholder="$" value="'+(t && t.price!==null ? t.price : '')+'">' +
-          '<input class="dur-in" type="number" step="5" placeholder="min" value="'+(t && t.duration_minutes!==null ? t.duration_minutes : '')+'">' +
+          '<input class="price-in" type="number" step="0.01" placeholder="$" value="'+(t && t.price!==null ? t.price : '')+'" onchange="enregistrerTierDepuisChamp(this)">' +
+          '<input class="dur-in" type="number" step="5" placeholder="min" value="'+(t && t.duration_minutes!==null ? t.duration_minutes : '')+'" onchange="enregistrerTierDepuisChamp(this)">' +
           '<button class="save-btn" onclick="saveTierEdit(this)">Enreg.</button>' +
         '</div></td>';
       });
@@ -2872,7 +2872,7 @@ function viderCachesDeNoms(){
   if(prix) prix.dataset.loaded = '';
 }
 
-async function enregistrerNom(input, table, colonneId){
+async function enregistrerNom(input, table, colonneId, quoi){
   const etat = input.parentElement.querySelector('.nom-etat');
   const nouveau = input.value.trim();
   const avant = input.dataset.avant;
@@ -2880,6 +2880,13 @@ async function enregistrerNom(input, table, colonneId){
   if(!nouveau){
     input.value = avant;
     if(etat){ etat.style.color = 'var(--terracotta)'; etat.textContent = 'Le nom ne peut pas être vide.'; }
+    return;
+  }
+  // Un prix modifié par erreur se voit tout de suite ; un nom changé par mégarde passe inaperçu
+  // et se retrouve partout dans le logiciel. On demande donc confirmation pour les noms
+  // seulement — pas pour les prix, qu'on ajuste souvent.
+  if(!confirm('Renommer ' + quoi + ' ?\n\n« ' + avant +' »\nva devenir\n« ' + nouveau + ' »\n\nLe nouveau nom apparaîtra partout dans le logiciel. Les factures déjà émises gardent l’ancien.')){
+    input.value = avant;
     return;
   }
   if(etat){ etat.style.color = ''; etat.textContent = '…'; }
@@ -2894,8 +2901,18 @@ async function enregistrerNom(input, table, colonneId){
   if(etat){ etat.textContent = '✓'; setTimeout(()=>{ etat.textContent = ''; }, 1600); }
 }
 
-async function renommerCategorie(input){ await enregistrerNom(input, 'service_categories', 'catId'); }
-async function renommerService(input){ await enregistrerNom(input, 'services', 'svcId'); }
+async function renommerCategorie(input){ await enregistrerNom(input, 'service_categories', 'catId', 'cette catégorie'); }
+async function renommerService(input){ await enregistrerNom(input, 'services', 'svcId', 'ce service'); }
+
+/* Le prix et la durée s'enregistrent maintenant en quittant la case, comme les noms — le bouton
+   « Enreg. » reste, mais il n'est plus la seule façon de sauvegarder. Avant, taper un prix puis
+   changer d'écran perdait la saisie sans un mot : c'est exactement ce qui est arrivé à Martin le
+   2026-09-02, et ça devenait d'autant plus piégeant que les noms, eux, se sauvent tout seuls. */
+function enregistrerTierDepuisChamp(input){
+  const cellule = input.closest('.tier-edit');
+  const bouton = cellule && cellule.querySelector('.save-btn');
+  if(bouton) saveTierEdit(bouton);
+}
 
 async function saveTierEdit(btn){
   const cell = btn.closest('.tier-edit');
