@@ -2015,7 +2015,7 @@
     </button>
     <button type="button" class="slot-menu-btn slot-menu-btn-exception" onclick="slotMenuAddException()">
       <span class="smb-icon">+</span>
-      <span class="smb-label">Ajouter un…<b>Rendez-vous d'exception</b></span>
+      <span class="smb-label">Ajouter une…<b>Plage horaire d'exception</b></span>
     </button>
   </div>
 </div>
@@ -2050,7 +2050,7 @@
 
 <div class="modal-overlay" id="quickExceptionModalOverlay">
   <div class="modal-card">
-    <h3>Rendez-vous d'exception — <span id="qexEmpName"></span></h3>
+    <h3>Plage horaire d'exception — <span id="qexEmpName"></span></h3>
     <p class="sched-hint" style="margin:-10px 0 18px;">Ouvre la plage horaire pour cette journée afin de pouvoir prendre un rendez-vous en dehors des heures habituelles.</p>
     <label>Date<input id="qexDate" type="date" disabled></label>
     <label>De<input id="qexStart" type="time"></label>
@@ -8421,7 +8421,7 @@ async function saveQuickException(){
 }
 
 async function cancelQuickException(){
-  if(!confirm('Annuler cette plage de rendez-vous d\'exception ?')) return;
+  if(!confirm('Annuler cette plage horaire d\'exception ?')) return;
   const { error } = await sbClient.from('employee_day_overrides').delete().eq('employee_id', qexEmployeeId).eq('date', qexDateISO);
   if(error){ alert('Erreur : ' + error.message); return; }
   closeQuickExceptionModal();
@@ -9963,7 +9963,7 @@ function renderSpecialWindow(body, overrideRow, ctx){
   block.className = 'special-window-block';
   block.style.top = (top*HOR_PX_PER_MIN) + 'px';
   block.style.height = ((bottom-top)*HOR_PX_PER_MIN) + 'px';
-  block.title = 'Cliquer pour modifier ou annuler cette plage de rendez-vous d\'exception';
+  block.title = 'Cliquer pour modifier ou annuler cette plage horaire d\'exception';
   const label = document.createElement('span');
   label.className = 'special-window-label';
   label.textContent = 'Exception seulement';
