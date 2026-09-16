@@ -218,8 +218,20 @@
   /* Services acceptés pour cette plage d'exception (ex. "Coupe et couleur seulement") : sous le
      petit pill orange, texte normal qui peut revenir à la ligne. */
   .special-window-note{ margin:4px 8px 0; font-size:10.5px; color:var(--ocre); font-weight:600; font-family:'Poppins'; line-height:1.3; white-space:normal; overflow-wrap:break-word; }
-  .hour-line{ position:absolute; left:0; right:0; border-top:1px solid rgba(32,48,47,.13); }
-  .hour-line.half{ border-top:1px dashed rgba(32,48,47,.20); }
+  /* Les heures pleines se lisent d'un coup d'œil : trait plein, plus épais et plus foncé que les
+     quarts d'heure, qui restent en pointillé discret — comme dans l'ancien logiciel du salon. */
+  .hour-line{ position:absolute; left:0; right:0; border-top:2px solid rgba(32,48,47,.30); }
+  /* ---- L'heure actuelle : ce qui est passé est assombri, une ligne rouge marque maintenant ----
+     Le voile est inséré en PREMIER dans la colonne et n'a pas de z-index : les rendez-vous, les
+     plages non travaillées et les lignes d'heures, ajoutés après lui, se peignent donc par-dessus.
+     Les rendez-vous passés restent en pleine couleur, comme dans l'ancien logiciel du salon. */
+  .hor-passe{ position:absolute; left:0; right:0; top:0; background:rgba(38,58,72,.17); pointer-events:none; }
+  .hor-maintenant{ position:absolute; left:0; right:0; height:0; border-top:2px solid #E0245E;
+    pointer-events:none; z-index:5; }
+  .time-axis .tick-maintenant{ position:absolute; left:3px; right:3px; transform:translateY(-50%);
+    background:#E0245E; color:#fff; border-radius:4px; text-align:center; font-family:'Josefin Sans';
+    font-weight:700; font-size:11.5px; line-height:1.5; z-index:3; font-variant-numeric:tabular-nums; }
+  .hour-line.half{ border-top:1px dotted rgba(32,48,47,.24); }
   .appt2{ position:absolute; left:4px; right:4px; border-radius:9px; padding:6px 9px; color:#fff; font-size:11.5px; box-shadow:0 3px 8px rgba(0,0,0,.14); overflow:hidden; cursor:grab; user-select:none; }
   .appt2:hover{ filter:brightness(1.08); }
   /* Double booking : le rendez-vous "ajouté" par-dessus le premier est un peu plus pâle (même
@@ -1242,6 +1254,7 @@
        horizontalement pour voir les employées suivantes. */
     .time-axis{ width:34px; }
     .time-axis .tick{ font-size:8.5px; right:3px; }
+    .time-axis .tick-maintenant{ left:1px; right:1px; font-size:8.5px; border-radius:3px; }
     /* La grille déborde volontairement des marges de .app-shell (16px de chaque côté) : ces
        32px récupérés sont ce qui permet aux huit coiffeuses d'entrer à l'écran. Bordures et
        coins arrondis retirés sur les côtés, sinon le débordement aurait l'air d'un défaut. */
@@ -10330,6 +10343,7 @@ async function loadHoraire(){
       openSlotMenu(emp.name, hh+':'+mm, new Date(currentViewDate), e);
     });
     dayCols.push({ body, dateObj: new Date(currentViewDate), employeeName: emp.name, employeeColor: emp.color_hex });
+    body.dataset.jour = horDateISO(currentViewDate);
 
     // heures non travaillées grisées selon l'horaire régulier / spécial / absence / vacances
     const empOverride = overrideByEmp[emp.id];
@@ -10382,6 +10396,7 @@ async function loadHoraire(){
     col.appendChild(body);
     wrap.appendChild(col);
   });
+  poserRepereMaintenant();
 }
 
 async function loadHoraireWeek(wrap){
@@ -10468,6 +10483,7 @@ async function loadHoraireWeek(wrap){
       openSlotMenu(empName, hh+':'+mm, dayDate, e);
     });
     weekCols.push({ body, dateObj: dayDate });
+    body.dataset.jour = dayISO;
 
     const dayOverride = overrideByDate[dayISO];
     const dayOverrideCtx = (dayOverride && dayOverride.status !== 'exception') ? {
@@ -10517,7 +10533,65 @@ async function loadHoraireWeek(wrap){
     col.appendChild(body);
     wrap.appendChild(col);
   }
+  poserRepereMaintenant();
 }
+
+/* ---------- L'heure actuelle dans l'Horaire ----------
+   Une ligne rouge à l'heure qu'il est, et tout ce qui est déjà passé assombri, comme dans l'ancien
+   logiciel du salon : on voit d'un coup d'œil où on en est dans la journée. Un jour révolu est
+   assombri au complet, un jour à venir pas du tout. Se remet à jour seul toutes les 30 secondes,
+   sans recharger les rendez-vous — l'onglet reste souvent ouvert toute la journée au comptoir. */
+function poserRepereMaintenant(){
+  const maintenant = new Date();
+  const aujourdhui = horDateISO(maintenant);
+  const mins = (maintenant.getHours()*60 + maintenant.getMinutes()) - HOR_START_H*60;
+  const dansLaGrille = mins >= 0 && mins <= horGridMinutes;
+  let aujourdhuiAffiche = false;
+
+  document.querySelectorAll('#ecolsWrap .ecol2-body[data-jour]').forEach(body => {
+    const jour = body.dataset.jour;   // AAAA-MM-JJ : la comparaison de texte suit l'ordre des dates
+    let hauteur = 0;
+    if(jour < aujourdhui) hauteur = horGridHeight;
+    else if(jour === aujourdhui) hauteur = Math.max(0, Math.min(horGridMinutes, mins)) * HOR_PX_PER_MIN;
+
+    let passe = body.querySelector(':scope > .hor-passe');
+    if(!passe){
+      passe = document.createElement('div');
+      passe.className = 'hor-passe';
+      body.insertBefore(passe, body.firstChild);   // en premier : tout le reste se peint par-dessus
+    }
+    passe.style.height = hauteur + 'px';
+
+    let ligne = body.querySelector(':scope > .hor-maintenant');
+    if(jour === aujourdhui && dansLaGrille){
+      aujourdhuiAffiche = true;
+      if(!ligne){
+        ligne = document.createElement('div');
+        ligne.className = 'hor-maintenant';
+        body.appendChild(ligne);
+      }
+      ligne.style.top = (mins * HOR_PX_PER_MIN) + 'px';
+    } else if(ligne){
+      ligne.remove();
+    }
+  });
+
+  const axe = document.getElementById('timeAxis');
+  if(!axe) return;
+  let etiquette = axe.querySelector('.tick-maintenant');
+  if(aujourdhuiAffiche){
+    if(!etiquette){
+      etiquette = document.createElement('div');
+      etiquette.className = 'tick-maintenant';
+      axe.appendChild(etiquette);
+    }
+    etiquette.style.top = (HOR_HEAD_H + mins * HOR_PX_PER_MIN) + 'px';
+    etiquette.textContent = maintenant.getHours() + ':' + String(maintenant.getMinutes()).padStart(2,'0');
+  } else if(etiquette){
+    etiquette.remove();
+  }
+}
+setInterval(poserRepereMaintenant, 30000);
 </script>
 </body>
 </html>
