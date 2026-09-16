@@ -559,6 +559,29 @@
   .btn-facturer:hover{ filter:brightness(1.15); }
   .btn-facturer-left{ display:flex; align-items:center; gap:9px; }
   .btn-facturer .chev{ font-size:20px; opacity:.7; }
+  /* Facturer et Déplacer côte à côte, chacun la moitié de la largeur. Si le rendez-vous est déjà
+     facturé, Facturer disparaît et Déplacer prend toute la place. */
+  .qa-actions-bas{ display:flex; gap:10px; margin-top:14px; }
+  .qa-actions-bas .btn-facturer{ flex:1; width:auto; margin-top:0; min-width:0; }
+  .btn-facturer.btn-deplacer{ background:var(--teal); }
+
+  /* ---- Mode « Déplacer un rendez-vous » ---- */
+  .appt2.appt2-a-deplacer{ outline:3px solid #F2B705; outline-offset:2px; box-shadow:0 0 0 7px rgba(242,183,5,.35);
+    animation:rdvDeplacerPulse 1.3s ease-in-out infinite; z-index:30; }
+  @keyframes rdvDeplacerPulse{ 50%{ box-shadow:0 0 0 11px rgba(242,183,5,.12); } }
+  @media (prefers-reduced-motion: reduce){ .appt2.appt2-a-deplacer{ animation:none; } }
+  body.mode-deplacement #ecolsWrap .ecol2-body{ cursor:copy; }
+  body.mode-deplacement #ecolsWrap .ecol2-body:hover{ background:rgba(242,183,5,.06); }
+  .bandeau-deplacer{ position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:150;
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap; justify-content:center;
+    width:min(680px, calc(100% - 24px)); padding:12px 16px; border-radius:14px;
+    background:var(--ink); color:#fff; box-shadow:0 12px 30px rgba(0,0,0,.28); font-family:'Josefin Sans'; }
+  .bandeau-deplacer .bd-texte{ flex:1; min-width:220px; font-size:14px; line-height:1.35; }
+  .bandeau-deplacer .bd-texte b{ color:#F2B705; }
+  .bandeau-deplacer .bd-aide{ display:block; font-size:12.5px; opacity:.8; margin-top:2px; }
+  .bandeau-deplacer button{ background:transparent; color:#fff; border:1.5px solid rgba(255,255,255,.55);
+    border-radius:999px; padding:8px 16px; font-family:'Josefin Sans'; font-weight:600; font-size:13px; cursor:pointer; }
+  .bandeau-deplacer button:hover{ background:rgba(255,255,255,.12); }
   .modal-actions .qa-dbbtn:hover{ background:var(--teal); color:#fff; }
   .db-modal-card{ width:420px; }
   .db-modal-head{ background:var(--ink); color:#fff; margin:-30px -32px 20px; padding:20px 32px; border-radius:16px 16px 0 0; font-family:'Josefin Sans'; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:rgba(255,255,255,.7); }
@@ -1602,6 +1625,10 @@
         <div class="cal-grid" id="calGrid"></div>
       </div>
     </div>
+    <div class="bandeau-deplacer" id="bandeauDeplacer" hidden>
+      <span class="bd-texte" id="bandeauDeplacerTexte"></span>
+      <button type="button" onclick="annulerDeplacerRdv()">Annuler</button>
+    </div>
     <div class="avis-bandeau" id="avisBandeau" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
       <span class="ab-texte">Recevoir un avis et un chiffre rouge sur l'icône à chaque annulation, même logiciel fermé.</span>
@@ -1780,8 +1807,8 @@
 <div class="modal-overlay" id="rdvModalOverlay">
   <div class="modal-card">
     <h3>Planifier un rendez-vous</h3>
-    <label>Cliente<div id="rdvClientName" class="rdv-client-name"></div></label>
-    <label>Employée
+    <label>Client<div id="rdvClientName" class="rdv-client-name"></div></label>
+    <label>Coiffeur / Coiffeuse
       <select id="rdvEmployee">
         <option>Ann-So</option>
         <option>Audrey</option>
@@ -1808,7 +1835,7 @@
 <div class="modal-overlay" id="quickAddModalOverlay">
   <div class="modal-card">
     <h3 id="qaModalTitle">Ajouter un rendez-vous</h3>
-    <label>Employée
+    <label>Coiffeur / Coiffeuse
       <select id="qaEmployeeName" onchange="onQaEmployeeChange()">
         <option>Ann-So</option>
         <option>Audrey</option>
@@ -1822,7 +1849,7 @@
     </label>
     <label>Date<input id="qaDate" type="date"></label>
     <label>Heure<input id="qaTime" type="time"></label>
-    <label>Cliente
+    <label>Client
       <input id="qaClientSearch" type="text" placeholder="Chercher ou taper un nom..." autocomplete="off" oninput="onQaClientInput()">
       <div id="qaClientResults" class="qa-results"></div>
       <span id="qaClientFicheLink" class="qa-client-fiche-link clickable" style="display:none;" onclick="openClientFromAppointment()">Voir la fiche client (notes, historique...) &rarr;</span>
@@ -1847,13 +1874,22 @@
       <button class="btn-outline" onclick="closeQuickAddModal()">Annuler</button>
       <button class="btn-solid" id="qaSaveBtn" onclick="saveQuickAdd()">Ajouter</button>
     </div>
-    <button type="button" class="btn-facturer" id="qaFacturerBtn" onclick="goFacturerFromAppt()" style="display:none;">
-      <span class="btn-facturer-left">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-        Facturer
-      </span>
-      <span class="chev">&rsaquo;</span>
-    </button>
+    <div class="qa-actions-bas">
+      <button type="button" class="btn-facturer" id="qaFacturerBtn" onclick="goFacturerFromAppt()" style="display:none;">
+        <span class="btn-facturer-left">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+          Facturer
+        </span>
+        <span class="chev">&rsaquo;</span>
+      </button>
+      <button type="button" class="btn-facturer btn-deplacer" id="qaDeplacerBtn" onclick="commencerDeplacerRdv()" style="display:none;">
+        <span class="btn-facturer-left">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"></polyline><polyline points="9 5 12 2 15 5"></polyline><polyline points="15 19 12 22 9 19"></polyline><polyline points="19 9 22 12 19 15"></polyline><line x1="2" y1="12" x2="22" y2="12"></line><line x1="12" y1="2" x2="12" y2="22"></line></svg>
+          Déplacer
+        </span>
+        <span class="chev">&rsaquo;</span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -2286,7 +2322,7 @@
 <div class="modal-overlay" id="servOverlay" onclick="if(event.target.id==='servOverlay') closeServicesModal();">
   <div class="modal-card serv-card">
     <button type="button" class="db-slot-close" onclick="closeServicesModal()" aria-label="Fermer">&times;</button>
-    <h3 class="acces-nom" id="servNom">Employée</h3>
+    <h3 class="acces-nom" id="servNom">Membre de l'équipe</h3>
     <p class="serv-hint">Coche les services offerts. À la prise de rendez-vous, les catégories décochées ne seront pas proposées.</p>
     <p class="serv-tout"><span id="servToutBtn" onclick="basculerTousLesServices()">Tout cocher</span></p>
     <div class="serv-liste" id="servListe" onchange="onServListeChange(event)"></div>
@@ -2303,7 +2339,7 @@
 <div class="modal-overlay" id="accesOverlay" onclick="if(event.target.id==='accesOverlay') closeAccesModal();">
   <div class="modal-card acces-card">
     <button type="button" class="db-slot-close" onclick="closeAccesModal()" aria-label="Fermer">&times;</button>
-    <h3 class="acces-nom" id="accesNom">Employée</h3>
+    <h3 class="acces-nom" id="accesNom">Membre de l'équipe</h3>
     <p class="acces-etat" id="accesEtat"></p>
     <label>Courriel<input id="accesEmail" type="email" placeholder="Ex. sophie@exemple.com" autocomplete="off"></label>
     <label>Rôle
@@ -2426,7 +2462,7 @@
 <div class="modal-overlay" id="demandeHoraireOverlay" onclick="if(event.target.id==='demandeHoraireOverlay') fermerDemandeHoraire();">
   <div class="modal-card dh-card">
     <button type="button" class="db-slot-close" onclick="fermerDemandeHoraire()" aria-label="Fermer">&times;</button>
-    <h3 class="dh-nom" id="dhNom">Employée</h3>
+    <h3 class="dh-nom" id="dhNom">Membre de l'équipe</h3>
     <p class="dh-date" id="dhDate"></p>
     <div class="dh-choix">
       <button type="button" class="dh-option" data-statut="regular" onclick="choisirStatutJournee('regular')">
@@ -2599,7 +2635,7 @@
       <input type="text" id="comptableSearch" class="comptable-search" placeholder="Chercher un client ou un numéro de facture…" oninput="onComptableSearchInput()">
       <div class="comptable-invoice-wrap">
         <div class="comptable-invoice-row head">
-          <span>Date</span><span>Cliente</span><span># Facture</span><span>Employée</span><span>Paiement</span><span style="text-align:right;">Total</span>
+          <span>Date</span><span>Client</span><span># Facture</span><span>Équipe</span><span>Paiement</span><span style="text-align:right;">Total</span>
         </div>
         <div id="comptableInvoiceList"></div>
       </div>
@@ -7651,6 +7687,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   majPastilleAnnulations();
   chargerDemandesEnAttente();
   preparerAvis();
+  brancherDeplacementGrille();
   // Après un refresh (F5), on revient sur la page où on était plutôt que de retourner
   // systématiquement à la page d'accueil. Les zones protégées par un code PIN redemandent
   // quand même ce code, puisque go() gère déjà cette vérification normalement.
@@ -8522,7 +8559,7 @@ async function saveQuickNonDispo(){
   const end = document.getElementById('qndEnd').value;
   const note = document.getElementById('qndNote').value.trim();
   if(!start || !end){ alert('Indique une heure de début et de fin.'); return; }
-  if(!qndEmployeeId){ alert('Employée introuvable.'); return; }
+  if(!qndEmployeeId){ alert('Membre de l\'équipe introuvable.'); return; }
   const { error } = await sbClient.from('employee_day_overrides')
     .upsert({ employee_id: qndEmployeeId, date: qndDateISO, status:'absent', start_time:start, end_time:end, note: note||null }, { onConflict: 'employee_id,date' });
   if(error){ alert('Erreur : ' + error.message); return; }
@@ -8590,7 +8627,7 @@ async function saveQuickException(){
   const end = document.getElementById('qexEnd').value;
   const note = document.getElementById('qexNote').value.trim() || null;
   if(!start || !end){ alert('Indique une heure de début et de fin.'); return; }
-  if(!qexEmployeeId){ alert('Employée introuvable.'); return; }
+  if(!qexEmployeeId){ alert('Membre de l\'équipe introuvable.'); return; }
   const { error } = await sbClient.from('employee_day_overrides')
     .upsert({ employee_id: qexEmployeeId, date: qexDateISO, status:'exception', start_time:start, end_time:end, note:note }, { onConflict: 'employee_id,date' });
   if(error){ alert('Erreur : ' + error.message); return; }
@@ -8615,6 +8652,7 @@ async function openQuickAdd(employeeName, timeStr, dateOverride){
   document.getElementById('qaDeleteBtn').style.display = 'none';
   document.getElementById('qaDbBtn').style.display = 'none';
   document.getElementById('qaFacturerBtn').style.display = 'none';
+  document.getElementById('qaDeplacerBtn').style.display = 'none';
   fillEmployeeSelect('qaEmployeeName', await loadBookableEmployeeNames());
   document.getElementById('qaEmployeeName').value = employeeName;
   document.getElementById('qaDate').value = horDateISO(dateOverride || currentViewDate);
@@ -8737,7 +8775,7 @@ let clientUpcomingDupAvail = null; // { employees, weeklyByEmpWeekday, overrideB
 
 async function openClientUpcomingCalModal(){
   if(!qaSelectedClientId) return;
-  const name = document.getElementById('qaClientSearch').value.trim() || 'Cliente';
+  const name = document.getElementById('qaClientSearch').value.trim() || 'Client';
   document.getElementById('clientUpcomingName').textContent = name;
   const nowISO = new Date().toISOString();
   const { data, error } = await sbClient.from('appointments')
@@ -8863,7 +8901,7 @@ async function startClientUpcomingDuplicate(apptId){
   // seront plus fiables à relire (le formulaire de rendez-vous sera caché, pas nécessairement vidé,
   // mais on préfère ne pas en dépendre).
   clientUpcomingDupClientId = qaSelectedClientId;
-  clientUpcomingDupClientName = document.getElementById('qaClientSearch').value.trim() || 'Cliente';
+  clientUpcomingDupClientName = document.getElementById('qaClientSearch').value.trim() || 'Client';
   closeClientDayPopup();
   setClientUpcomingDupMode(true); // affiche tout de suite la bannière + les jours cliquables
   await prepareClientDupAvailability(appt.duration_minutes || 30);
@@ -9192,6 +9230,7 @@ async function openEditAppointment(a, knownClientId){
   // l'état affiché ici serait périmé (facturé par quelqu'un d'autre entre-temps, par exemple).
   const alreadyInvoiced = a.id ? (await getInvoicedApptIds([a.id])).has(a.id) : false;
   document.getElementById('qaFacturerBtn').style.display = alreadyInvoiced ? 'none' : 'flex';
+  document.getElementById('qaDeplacerBtn').style.display = 'flex';
   // Inclut aussi l'employée du rendez-vous même si elle a été désactivée/retirée de l'Équipe
   // depuis — sinon un vieux rendez-vous perdrait aussi sa présélection en édition.
   const editEmpNames = await loadBookableEmployeeNames();
@@ -10215,6 +10254,7 @@ let apptJustDragged = false; // avale le clic fantôme qui suit un glissement
 // Vue jour : une colonne par employée, même journée (l'heure ET l'employée peuvent changer).
 // Vue semaine d'une employée : une colonne par jour, même employée (l'heure ET la journée peuvent changer).
 function makeApptDraggable(el, a, dragColumns){
+  el.dataset.rdvId = a.id;
   el.addEventListener('mousedown', function(e){
     if(e.button !== 0) return; // clic gauche seulement
     e.stopPropagation();
@@ -10474,7 +10514,7 @@ function peutToucherLaPastille(employe){
 function patronStatusText(weeklyRow, overrideRow){
   if(overrideRow && overrideRow.status === 'vacation') return 'En vacances';
   if(overrideRow && overrideRow.status === 'absent'){
-    const label = overrideRow.note ? overrideRow.note : 'Absente';
+    const label = overrideRow.note ? overrideRow.note : 'Absence';
     return (overrideRow.start_time && overrideRow.end_time) ? (overrideRow.start_time+' – '+overrideRow.end_time+' · '+label) : label;
   }
   if(overrideRow && overrideRow.status === 'special'){
@@ -10630,6 +10670,7 @@ async function loadHoraire(){
     });
     dayCols.push({ body, dateObj: new Date(currentViewDate), employeeName: emp.name, employeeColor: emp.color_hex });
     body.dataset.jour = horDateISO(currentViewDate);
+    body.dataset.employe = emp.name;
 
     // heures non travaillées grisées selon l'horaire régulier / spécial / absence / vacances
     const empOverride = overrideByEmp[emp.id];
@@ -10683,6 +10724,7 @@ async function loadHoraire(){
     wrap.appendChild(col);
   });
   poserRepereMaintenant();
+  marquerRdvADeplacer();
 }
 
 async function loadHoraireWeek(wrap){
@@ -10770,6 +10812,7 @@ async function loadHoraireWeek(wrap){
     });
     weekCols.push({ body, dateObj: dayDate });
     body.dataset.jour = dayISO;
+    body.dataset.employe = employee.name;
 
     const dayOverride = overrideByDate[dayISO];
     const dayOverrideCtx = (dayOverride && dayOverride.status !== 'exception') ? {
@@ -10820,6 +10863,145 @@ async function loadHoraireWeek(wrap){
     wrap.appendChild(col);
   }
   poserRepereMaintenant();
+  marquerRdvADeplacer();
+}
+
+/* ---------- Déplacer un rendez-vous d'un clic ----------
+   Demandé par Martin le 2026-09-16 : dans la fenêtre d'un rendez-vous, « Déplacer » ferme la
+   fenêtre et met le rendez-vous en attente d'un nouvel endroit. On navigue librement (autre jour,
+   semaine, mois, coiffeuse), puis un clic sur une plage demande confirmation et transfère.
+   Pendant ce mode, un clic dans la grille ne fait RIEN d'autre : ni menu de plage, ni ouverture
+   de rendez-vous, ni glisser-déposer. Les en-têtes (noms, dates) restent utilisables pour naviguer. */
+let rdvADeplacer = null;
+
+function formatQuandRdv(d){
+  const jour = d.toLocaleDateString('fr-CA', { weekday:'short', day:'numeric', month:'short' });
+  return jour + ' à ' + d.getHours() + ' h' + (d.getMinutes() ? ' ' + String(d.getMinutes()).padStart(2,'0') : '');
+}
+function nomClientRdv(a){
+  return a && a.clients ? ((a.clients.first_name||'') + ' ' + (a.clients.last_name||'')).trim() : 'ce rendez-vous';
+}
+
+function commencerDeplacerRdv(){
+  const a = qaEditingApptRaw;
+  if(!a || !a.id) return;
+  rdvADeplacer = a;
+  closeQuickAddModal();
+  document.body.classList.add('mode-deplacement');
+  document.getElementById('bandeauDeplacerTexte').innerHTML =
+    'Déplacement de <b>' + escapeHtml(nomClientRdv(a)) + '</b> — ' +
+    escapeHtml(formatQuandRdv(new Date(a.start_at))) + ' avec ' + escapeHtml(a.employee_name || '') +
+    '<span class="bd-aide">Va au jour voulu, puis touche la nouvelle plage.</span>';
+  document.getElementById('bandeauDeplacer').hidden = false;
+  marquerRdvADeplacer();
+}
+
+function annulerDeplacerRdv(){
+  rdvADeplacer = null;
+  document.body.classList.remove('mode-deplacement');
+  document.getElementById('bandeauDeplacer').hidden = true;
+  document.querySelectorAll('.appt2-a-deplacer').forEach(e => e.classList.remove('appt2-a-deplacer'));
+}
+
+function marquerRdvADeplacer(){
+  document.querySelectorAll('.appt2-a-deplacer').forEach(e => e.classList.remove('appt2-a-deplacer'));
+  if(!rdvADeplacer) return;
+  document.querySelectorAll('#ecolsWrap .appt2[data-rdv-id="' + rdvADeplacer.id + '"]')
+    .forEach(e => e.classList.add('appt2-a-deplacer'));
+}
+
+function brancherDeplacementGrille(){
+  const wrap = document.getElementById('ecolsWrap');
+  if(!wrap || wrap.dataset.deplacementBranche) return;
+  wrap.dataset.deplacementBranche = '1';
+  // En phase de CAPTURE : ces écouteurs passent avant ceux des rendez-vous et des plages grisées.
+  const bloquer = e => { if(rdvADeplacer && e.target.closest('.ecol2-body')) e.stopPropagation(); };
+  wrap.addEventListener('mousedown', bloquer, true);
+  wrap.addEventListener('touchstart', bloquer, { capture: true, passive: true });
+  wrap.addEventListener('click', e => {
+    if(!rdvADeplacer) return;
+    const body = e.target.closest('.ecol2-body');
+    if(!body || !body.dataset.jour || !body.dataset.employe) return;
+    e.stopPropagation();
+    e.preventDefault();
+    const r = body.getBoundingClientRect();
+    let mins = Math.round(((e.clientY - r.top) / HOR_PX_PER_MIN) / 15) * 15;
+    mins = Math.max(0, Math.min(horGridMinutes - 15, mins));
+    const total = HOR_START_H*60 + mins;
+    const heure = String(Math.floor(total/60)).padStart(2,'0') + ':' + String(total%60).padStart(2,'0');
+    placerRdvDeplace(body.dataset.employe, body.dataset.jour, heure);
+  }, true);
+  document.addEventListener('keydown', e => { if(e.key === 'Escape' && rdvADeplacer) annulerDeplacerRdv(); });
+}
+
+// Ce qui mérite d'être dit avant de confirmer : la plage est déjà prise, ou la personne ne
+// travaille pas à cette heure. Mêmes vérifications que la prise de rendez-vous.
+async function avertissementsPlage(employe, debut, dureeMin, saufId){
+  const fin = new Date(debut.getTime() + dureeMin*60000);
+  const avert = [];
+  try {
+    const jour0 = new Date(debut); jour0.setHours(0,0,0,0);
+    const jour1 = new Date(debut); jour1.setHours(23,59,59,999);
+    const [{ data: rdvs }, { data: emps }] = await Promise.all([
+      sbClient.from('appointments').select('id, start_at, duration_minutes, db_allowed, db_after_min, db_for_min')
+        .eq('employee_name', employe).gte('start_at', jour0.toISOString()).lte('start_at', jour1.toISOString()),
+      sbClient.from('employees').select('id').eq('name', employe).limit(1)
+    ]);
+    const conflit = (rdvs || []).some(x => {
+      if(x.id === saufId) return false;
+      const xd = new Date(x.start_at), xf = new Date(xd.getTime() + (x.duration_minutes||30)*60000);
+      if(!(debut < xf && fin > xd)) return false;
+      if(x.db_allowed && x.db_after_min != null && x.db_for_min != null){
+        const dd = new Date(xd.getTime() + x.db_after_min*60000), df = new Date(dd.getTime() + x.db_for_min*60000);
+        if(debut >= dd && fin <= df) return false;
+      }
+      return true;
+    });
+    if(conflit) avert.push('Il y a déjà un rendez-vous à cette plage horaire.');
+    if(emps && emps.length){
+      const [{ data: sem }, { data: exc }] = await Promise.all([
+        sbClient.from('employee_weekly_hours').select('*').eq('employee_id', emps[0].id).eq('weekday', debut.getDay()),
+        sbClient.from('employee_day_overrides').select('*').eq('employee_id', emps[0].id).eq('date', horDateISO(debut)).limit(1)
+      ]);
+      const hDebut = String(debut.getHours()).padStart(2,'0') + ':' + String(debut.getMinutes()).padStart(2,'0');
+      const hFin = String(fin.getHours()).padStart(2,'0') + ':' + String(fin.getMinutes()).padStart(2,'0');
+      if(isTimeBlockedForEmployee(pickWeeklyRowForParity(sem, getScheduleWeekParity(debut)), (exc && exc[0]) || null, hDebut, hFin)){
+        avert.push(employe + " n'est pas disponible à cette heure.");
+      }
+    }
+  } catch(err){ console.warn('Vérification de la plage impossible', err); }
+  return avert;
+}
+
+async function placerRdvDeplace(employe, dateISO, heure){
+  const a = rdvADeplacer;
+  if(!a) return;
+  const ancien = new Date(a.start_at);
+  const nouveau = new Date(dateISO + 'T' + heure + ':00');
+  if(nouveau.getTime() === ancien.getTime() && employe === a.employee_name){
+    alert("C'est l'endroit où le rendez-vous est déjà. Choisis une autre plage, ou touche Annuler.");
+    return;
+  }
+  const avert = await avertissementsPlage(employe, nouveau, a.duration_minutes || 30, a.id);
+  const message = 'Êtes-vous sûr de vouloir transférer ce rendez-vous à cet endroit ?\n\n' +
+    nomClientRdv(a) + '\n' +
+    'De : ' + formatQuandRdv(ancien) + ' avec ' + a.employee_name + '\n' +
+    'À : ' + formatQuandRdv(nouveau) + ' avec ' + employe +
+    (avert.length ? '\n\nAttention : ' + avert.join(' ') : '');
+  if(!confirm(message)) return;          // on reste en mode déplacement : une autre plage peut être choisie
+
+  const changement = { start_at: nouveau.toISOString() };
+  if(employe !== a.employee_name) changement.employee_name = employe;
+  const { error } = await sbClient.from('appointments').update(changement).eq('id', a.id);
+  if(error){ alert('Erreur : ' + error.message); return; }
+  // Un refus par les règles d'accès ne renvoie pas d'erreur : on relit pour être sûr.
+  const { data: relu } = await sbClient.from('appointments').select('start_at, employee_name').eq('id', a.id).limit(1);
+  if(!relu || !relu[0] || new Date(relu[0].start_at).getTime() !== nouveau.getTime() || relu[0].employee_name !== employe){
+    alert("Le rendez-vous n'a pas été déplacé. Vérifie ta connexion, puis réessaie.");
+    return;
+  }
+  annulerDeplacerRdv();
+  loadHoraire();
 }
 
 /* ---------- Avis d'annulation sur l'icône de l'app ----------
