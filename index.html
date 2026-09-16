@@ -10609,9 +10609,27 @@ async function preparerAvis(){
 // l'appareil du comptoir qui aurait refusé puis changé d'idée.
 async function majBoutonAvis(){
   let actif = false;
+  let dejaActive = false;
+  try { dejaActive = localStorage.getItem('avisAnnulationActifs') === '1'; } catch(_){}
   try {
-    if(avisPossibles() && Notification.permission === 'granted' && swEnregistrement){
-      actif = !!(await swEnregistrement.pushManager.getSubscription());
+    if(avisPossibles() && Notification.permission === 'granted'){
+      // Sur iPhone, getSubscription() peut revenir vide à la réouverture de l'app (constaté le
+      // 2026-09-16 : l'iPhone de Martin s'est réinscrit 5 minutes plus tard sous une autre adresse).
+      // Le bandeau restait donc affiché. On retient localement que l'appareil a été activé, et on
+      // refait l'inscription en silence si elle a disparu — la permission est déjà accordée.
+      let abo = swEnregistrement ? await swEnregistrement.pushManager.getSubscription() : null;
+      if(!abo && dejaActive && swEnregistrement){
+        try {
+          abo = await swEnregistrement.pushManager.subscribe({
+            userVisibleOnly: true, applicationServerKey: cleEnOctets(VAPID_PUBLIQUE)
+          });
+          const j = abo.toJSON();
+          await sbClient.rpc('enregistrer_abonnement_push', {
+            p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_appareil: navigator.userAgent
+          });
+        } catch(e){ console.warn('Avis : réinscription silencieuse impossible', e); }
+      }
+      actif = !!abo || dejaActive;
     }
   } catch(_){}
   const utile = !actif && (avisPossibles() || estIphoneNonInstalle());
@@ -10656,6 +10674,7 @@ async function activerAvis(){
       p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_appareil: navigator.userAgent
     });
     if(error){ alert('Inscription impossible : ' + error.message); return; }
+    try { localStorage.setItem('avisAnnulationActifs', '1'); } catch(_){}
     // Un avis d'essai vers CET appareil : si la notification arrive, toute la chaîne fonctionne.
     const { data, error: e2 } = await sbClient.functions.invoke('notifier-annulation', { body: { test: true } });
     if(e2 || !data || !data.envoyes){
