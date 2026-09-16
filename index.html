@@ -579,6 +579,8 @@
       flex:0 0 auto; padding:11px 8px; font-size:12px; letter-spacing:0; }
     /* Facturer et Déplacer à mi-largeur : la flèche collait au texte. */
     .qa-actions-bas .btn-facturer .chev{ display:none; }
+    .qa-actions-bas{ gap:6px; }
+    .qa-actions-bas .btn-facturer svg{ display:none; }
     .qa-actions-bas .btn-facturer{ justify-content:center; padding:13px 10px; }
   }
   /* La fenêtre « Rendez-vous d'exception » a 4 boutons avec du texte plus long (Annuler la plage /
@@ -597,7 +599,29 @@
      facturé, Facturer disparaît et Déplacer prend toute la place. */
   .qa-actions-bas{ display:flex; gap:10px; margin-top:14px; }
   .qa-actions-bas .btn-facturer{ flex:1; width:auto; margin-top:0; min-width:0; }
+  /* Trois boutons côte à côte depuis l'ajout d'Historique : plus de place pour la flèche. */
+  .qa-actions-bas .btn-facturer{ justify-content:center; padding:13px 10px; }
+  .qa-actions-bas .btn-facturer .chev{ display:none; }
   .btn-facturer.btn-deplacer{ background:var(--teal); }
+  .btn-facturer.btn-historique{ background:#fff; color:var(--ink); box-shadow:inset 0 0 0 1.5px var(--ink); }
+  .btn-facturer.btn-historique:hover{ filter:none; background:var(--paper2); }
+  #historiqueRdvOverlay{ z-index:230; }
+  .hr-card{ width:430px; max-width:100%; max-height:85vh; overflow-y:auto; position:relative; }
+  .hr-card .db-slot-close{ top:14px; right:14px; }
+  .hr-liste{ display:flex; flex-direction:column; gap:0; text-align:left; }
+  .hr-evt{ position:relative; padding:0 0 18px 26px; }
+  .hr-evt::before{ content:''; position:absolute; left:6px; top:6px; bottom:-6px; width:2px; background:var(--line); }
+  .hr-evt:last-child::before{ display:none; }
+  .hr-evt::after{ content:''; position:absolute; left:1px; top:4px; width:12px; height:12px; border-radius:50%; background:var(--teal-dk); box-shadow:0 0 0 3px #fff; }
+  .hr-evt.deplace::after{ background:#C98A2B; }
+  .hr-evt.annule::after{ background:#B23A3A; }
+  .hr-evt.confirme::after{ background:#4F9A63; }
+  .hr-titre{ font-family:'Josefin Sans'; font-weight:700; font-size:14px; letter-spacing:.03em; color:var(--ink); }
+  .hr-quand{ font-family:'Poppins'; font-size:12.5px; color:var(--ink-soft); margin-top:2px; line-height:1.45; }
+  .hr-quand b{ color:var(--ink); font-weight:600; }
+  .hr-detail{ margin-top:8px; padding:9px 12px; border-radius:10px; background:var(--paper2); font-family:'Poppins'; font-size:13px; color:var(--ink); line-height:1.5; }
+  .hr-detail .hr-ancien{ color:var(--ink-soft); text-decoration:line-through; }
+  .hr-vide{ font-family:'Josefin Sans'; font-size:13px; color:var(--ink-soft); font-style:italic; text-align:center; padding:6px 0 2px; }
 
   /* ---- Mode « Déplacer un rendez-vous » ---- */
   .appt2.appt2-a-deplacer{ outline:3px solid #F2B705; outline-offset:2px; box-shadow:0 0 0 7px rgba(242,183,5,.35);
@@ -1920,6 +1944,13 @@
         </span>
         <span class="chev">&rsaquo;</span>
       </button>
+      <button type="button" class="btn-facturer btn-historique" id="qaHistoriqueBtn" onclick="ouvrirHistoriqueRdv()" style="display:none;">
+        <span class="btn-facturer-left">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"></path><polyline points="3 3 3 9 9 9"></polyline><polyline points="12 7 12 12 15 14"></polyline></svg>
+          Historique
+        </span>
+        <span class="chev">&rsaquo;</span>
+      </button>
       <button type="button" class="btn-facturer btn-deplacer" id="qaDeplacerBtn" onclick="commencerDeplacerRdv()" style="display:none;">
         <span class="btn-facturer-left">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"></polyline><polyline points="9 5 12 2 15 5"></polyline><polyline points="15 19 12 22 9 19"></polyline><polyline points="19 9 22 12 19 15"></polyline><line x1="2" y1="12" x2="22" y2="12"></line><line x1="12" y1="2" x2="12" y2="22"></line></svg>
@@ -1928,6 +1959,16 @@
         <span class="chev">&rsaquo;</span>
       </button>
     </div>
+  </div>
+</div>
+
+<!-- ============ HISTORIQUE d'un rendez-vous ============ -->
+<div class="modal-overlay" id="historiqueRdvOverlay" onclick="if(event.target.id==='historiqueRdvOverlay') fermerHistoriqueRdv();">
+  <div class="modal-card hr-card">
+    <button type="button" class="db-slot-close" onclick="fermerHistoriqueRdv()" aria-label="Fermer">&times;</button>
+    <h3 class="dh-nom">Historique</h3>
+    <p class="dh-date" id="hrSousTitre"></p>
+    <div class="hr-liste" id="hrListe"></div>
   </div>
 </div>
 
@@ -8812,6 +8853,7 @@ async function openQuickAdd(employeeName, timeStr, dateOverride){
   document.querySelector('#quickAddModalOverlay .modal-actions').classList.remove('rdv-existant');
   document.getElementById('qaFacturerBtn').style.display = 'none';
   document.getElementById('qaDeplacerBtn').style.display = 'none';
+  document.getElementById('qaHistoriqueBtn').style.display = 'none';
   fillEmployeeSelect('qaEmployeeName', await loadBookableEmployeeNames());
   document.getElementById('qaEmployeeName').value = employeeName;
   document.getElementById('qaDate').value = horDateISO(dateOverride || currentViewDate);
@@ -9391,6 +9433,7 @@ async function openEditAppointment(a, knownClientId){
   const alreadyInvoiced = a.id ? (await getInvoicedApptIds([a.id])).has(a.id) : false;
   document.getElementById('qaFacturerBtn').style.display = alreadyInvoiced ? 'none' : 'flex';
   document.getElementById('qaDeplacerBtn').style.display = 'flex';
+  document.getElementById('qaHistoriqueBtn').style.display = a.id ? 'flex' : 'none';
   // Inclut aussi l'employée du rendez-vous même si elle a été désactivée/retirée de l'Équipe
   // depuis — sinon un vieux rendez-vous perdrait aussi sa présélection en édition.
   const editEmpNames = await loadBookableEmployeeNames();
@@ -11040,6 +11083,90 @@ function formatQuandRdv(d){
 }
 function nomClientRdv(a){
   return a && a.clients ? ((a.clients.first_name||'') + ' ' + (a.clients.last_name||'')).trim() : 'ce rendez-vous';
+}
+
+/* ---------- Historique d'un rendez-vous ----------
+   Demandé par Martin le 2026-09-16 : quand et par quel accès le rendez-vous a été pris, et chaque
+   déplacement (d'où, vers où, par qui). Le journal (rdv_historique) est tenu par la base elle-même,
+   à chaque ajout ou modification : rien à faire ici pour l'alimenter. Les rendez-vous pris avant
+   sa mise en place n'ont que leur date de création, sans l'accès. */
+function ilYA(d){
+  const min = Math.round((Date.now() - d.getTime()) / 60000);
+  if(min < 1) return 'à l’instant';
+  if(min < 60) return 'il y a ' + min + ' min';
+  const h = Math.round(min / 60);
+  if(h < 24) return 'il y a ' + h + ' h';
+  const j = Math.round(h / 24);
+  if(j < 30) return 'il y a ' + j + (j > 1 ? ' jours' : ' jour');
+  const m = Math.round(j / 30);
+  if(m < 12) return 'il y a ' + m + ' mois';
+  const a = Math.round(j / 365);
+  return 'il y a ' + a + (a > 1 ? ' ans' : ' an');
+}
+
+function quandComplet(d){
+  return d.toLocaleDateString('fr-CA', { weekday:'long', day:'numeric', month:'long' }) + ' à ' +
+    d.getHours() + ' h ' + String(d.getMinutes()).padStart(2,'0');
+}
+
+function placeRdvTexte(debut, employe){
+  return escapeHtml(formatQuandRdv(new Date(debut))) + (employe ? ' avec ' + escapeHtml(employe) : '');
+}
+
+async function ouvrirHistoriqueRdv(){
+  const a = qaEditingApptRaw;
+  if(!a || !a.id) return;
+  const liste = document.getElementById('hrListe');
+  document.getElementById('hrSousTitre').textContent = nomClientRdv(a);
+  liste.innerHTML = '<div class="hr-vide">Chargement…</div>';
+  document.getElementById('historiqueRdvOverlay').classList.add('show');
+
+  const [{ data: evts, error }, { data: rdv }] = await Promise.all([
+    sbClient.from('rdv_historique').select('*').eq('appointment_id', a.id).order('fait_le'),
+    sbClient.from('appointments').select('created_at').eq('id', a.id).limit(1)
+  ]);
+  if(error){ liste.innerHTML = '<div class="hr-vide">Historique impossible à lire : ' + escapeHtml(error.message) + '</div>'; return; }
+
+  const blocs = [];
+  const evenements = evts || [];
+  if(!evenements.some(e => e.action === 'cree') && rdv && rdv[0]){
+    const cree = new Date(rdv[0].created_at);
+    blocs.push('<div class="hr-evt"><div class="hr-titre">Créé</div>' +
+      '<div class="hr-quand">' + escapeHtml(ilYA(cree)) + ' (' + escapeHtml(quandComplet(cree)) + ')<br>' +
+      'Accès inconnu : pris avant la mise en place de l’historique</div></div>');
+  }
+  evenements.forEach(e => {
+    const quand = new Date(e.fait_le);
+    const entete = '<div class="hr-quand">' + escapeHtml(ilYA(quand)) + ' (' + escapeHtml(quandComplet(quand)) + ')<br>par <b>' + escapeHtml(e.par_nom) + '</b></div>';
+    let classe = '', titre = '', detail = '';
+    if(e.action === 'cree'){
+      titre = 'Créé';
+      detail = 'Prévu ' + placeRdvTexte(e.nouveau_debut, e.nouvel_employe) +
+        (e.nouveau_texte ? '<br>' + escapeHtml(e.nouveau_texte) : '');
+    } else if(e.action === 'deplace'){
+      classe = 'deplace'; titre = 'Déplacé';
+      detail = '<span class="hr-ancien">' + placeRdvTexte(e.ancien_debut, e.ancien_employe) + '</span><br>→ ' +
+        placeRdvTexte(e.nouveau_debut, e.nouvel_employe);
+    } else if(e.action === 'duree'){
+      titre = 'Durée changée';
+      detail = '<span class="hr-ancien">' + escapeHtml(formatDuration(e.ancienne_duree)) + '</span> → ' + escapeHtml(formatDuration(e.nouvelle_duree));
+    } else if(e.action === 'services'){
+      titre = 'Services changés';
+      detail = (e.ancien_texte ? '<span class="hr-ancien">' + escapeHtml(e.ancien_texte) + '</span><br>→ ' : '') + escapeHtml(e.nouveau_texte || 'Aucun service');
+    } else if(e.action === 'statut'){
+      if(e.nouveau_texte === 'confirmed'){ classe = 'confirme'; titre = 'Confirmé'; }
+      else if(e.nouveau_texte === 'cancelled'){ classe = 'annule'; titre = 'Annulé'; }
+      else { titre = 'Confirmation retirée'; }
+    }
+    blocs.push('<div class="hr-evt ' + classe + '"><div class="hr-titre">' + titre + '</div>' + entete +
+      (detail ? '<div class="hr-detail">' + detail + '</div>' : '') + '</div>');
+  });
+  if(!evenements.some(e => e.action !== 'cree')) blocs.push('<div class="hr-vide">Aucun autre changement</div>');
+  liste.innerHTML = blocs.join('');
+}
+
+function fermerHistoriqueRdv(){
+  document.getElementById('historiqueRdvOverlay').classList.remove('show');
 }
 
 function commencerDeplacerRdv(){
