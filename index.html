@@ -432,6 +432,9 @@
   .hor-head-right{ display:flex; align-items:center; gap:14px; margin-left:28px; }
   .next-avail-btn{ display:flex; align-items:center; gap:8px; background:var(--sage); color:#fff; border:none; border-radius:999px; padding:12px 20px; font-family:'Josefin Sans'; font-weight:600; font-size:13px; letter-spacing:.03em; cursor:pointer; white-space:nowrap; }
   .next-avail-btn:hover{ filter:brightness(1.14); }
+  /* L'attribut hidden doit TOUJOURS cacher. Sans cette règle, un style comme display:flex l'emporte
+     sur lui : le bandeau « Avis d'annulation » restait affiché après l'activation (2026-09-16). */
+  [hidden]{ display:none !important; }
   /* Bandeau « Avis d'annulation », au-dessus de la grille de l'Horaire. Pas dans l'en-tête : il y
      manque déjà de place, la pilule de la date y chevauche « Prochaine dispo » sur un écran moyen.
      Disparaît dès que les avis sont actifs sur l'appareil, ou si on répond « Non merci ». */
@@ -10577,11 +10580,16 @@ let swEnregistrement = null;
 function avisPossibles(){
   return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 }
+// Vrai dans Safari sur iPhone/iPad, faux dans l'app ajoutée à l'écran d'accueil.
+// Le simple test « iPhone dans l'identifiant du navigateur » a raté le 2026-09-16 sur l'iPhone de
+// Martin : Safari affichait « notifications bloquées » au lieu d'expliquer d'installer l'app.
+// navigator.standalone n'existe que dans Safari iOS/iPadOS : c'est le signal le plus fiable.
 function estIphoneNonInstalle(){
-  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
-              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const installe = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-  return ios && !installe;
+  if(installe) return false;
+  const ua = navigator.userAgent;
+  return /iPhone|iPad|iPod/.test(ua) || ('standalone' in navigator) ||
+         (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
 }
 function cleEnOctets(b64){
   const s = atob((b64 + '='.repeat((4 - b64.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/'));
@@ -10622,10 +10630,10 @@ function refuserAvis(){
 
 async function activerAvis(){
   if(estIphoneNonInstalle()){
-    alert("Sur iPhone, les avis fonctionnent seulement quand le logiciel est ajouté à l'écran d'accueil.\n\n" +
-          "1. Dans Safari, touche le bouton Partager (le carré avec la flèche vers le haut).\n" +
-          "2. Choisis « Sur l'écran d'accueil », puis « Ajouter ».\n" +
-          "3. Ouvre le logiciel depuis sa nouvelle icône et touche encore « Avis d'annulation ».");
+    alert("Sur iPhone, les avis fonctionnent seulement dans l'app ajoutée à l'écran d'accueil, pas dans Safari.\n\n" +
+          "1. Dans Safari, touche Partager (le carré avec la flèche vers le haut).\n" +
+          "2. Choisis « Sur l'écran d'accueil ». Si l'option « Ouvrir comme app web » apparaît, laisse-la activée.\n" +
+          "3. Touche « Ajouter », ouvre le logiciel depuis sa nouvelle icône (sans barre d'adresse) et active les avis.");
     return;
   }
   if(!avisPossibles()){ alert("Ce navigateur ne permet pas les avis."); return; }
