@@ -417,6 +417,8 @@
   .fli-qty-btn{ width:24px; height:24px; border-radius:7px; border:1px solid var(--line); background:#fff; color:var(--teal-dk); font-family:'Poppins'; font-size:15px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
   .fli-qty-btn:hover{ background:var(--teal); color:#fff; border-color:var(--teal); }
   .fli-qty-val{ min-width:18px; text-align:center; font-family:'Poppins'; font-size:13.5px; color:var(--ink); }
+  .fli-qty-input{ width:46px; padding:3px 4px; border:1px solid var(--line); border-radius:7px; background:#fff; }
+  .fli-qty-input:focus{ outline:none; border-color:var(--teal-dk); box-shadow:0 0 0 2px rgba(39,101,108,.15); }
   /* Étiquette de rabais cliquable sur chaque ligne de facture (ouvre la roulette +/-) : simple
      contour tant qu'aucun rabais n'est actif, remplie en ocre une fois un rabais appliqué. */
   .fli-discount-tag{ width:24px; height:24px; border-radius:7px; border:1px solid var(--line); background:#fff; color:var(--ink-soft); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; flex-shrink:0; }
@@ -5879,10 +5881,46 @@ function removeFactureItem(key){
 // Petites flèches +/- sur une ligne de facture pour ajuster sa quantité (ex : une cliente qui
 // achète 2 shampoings). Si on descend à 0, la ligne est simplement retirée de la facture, comme
 // avec le ×.
+/* Quantité avec décimales sur les services — demandé par Martin le 2026-09-16 : « Service à
+   l'heure » × 1,3, par exemple. Les produits restent à l'unité (on ne vend pas 1,3 bouteille).
+   Arrondie au centième, comme la colonne invoice_items.quantity. */
+function formatQuantite(q){
+  const n = Math.round((Number(q) || 0) * 100) / 100;
+  return String(n).replace('.', ',');
+}
+
+// Pendant la frappe : le prix de la ligne et les totaux suivent, sans redessiner la liste (ce qui
+// ferait perdre le curseur). « 1, » ou un champ vide ne changent rien tant que ce n'est pas un nombre.
+async function apercuQuantiteService(input){
+  const it = factItems.find(i => i.key === input.dataset.qtyKey);
+  if(!it) return;
+  const n = Math.round(parseFloat(String(input.value).replace(',', '.').replace(/\s/g, '')) * 100) / 100;
+  if(!(n > 0)) return;
+  it.quantity = n;
+  const ligne = input.closest('.fact-line-item');
+  const prix = ligne && ligne.querySelector('.fli-price');
+  if(prix) prix.textContent = formatMoney(factLineTotal(it));
+  const rates = await factureTaxRates();
+  const totals = computeFactureTotals(factItems, rates);
+  document.getElementById('factSubtotal').textContent = formatMoney(totals.subtotal);
+  document.getElementById('factGstAmount').textContent = formatMoney(totals.gst);
+  document.getElementById('factQstAmount').textContent = formatMoney(totals.qst);
+  document.getElementById('factTotal').textContent = formatMoney(totals.total);
+}
+
+function saisirQuantiteService(input){
+  const it = factItems.find(i => i.key === input.dataset.qtyKey);
+  if(!it) return;
+  const n = Math.round(parseFloat(String(input.value).replace(',', '.').replace(/\s/g, '')) * 100) / 100;
+  if(!(n > 0)){ input.value = formatQuantite(it.quantity); return; }
+  it.quantity = n;
+  renderFactItems();
+}
+
 function adjustFactureItemQty(key, delta){
   const it = factItems.find(i => i.key === key);
   if(!it) return;
-  const newQty = it.quantity + delta;
+  const newQty = Math.round((it.quantity + delta) * 100) / 100;
   if(newQty <= 0){
     removeFactureItem(key);
     return;
@@ -5988,7 +6026,7 @@ async function renderFactItems(){
       const metaParts = [];
       if(it.isProduct) metaParts.push('Produit');
       if(it.employeeName) metaParts.push('par ' + it.employeeName);
-      if(it.quantity > 1) metaParts.push(it.quantity + ' x ' + formatMoney(it.unitPrice));
+      if(it.quantity !== 1) metaParts.push(formatQuantite(it.quantity) + ' x ' + formatMoney(it.unitPrice));
       // Une ligne à rabais devient « spéciale » : fond teinté, badge -X%, prix d'origine barré à côté
       // du nouveau prix — pour qu'on la repère d'un coup d'œil sur la facture.
       return '<div class="fact-line-item'+(hasDiscount?' has-discount':'')+'"><div><div class="fli-name">'+escapeHtml(it.description)+'</div>'+
@@ -5997,7 +6035,9 @@ async function renderFactItems(){
         '<button type="button" class="fli-discount-tag'+(hasDiscount?' active':'')+'" data-discount-key="'+it.key+'" title="Rabais">'+discountTagIcon+'</button>'+
         '<div class="fli-qty-stepper">'+
           '<button type="button" class="fli-qty-btn" data-qty-key="'+it.key+'" data-qty-delta="-1" title="Diminuer la quantité">&minus;</button>'+
-          '<span class="fli-qty-val">'+it.quantity+'</span>'+
+          (it.isProduct
+            ? '<span class="fli-qty-val">'+it.quantity+'</span>'
+            : '<input type="text" inputmode="decimal" class="fli-qty-val fli-qty-input" data-qty-key="'+it.key+'" value="'+formatQuantite(it.quantity)+'" title="Quantité (ex. 1,3)" onfocus="this.select()" oninput="apercuQuantiteService(this)" onchange="saisirQuantiteService(this)" onkeydown="if(event.key===\'Enter\'){ event.preventDefault(); this.blur(); }">')+
           '<button type="button" class="fli-qty-btn" data-qty-key="'+it.key+'" data-qty-delta="1" title="Augmenter la quantité">+</button>'+
         '</div>'+
         (hasDiscount ? '<span class="fli-discount-badge">-'+discountPct+'%</span><span class="fli-price-orig">'+formatMoney(baseTotal)+'</span>' : '')+
@@ -6075,7 +6115,7 @@ async function buildFactureReceiptHTML(opts){
   items.forEach(it=>{
     const lineTotal = factLineTotal(it);
     const discountPct = it.discountPercent || 0;
-    html += '<div class="receipt-item"><div class="receipt-item-desc">'+it.quantity+'x&nbsp; '+escapeHtml(it.description)+
+    html += '<div class="receipt-item"><div class="receipt-item-desc">'+formatQuantite(it.quantity)+'x&nbsp; '+escapeHtml(it.description)+
       (discountPct > 0 ? '&nbsp;<span class="receipt-item-discount">(-'+discountPct+'%)</span>' : '')+
       (it.employeeName ? '<br>&nbsp;&nbsp;&nbsp;&nbsp;par '+escapeHtml(it.employeeName) : '')+'</div>'+
       '<div class="receipt-item-price">'+formatMoney(lineTotal)+'</div></div>';
@@ -6797,7 +6837,7 @@ function crepMoneyRowHtml(label, r, opts){
   const chevron = opts.expandable ? ('<span class="crep-cat-chevron">'+(opts.expanded?'▾':'▸')+'</span> ') : '';
   const clickAttr = opts.onclick ? (' onclick="'+opts.onclick+'"') : '';
   const cls = 'crep-table-row' + (opts.expandable ? ' crep-cat-row' : ' crep-leaf-row');
-  return '<div class="'+cls+'"'+clickAttr+'><span style="padding-left:'+indentPx+'px;">'+chevron+escapeHtml(label)+'</span><span>'+r.qty+'</span><span>'+formatMoney(r.ventes)+'</span><span>'+formatMoney(r.gst)+'</span><span>'+formatMoney(r.qst)+'</span><span class="ctr-total">'+formatMoney(r.total)+'</span></div>';
+  return '<div class="'+cls+'"'+clickAttr+'><span style="padding-left:'+indentPx+'px;">'+chevron+escapeHtml(label)+'</span><span>'+formatQuantite(r.qty)+'</span><span>'+formatMoney(r.ventes)+'</span><span>'+formatMoney(r.gst)+'</span><span>'+formatMoney(r.qst)+'</span><span class="ctr-total">'+formatMoney(r.total)+'</span></div>';
 }
 
 function crepRenderLeafRows(items, rates, level){
@@ -6863,7 +6903,7 @@ async function renderComptableVentesTable(){
     });
   }
 
-  html += '<div class="crep-table-row total"><span>TOTAL</span><span>'+totalRow.qty+'</span><span>'+formatMoney(totalRow.ventes)+'</span><span>'+formatMoney(totalRow.gst)+'</span><span>'+formatMoney(totalRow.qst)+'</span><span class="ctr-total">'+formatMoney(totalRow.total)+'</span></div>';
+  html += '<div class="crep-table-row total"><span>TOTAL</span><span>'+formatQuantite(totalRow.qty)+'</span><span>'+formatMoney(totalRow.ventes)+'</span><span>'+formatMoney(totalRow.gst)+'</span><span>'+formatMoney(totalRow.qst)+'</span><span class="ctr-total">'+formatMoney(totalRow.total)+'</span></div>';
   document.getElementById('ventesTableBody').innerHTML = html;
   document.getElementById('ventesPaiementsRecus').textContent = formatMoney(totalRow.total);
 }
@@ -7285,7 +7325,7 @@ async function openComptableInvoiceReceipt(invoiceId){
   const inv = invRows[0];
   const { data: items, error } = await sbClient.from('invoice_items').select('*').eq('invoice_id', invoiceId);
   if(error){ console.error(error); return; }
-  const mappedItems = (items||[]).map(it => ({ description: it.description, employeeName: it.employee_name, quantity: it.quantity, unitPrice: Number(it.unit_price), discountPercent: it.discount_percent ? Number(it.discount_percent) : 0, lineTotal: it.line_total != null ? Number(it.line_total) : null }));
+  const mappedItems = (items||[]).map(it => ({ description: it.description, employeeName: it.employee_name, quantity: Number(it.quantity), unitPrice: Number(it.unit_price), discountPercent: it.discount_percent ? Number(it.discount_percent) : 0, lineTotal: it.line_total != null ? Number(it.line_total) : null }));
   const totals = { subtotal:Number(inv.subtotal), gst:Number(inv.gst_amount), qst:Number(inv.qst_amount), total:Number(inv.total) };
   document.getElementById('factApercuBody').innerHTML = await buildFactureReceiptHTML({
     isPreview:false, items:mappedItems, totals, invoiceNumber:inv.invoice_number, paymentMethod:inv.payment_method,
