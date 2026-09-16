@@ -547,6 +547,27 @@
   #quickAddModalOverlay .modal-card{ width:500px; }
   #quickAddModalOverlay .modal-actions{ display:flex; justify-content:flex-end; align-items:center; gap:18px; }
   #quickAddModalOverlay .modal-actions .qa-delete{ margin-right:0; }
+  /* Rendez-vous existant : quatre boutons (poubelle, Double booking, Annuler, Enregistrer)
+     répartis avec le même espace entre chacun, d'un bord à l'autre de la fenêtre. Pour un nouveau
+     rendez-vous, seuls Annuler et Ajouter restent, groupés à droite comme avant. */
+  #quickAddModalOverlay .modal-actions.rdv-existant{ justify-content:space-between; gap:8px; }
+  #quickAddModalOverlay .modal-actions .qa-delete{ width:46px; height:46px; padding:0; flex:0 0 46px;
+    align-items:center; justify-content:center; border-radius:12px; }
+  #quickAddModalOverlay .modal-actions .qa-delete svg{ width:19px; height:19px; }
+  #quickAddModalOverlay .modal-actions .qa-dbbtn{ font-weight:600; letter-spacing:.01em; }
+  /* Téléphone : avec 32 px de marge de chaque côté, les quatre boutons ne tenaient pas — le
+     dernier dépassait de 46 px, puis leur texte se coupait quand on les serrait. On réduit la marge
+     de CETTE fenêtre à 16 px : tout tient, texte entier, même espace entre chaque bouton. */
+  @media (max-width:420px){
+    #quickAddModalOverlay .modal-card{ padding-left:16px; padding-right:16px; }
+    #quickAddModalOverlay .modal-actions.rdv-existant{ gap:4px; }
+    #quickAddModalOverlay .modal-actions.rdv-existant .qa-delete{ width:40px; height:40px; flex:0 0 40px; }
+    #quickAddModalOverlay .modal-actions.rdv-existant button:not(.qa-delete){
+      flex:0 0 auto; padding:11px 8px; font-size:12px; letter-spacing:0; }
+    /* Facturer et Déplacer à mi-largeur : la flèche collait au texte. */
+    .qa-actions-bas .btn-facturer .chev{ display:none; }
+    .qa-actions-bas .btn-facturer{ justify-content:center; padding:13px 10px; }
+  }
   /* La fenêtre « Rendez-vous d'exception » a 4 boutons avec du texte plus long (Annuler la plage /
      Céduler un rendez-vous / Fermer / Enregistrer) qui dépassaient de la largeur par défaut de la
      modale (440px) : le bouton « Annuler la plage », poussé tout à gauche par margin-right:auto,
@@ -1869,8 +1890,8 @@
     </label>
     <label>Note<input id="qaNote" type="text" placeholder="Optionnel"></label>
     <div class="modal-actions">
-      <button class="btn-outline qa-delete" id="qaDeleteBtn" onclick="deleteQuickAppt()" style="display:none;">Supprimer</button>
-      <button class="btn-outline qa-dbbtn" id="qaDbBtn" onclick="openDoubleBookingModal()" style="display:none;" title="Permettre un double-booking">DB</button>
+      <button class="btn-outline qa-delete" id="qaDeleteBtn" onclick="deleteQuickAppt()" style="display:none;" title="Supprimer ce rendez-vous" aria-label="Supprimer ce rendez-vous"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></button>
+      <button class="btn-outline qa-dbbtn" id="qaDbBtn" onclick="openDoubleBookingModal()" style="display:none;" title="Permettre un double-booking">Double booking</button>
       <button class="btn-outline" onclick="closeQuickAddModal()">Annuler</button>
       <button class="btn-solid" id="qaSaveBtn" onclick="saveQuickAdd()">Ajouter</button>
     </div>
@@ -8651,6 +8672,7 @@ async function openQuickAdd(employeeName, timeStr, dateOverride){
   document.getElementById('qaSaveBtn').textContent = 'Ajouter';
   document.getElementById('qaDeleteBtn').style.display = 'none';
   document.getElementById('qaDbBtn').style.display = 'none';
+  document.querySelector('#quickAddModalOverlay .modal-actions').classList.remove('rdv-existant');
   document.getElementById('qaFacturerBtn').style.display = 'none';
   document.getElementById('qaDeplacerBtn').style.display = 'none';
   fillEmployeeSelect('qaEmployeeName', await loadBookableEmployeeNames());
@@ -9222,8 +9244,9 @@ async function openEditAppointment(a, knownClientId){
   qaRefreshClientId = knownClientId || a.client_id || null;
   document.getElementById('qaModalTitle').textContent = 'Modifier le rendez-vous';
   document.getElementById('qaSaveBtn').textContent = 'Enregistrer';
-  document.getElementById('qaDeleteBtn').style.display = 'inline-block';
+  document.getElementById('qaDeleteBtn').style.display = 'inline-flex';
   document.getElementById('qaDbBtn').style.display = 'inline-flex';
+  document.querySelector('#quickAddModalOverlay .modal-actions').classList.add('rdv-existant');
   // Le bouton Facturer ne doit apparaître QUE si ce rendez-vous n'a pas déjà une facture associée
   // (invoices.appointment_id) — sinon on pourrait créer une deuxième facture pour le même rendez-vous.
   // goFacturerFromAppt() refait aussi cette vérification par sécurité (voir plus bas), au cas où
