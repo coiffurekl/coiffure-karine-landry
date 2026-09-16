@@ -346,6 +346,11 @@
   #statutMenu .sm-actuel::after{ content:' ✓'; color:var(--teal); }
   .appt2.appt2-invoiced:hover{ opacity:.55; }
   .appt2-dragging{ opacity:.85; box-shadow:0 10px 26px rgba(0,0,0,.35); z-index:50; cursor:grabbing; }
+  /* Sur téléphone : pas de bulle « Copier / Rechercher » ni de loupe pendant l'appui long. */
+  .appt2{ -webkit-touch-callout:none; -webkit-user-select:none; }
+  /* Le rendez-vous « soulevé » par un appui long : on voit qu'il est prêt à suivre le doigt. */
+  .appt2.appt2-souleve{ transform:scale(1.05); box-shadow:0 12px 28px rgba(0,0,0,.35); z-index:50;
+    transition:transform .12s ease, box-shadow .12s ease; }
   .appt2 b{ display:block; font-size:12.5px; font-family:'Josefin Sans'; font-weight:600; margin-bottom:1px; }
   /* Plusieurs services choisis (ex. "Coupe, Couleur") : on laisse le texte revenir à la ligne au
      lieu de le tronquer avec des points de suspension — sinon le 2e service (et les suivants)
@@ -1151,6 +1156,8 @@
      comme un élément à déplacer, pas un rendez-vous déjà confirmé. */
   .appt2.appt2-ghost{ border:2.5px dashed #fff; box-shadow:0 6px 16px rgba(0,0,0,.3); cursor:grab; opacity:.92; z-index:55; }
   .appt2.appt2-ghost.dup-ghost-dragging{ cursor:grabbing; opacity:1; box-shadow:0 10px 26px rgba(0,0,0,.4); }
+  /* Le bloc fantôme n'existe que pour être glissé : le doigt le déplace sans faire défiler la page. */
+  .appt2.appt2-ghost{ touch-action:none; }
   .appt2.appt2-ghost .ghost-hint{ display:flex; align-items:center; gap:4px; font-size:9.5px; font-weight:600; letter-spacing:.02em; text-transform:uppercase; opacity:.9; margin-top:3px; }
   /* Barre fixe de confirmation pendant le placement — reste visible pendant qu'on glisse le bloc
      fantôme de haut en bas dans la grille pour l'ajuster à côté des autres rendez-vous de la journée. */
@@ -9037,6 +9044,13 @@ function renderDupGhostLabel(){
 // glisser-déposer d'un vrai rendez-vous) : le bloc fantôme reste dans sa colonne d'origine, on
 // l'utilise seulement pour ajuster l'heure à côté des rendez-vous déjà présents dans la journée.
 function makeGhostDraggable(el){
+  function placer(origTop, dy){
+    const height = parseFloat(el.style.height) || 0;
+    let newTop = Math.round(((origTop+dy) / HOR_PX_PER_MIN) / 15) * 15 * HOR_PX_PER_MIN;
+    newTop = Math.max(0, Math.min(horGridHeight - height, newTop));
+    el.style.top = newTop + 'px';
+    renderDupGhostLabel();
+  }
   el.addEventListener('mousedown', function(e){
     if(e.button !== 0) return;
     e.stopPropagation();
@@ -9045,14 +9059,7 @@ function makeGhostDraggable(el){
     const startClientY = e.clientY;
     const origTop = parseFloat(el.style.top) || 0;
     el.classList.add('dup-ghost-dragging');
-    function onMove(e2){
-      const dy = e2.clientY - startClientY;
-      const height = parseFloat(el.style.height) || 0;
-      let newTop = Math.round(((origTop+dy) / HOR_PX_PER_MIN) / 15) * 15 * HOR_PX_PER_MIN;
-      newTop = Math.max(0, Math.min(horGridHeight - height, newTop));
-      el.style.top = newTop + 'px';
-      renderDupGhostLabel();
-    }
+    function onMove(e2){ placer(origTop, e2.clientY - startClientY); }
     function onUp(){
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
@@ -9061,6 +9068,28 @@ function makeGhostDraggable(el){
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
   });
+  // Au doigt : le bloc fantôme n'est là que pour être glissé, donc pas besoin d'appui long.
+  el.addEventListener('touchstart', function(e){
+    if(e.touches.length !== 1 || !dupGhostState) return;
+    const startClientY = e.touches[0].clientY;
+    const origTop = parseFloat(el.style.top) || 0;
+    el.classList.add('dup-ghost-dragging');
+    function onMove(ev){
+      const p = ev.touches[0];
+      if(!p) return;
+      ev.preventDefault();
+      placer(origTop, p.clientY - startClientY);
+    }
+    function onEnd(){
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+      document.removeEventListener('touchcancel', onEnd);
+      el.classList.remove('dup-ghost-dragging');
+    }
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+    document.addEventListener('touchcancel', onEnd);
+  }, { passive: true });
 }
 
 function cancelClientDupPlacement(){
@@ -10143,30 +10172,129 @@ function makeApptDraggable(el, a, dragColumns){
   el.addEventListener('mousedown', function(e){
     if(e.button !== 0) return; // clic gauche seulement
     e.stopPropagation();
-    const cols = dragColumns.map(c => Object.assign({}, c, { rect: c.body.getBoundingClientRect() }));
-    const startCol = cols.find(c => c.body === el.parentElement) || cols[0];
-    apptDragState = {
-      el, appt: a, cols,
-      origCol: startCol, currentCol: startCol,
-      origBackground: el.style.background,
-      startClientY: e.clientY,
-      origTop: parseFloat(el.style.top) || 0,
-      moved: false
-    };
+    commencerDeplacementRdv(el, a, dragColumns, e.clientX, e.clientY);
     document.addEventListener('mousemove', onApptDragMove);
     document.addEventListener('mouseup', onApptDragEnd);
   });
+  brancherAppuiLongRdv(el, a, dragColumns);
 }
 
-function onApptDragMove(e){
+function commencerDeplacementRdv(el, a, dragColumns, x, y){
+  const cols = dragColumns.map(c => Object.assign({}, c, { rect: c.body.getBoundingClientRect() }));
+  const startCol = cols.find(c => c.body === el.parentElement) || cols[0];
+  apptDragState = {
+    el, appt: a, cols,
+    origCol: startCol, currentCol: startCol,
+    origBackground: el.style.background,
+    startClientX: x, startClientY: y,
+    origTop: parseFloat(el.style.top) || 0,
+    moved: false
+  };
+}
+
+/* Sur téléphone, les événements de souris n'arrivent pas pendant qu'un doigt glisse : le
+   rendez-vous ne bougeait pas, l'horaire défilait à la place (constaté par Martin le 2026-09-16).
+   Un APPUI LONG (0,35 s) soulève le rendez-vous, qui suit ensuite le doigt. Un toucher rapide
+   l'ouvre toujours, et un balayage fait toujours défiler l'horaire : le doigt qui bouge avant la
+   fin de l'appui annule tout. Près des bords de l'écran, la page défile toute seule. */
+function brancherAppuiLongRdv(el, a, dragColumns){
+  el.addEventListener('touchstart', function(e){
+    if(e.touches.length !== 1) return;
+    const x0 = e.touches[0].clientX, y0 = e.touches[0].clientY;
+    let souleve = false, anim = null, dernier = { x: x0, y: y0 };
+
+    const minuterie = setTimeout(() => {
+      souleve = true;
+      commencerDeplacementRdv(el, a, dragColumns, x0, y0);
+      el.classList.add('appt2-souleve');
+      if(navigator.vibrate) navigator.vibrate(15);
+      anim = setTimeout(defilerAuBord, 16);
+    }, 350);
+
+    function surMouvement(ev){
+      const p = ev.touches[0];
+      if(!p) return;
+      dernier = { x: p.clientX, y: p.clientY };
+      if(!souleve){
+        if(Math.abs(p.clientX - x0) > 8 || Math.abs(p.clientY - y0) > 8){ clearTimeout(minuterie); nettoyer(); }
+        return;                       // c'est un défilement : on laisse faire
+      }
+      ev.preventDefault();            // pendant le déplacement, la page ne défile pas sous le doigt
+      deplacerRdvA(p.clientX, p.clientY);
+    }
+
+    // Sur téléphone, c'est la grille elle-même (.ecols-wrap) qui défile, pas la page : on pousse
+    // la zone qui défile vraiment. Sur ordinateur, la grille est entière et c'est la page qui défile.
+    function defilerAuBord(){
+      if(!souleve) return;
+      const bande = el.closest('.ecols-wrap');
+      const grilleDefile = bande && bande.scrollHeight > bande.clientHeight + 2;
+      const haut = grilleDefile ? bande.getBoundingClientRect().top : 0;
+      const bas = grilleDefile ? bande.getBoundingClientRect().bottom : window.innerHeight;
+      const marge = grilleDefile ? 50 : 70;
+      let vy = 0;
+      if(dernier.y < haut + marge) vy = -Math.ceil((haut + marge - dernier.y) / 5);
+      else if(dernier.y > bas - marge) vy = Math.ceil((dernier.y - (bas - marge)) / 5);
+      let bouge = false;
+      if(vy){
+        if(grilleDefile) bande.scrollTop += vy; else window.scrollBy(0, vy);
+        bouge = true;
+      }
+      if(bande && bande.scrollWidth > bande.clientWidth){
+        const r = bande.getBoundingClientRect();
+        if(dernier.x < r.left + 40){ bande.scrollLeft -= 8; bouge = true; }
+        else if(dernier.x > r.right - 40){ bande.scrollLeft += 8; bouge = true; }
+      }
+      if(bouge) deplacerRdvA(dernier.x, dernier.y);
+      anim = setTimeout(defilerAuBord, 16);   // ~60 fois par seconde, tant que le doigt tient le rendez-vous
+    }
+
+    function surFin(ev){
+      clearTimeout(minuterie);
+      if(souleve){
+        ev.preventDefault();          // pas de « clic » fantôme qui rouvrirait le rendez-vous
+        el.classList.remove('appt2-souleve');
+        souleve = false;
+        if(ev.type === 'touchcancel'){
+          apptDragState = null;
+          loadHoraire();              // l'iPhone a interrompu le geste : on remet la grille telle quelle
+        } else if(apptDragState && !apptDragState.moved){
+          apptDragState = null;       // appui long sans bouger : on repose le rendez-vous, rien d'autre
+        } else {
+          onApptDragEnd();
+          setTimeout(() => { apptJustDragged = false; }, 400);
+        }
+      }
+      nettoyer();
+    }
+
+    function nettoyer(){
+      if(anim) clearTimeout(anim);
+      document.removeEventListener('touchmove', surMouvement);
+      document.removeEventListener('touchend', surFin);
+      document.removeEventListener('touchcancel', surFin);
+    }
+
+    document.addEventListener('touchmove', surMouvement, { passive: false });
+    document.addEventListener('touchend', surFin);
+    document.addEventListener('touchcancel', surFin);
+  }, { passive: true });
+}
+
+function onApptDragMove(e){ deplacerRdvA(e.clientX, e.clientY); }
+
+function deplacerRdvA(x, y){
   const ds = apptDragState;
   if(!ds) return;
-  const dy = e.clientY - ds.startClientY;
-  if(Math.abs(dy) > 4) ds.moved = true;
+  // Un déplacement vers la colonne voisine est souvent purement horizontal : avant, seul le
+  // mouvement vertical comptait, et glisser d'une coiffeuse à l'autre à la même heure ne faisait rien.
+  if(Math.abs(y - ds.startClientY) > 4 || Math.abs(x - ds.startClientX) > 4) ds.moved = true;
   if(!ds.moved) return;
+  // Positions relues à chaque mouvement : la page peut défiler pendant le déplacement.
+  ds.cols.forEach(c => { c.rect = c.body.getBoundingClientRect(); });
 
   if(ds.cols.length > 1){
-    const target = ds.cols.find(c => e.clientX >= c.rect.left && e.clientX < c.rect.right);
+    const target = ds.cols.find(c => x >= c.rect.left && x < c.rect.right);
     if(target && target !== ds.currentCol){
       ds.currentCol = target;
       target.body.appendChild(ds.el);
@@ -10175,7 +10303,7 @@ function onApptDragMove(e){
   }
 
   const height = parseFloat(ds.el.style.height) || 0;
-  const relY = e.clientY - ds.currentCol.rect.top;
+  const relY = y - ds.currentCol.rect.top;
   let newTop = Math.round((relY / HOR_PX_PER_MIN) / 15) * 15 * HOR_PX_PER_MIN;
   newTop = Math.max(0, Math.min(horGridHeight - height, newTop));
   ds.el.style.top = newTop + 'px';
