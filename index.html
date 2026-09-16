@@ -733,6 +733,9 @@
   /* Cette fenêtre s'ouvre PAR-DESSUS la fiche client, qui reste visible derrière : sans un
      z-index supérieur, elle passait dessous et paraissait ne pas s'ouvrir du tout. */
   #telDoublonOverlay{ z-index:260; }
+  /* Au-dessus des autres fenêtres (200) : la fiche client s'ouvre maintenant par-dessus la prise de
+     rendez-vous et la facturation. L'avertissement de doublon (260) reste au-dessus d'elle. */
+  #clientModalOverlay{ z-index:240; }
   .dh-card{ width:370px; max-width:100%; text-align:center; }
   .dh-liste-card{ width:440px; max-width:100%; }
   .dh-nom{ font-family:'Playfair Display'; font-style:italic; font-weight:600; color:var(--teal-dk); font-size:22px; margin:0 0 2px; }
@@ -5254,6 +5257,28 @@ function openEditModal(id){
 
 function closeClientModal(){
   document.getElementById('clientModalOverlay').classList.remove('show');
+  // Ouverte depuis un rendez-vous ou une facture et fermée sans enregistrer : aucun client créé.
+  if(clientCreeResolveur){ const r = clientCreeResolveur; clientCreeResolveur = null; r(null); }
+}
+
+/* ---------- Créer un client depuis un rendez-vous ou une facture ----------
+   Avant, taper un nouveau nom dans la prise de rendez-vous ou la facturation créait la fiche en
+   silence, avec le nom seulement — sans téléphone, alors qu'il est obligatoire à la création
+   (constaté par Martin le 2026-09-16). Désormais, TOUTE création passe par le même formulaire :
+   téléphone obligatoire et vérification « Même famille » compris. Le nom tapé y est prérempli,
+   et le rendez-vous ou la facture reprend là où il en était une fois la fiche enregistrée. */
+let clientCreeResolveur = null;
+
+function creerClientAvecFiche(nomTape){
+  return new Promise(resolve => {
+    if(clientCreeResolveur){ const r = clientCreeResolveur; clientCreeResolveur = null; r(null); }
+    openAddModal();
+    const { first, last } = splitClientName(nomTape || '');
+    document.getElementById('fName').value = first || '';
+    document.getElementById('fLast').value = last || '';
+    clientCreeResolveur = resolve;
+    setTimeout(() => document.getElementById(!first ? 'fName' : (!last ? 'fLast' : 'fPhone')).focus(), 60);
+  });
 }
 
 async function saveClient(){
@@ -5287,20 +5312,23 @@ async function saveClient(){
     }
   }
 
-  let error;
+  let error, cree = null;
   if(editingClientId){
     payload.updated_at = new Date().toISOString();
     ({ error } = await sbClient.from('clients').update(payload).eq('id', editingClientId));
   } else {
-    ({ error } = await sbClient.from('clients').insert(payload));
+    ({ data: cree, error } = await sbClient.from('clients').insert(payload).select('id, first_name, last_name').single());
   }
   if(error){
     alert('Erreur : ' + error.message);
     return;
   }
   const savedId = editingClientId;
+  const rendreA = clientCreeResolveur;   // pris AVANT la fermeture, qui sinon répondrait « rien créé »
+  clientCreeResolveur = null;
   closeClientModal();
   await loadClients();
+  if(rendreA){ rendreA(cree); return; }
   if(savedId) selectClient(savedId);
 }
 
@@ -6260,9 +6288,12 @@ async function ensureFactureClientId(){
     const { data: existing } = await sbClient.from('clients').select('id').ilike('first_name', first).ilike('last_name', last).limit(1);
     if(existing && existing.length) return existing[0].id;
   }
-  const { data: created, error } = await sbClient.from('clients').insert({ first_name:first, last_name:last }).select('id').single();
-  if(error){ alert('Erreur : ' + error.message); return null; }
-  return created.id;
+  const cree = await creerClientAvecFiche(name);
+  if(!cree) return null;                // fiche non créée : on ne facture pas un client sans fiche
+  factSelectedClientId = cree.id;
+  factSelectedClientName = ((cree.first_name||'') + ' ' + (cree.last_name||'')).trim();
+  updateFactClientLabel();
+  return cree.id;
 }
 
 async function confirmFacturePaiement(){
@@ -6273,7 +6304,7 @@ async function confirmFacturePaiement(){
 
   const productsOnly = factInvoiceIsProductsOnly();
   const clientId = await ensureFactureClientId();
-  if(!clientId && !productsOnly){ alert('Impossible de déterminer le client.'); return; }
+  if(!clientId && !productsOnly){ alert('Choisis un client existant ou crée sa fiche, avec son téléphone, avant le paiement.'); return; }
   const rates = await factureTaxRates();
   const totals = computeFactureTotals(factItems, rates);
   const invoiceNumber = await nextInvoiceNumber();
@@ -7519,10 +7550,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('quickAddModalOverlay').addEventListener('click', e => {
     if(e.target.id === 'quickAddModalOverlay') closeQuickAddModal();
   });
-  document.getElementById('qaClientResults').addEventListener('click', e => {
+  document.getElementById('qaClientResults').addEventListener('click', async e => {
     const item = e.target.closest('.qa-result');
     if(!item) return;
-    qaSelectedClientId = item.dataset.new === '1' ? null : item.dataset.id;
+    if(item.dataset.new === '1'){
+      document.getElementById('qaClientResults').innerHTML = '';
+      const cree = await creerClientAvecFiche(item.dataset.name);
+      if(!cree) return;
+      qaSelectedClientId = cree.id;
+      document.getElementById('qaClientSearch').value = ((cree.first_name||'') + ' ' + (cree.last_name||'')).trim();
+      updateQaClientFicheLink();
+      return;
+    }
+    qaSelectedClientId = item.dataset.id;
     document.getElementById('qaClientSearch').value = item.dataset.name;
     document.getElementById('qaClientResults').innerHTML = '';
     updateQaClientFicheLink();
@@ -7542,10 +7582,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(removeBtn){ qaRemoveTier(removeBtn.dataset.removeTier); return; }
     if(e.target.closest('[data-add-service]')) qaBackToCategories();
   });
-  document.getElementById('factClientResults').addEventListener('click', e => {
+  document.getElementById('factClientResults').addEventListener('click', async e => {
     const item = e.target.closest('.qa-result');
     if(!item) return;
-    selectFactClient(item.dataset.new === '1' ? null : item.dataset.id, item.dataset.name);
+    if(item.dataset.new === '1'){
+      const cree = await creerClientAvecFiche(item.dataset.name);
+      if(!cree) return;
+      selectFactClient(cree.id, ((cree.first_name||'') + ' ' + (cree.last_name||'')).trim());
+      return;
+    }
+    selectFactClient(item.dataset.id, item.dataset.name);
   });
   document.getElementById('factEmpList').addEventListener('click', e => {
     const btn = e.target.closest('.emp-btn');
@@ -9589,10 +9635,10 @@ async function saveQuickAdd(){
     if(existingId){
       clientId = existingId;
     } else {
-      const { data: created, error: createErr } = await sbClient.from('clients')
-        .insert({ first_name: first, last_name: last }).select('id').single();
-      if(createErr){ alert('Erreur : ' + createErr.message); return; }
-      clientId = created.id;
+      const cree = await creerClientAvecFiche(clientName);
+      if(!cree) return;                 // fiche non créée : le rendez-vous n'est pas enregistré
+      clientId = cree.id;
+      qaSelectedClientId = cree.id;
     }
   }
 
