@@ -432,6 +432,22 @@
   .hor-head-right{ display:flex; align-items:center; gap:14px; margin-left:28px; }
   .next-avail-btn{ display:flex; align-items:center; gap:8px; background:var(--sage); color:#fff; border:none; border-radius:999px; padding:12px 20px; font-family:'Josefin Sans'; font-weight:600; font-size:13px; letter-spacing:.03em; cursor:pointer; white-space:nowrap; }
   .next-avail-btn:hover{ filter:brightness(1.14); }
+  /* Bandeau « Avis d'annulation », au-dessus de la grille de l'Horaire. Pas dans l'en-tête : il y
+     manque déjà de place, la pilule de la date y chevauche « Prochaine dispo » sur un écran moyen.
+     Disparaît dès que les avis sont actifs sur l'appareil, ou si on répond « Non merci ». */
+  .avis-bandeau{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin:0 0 14px;
+    padding:11px 16px; border-radius:12px; background:rgba(216,64,47,.07); border:1px solid rgba(216,64,47,.22);
+    font-family:'Josefin Sans'; font-size:14px; color:var(--ink); }
+  .avis-bandeau svg{ width:18px; height:18px; color:#D8402F; flex-shrink:0; }
+  .avis-bandeau .ab-texte{ flex:1; min-width:220px; }
+  .avis-bandeau .ab-oui{ background:#D8402F; color:#fff; border:none; border-radius:999px; padding:9px 18px;
+    font-family:'Josefin Sans'; font-weight:600; font-size:13px; cursor:pointer; }
+  .avis-bandeau .ab-oui:hover{ filter:brightness(1.08); }
+  .avis-bandeau .ab-non{ background:none; border:none; color:var(--ink-soft); font-family:'Josefin Sans';
+    font-size:13px; cursor:pointer; text-decoration:underline; padding:4px; }
+  #annulListe .al-avis{ width:100%; margin-top:6px; padding:11px; border:1px solid rgba(216,64,47,.35);
+    border-radius:10px; background:rgba(216,64,47,.06); color:#D8402F; cursor:pointer;
+    font-family:'Josefin Sans',sans-serif; font-size:13.5px; font-weight:600; }
   .next-avail-btn svg{ width:16px; height:16px; flex-shrink:0; }
   .na-duration-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:7px; }
   .qa-cat-chip.na-chip.active{ background:var(--teal-dk); color:#fff; }
@@ -1564,6 +1580,12 @@
         </div>
         <div class="cal-grid" id="calGrid"></div>
       </div>
+    </div>
+    <div class="avis-bandeau" id="avisBandeau" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+      <span class="ab-texte">Recevoir un avis et un chiffre rouge sur l'icône à chaque annulation, même logiciel fermé.</span>
+      <button type="button" class="ab-oui" onclick="activerAvis()">Activer sur cet appareil</button>
+      <button type="button" class="ab-non" onclick="refuserAvis()">Non merci</button>
     </div>
     <div class="horaire-emp-bar" id="horaireEmpBar" style="display:none;">
       <span class="hb-back clickable" onclick="showAllEmployeesDay()" title="Retour à toute l’équipe">
@@ -2732,6 +2754,7 @@
     <h3 id="alTitre">Annulations</h3>
     <div class="al-sous">Touchez une ligne pour aller à cette journée.</div>
     <div id="alItems"></div>
+    <button class="al-avis" id="alAvis" hidden onclick="fermerListeAnnulations(); activerAvis()">Recevoir ces avis sur cet appareil</button>
     <button class="al-fermer" onclick="fermerListeAnnulations()">Fermer</button>
   </div>
 </div>
@@ -7491,6 +7514,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   applyThemeOnLoad();
   majPastilleAnnulations();
   chargerDemandesEnAttente();
+  preparerAvis();
   // Après un refresh (F5), on revient sur la page où on était plutôt que de retourner
   // systématiquement à la page d'accueil. Les zones protégées par un code PIN redemandent
   // quand même ce code, puisque go() gère déjà cette vérification normalement.
@@ -7823,6 +7847,11 @@ async function majPastilleAnnulations(){
   annulationsCache = (data || []).filter(a => jourMontreal(new Date(a.start_at)) >= aujourdhui);
 
   const n = annulationsCache.length;
+  // Le rond rouge sur l'icône de l'app suit la pastille : sans ça, il resterait figé sur un vieux
+  // chiffre une fois les annulations passées. Refusé sans permission de notifier : on ignore.
+  if('setAppBadge' in navigator){
+    (n > 0 ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {});
+  }
   // « :not(.demande-pastille) » est essentiel : la pastille des demandes d'horaire emprunte la
   // classe .annul-pastille pour son style, donc sans cette exclusion elle se faisait réécrire
   // ici et affichait « 2 annulations » elle aussi.
@@ -7842,7 +7871,7 @@ function ouvrirListeAnnulations(){
     const d = new Date(a.start_at);
     const quand = d.toLocaleDateString('fr-CA', { timeZone:'America/Montreal', weekday:'long', day:'numeric', month:'long' })
                 + ' · ' + d.toLocaleTimeString('fr-CA', { timeZone:'America/Montreal', hour:'2-digit', minute:'2-digit' });
-    const nom = a.clients ? ((a.clients.first_name||'') + ' ' + (a.clients.last_name||'')).trim() : 'Cliente';
+    const nom = a.clients ? ((a.clients.first_name||'') + ' ' + (a.clients.last_name||'')).trim() : 'Client';
     return '<div class="al-item" data-date="'+a.start_at+'">'
          + '<span><b>'+escapeHtml(nom)+'</b><br><span class="al-quand">'+escapeHtml(quand)+'</span></span>'
          + '<span class="al-quand">'+escapeHtml(a.employee_name||'')+'</span></div>';
@@ -10534,6 +10563,100 @@ async function loadHoraireWeek(wrap){
     wrap.appendChild(col);
   }
   poserRepereMaintenant();
+}
+
+/* ---------- Avis d'annulation sur l'icône de l'app ----------
+   Quand un rendez-vous passe à « annulé », le déclencheur de la base appelle la fonction
+   notifier-annulation, qui réveille chaque appareil inscrit ici : une notification, et le nombre
+   d'annulations à venir dans un rond rouge sur l'icône — même logiciel fermé.
+   Chaque appareil s'inscrit une fois, par le bouton « Avis d'annulation » de l'Horaire.
+   Sur iPhone, ça n'existe que pour un logiciel AJOUTÉ À L'ÉCRAN D'ACCUEIL (iOS 16.4 et plus). */
+const VAPID_PUBLIQUE = 'BB95ISjluMy54mt8lP6R2OdWhz70f-4zYT3-cibFQ7Q8t_VPnlmXsOE3FR8TTkZdZ0wG31LdT8-p0F0jyTGqUgM';
+let swEnregistrement = null;
+
+function avisPossibles(){
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+}
+function estIphoneNonInstalle(){
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const installe = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  return ios && !installe;
+}
+function cleEnOctets(b64){
+  const s = atob((b64 + '='.repeat((4 - b64.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from(s, c => c.charCodeAt(0));
+}
+
+async function preparerAvis(){
+  if('serviceWorker' in navigator){
+    try { swEnregistrement = await navigator.serviceWorker.register('sw.js'); }
+    catch(e){ console.warn('Avis : service worker non enregistré', e); }
+  }
+  majBoutonAvis();
+}
+
+// Le bandeau et le lien ne s'affichent que s'il y a quelque chose à faire sur CET appareil.
+// « Non merci » ne cache que le bandeau : le lien dans la liste des annulations reste, pour
+// l'appareil du comptoir qui aurait refusé puis changé d'idée.
+async function majBoutonAvis(){
+  let actif = false;
+  try {
+    if(avisPossibles() && Notification.permission === 'granted' && swEnregistrement){
+      actif = !!(await swEnregistrement.pushManager.getSubscription());
+    }
+  } catch(_){}
+  const utile = !actif && (avisPossibles() || estIphoneNonInstalle());
+  let refuse = false;
+  try { refuse = localStorage.getItem('avisAnnulationRefuses') === '1'; } catch(_){}
+  const bandeau = document.getElementById('avisBandeau');
+  if(bandeau) bandeau.hidden = !utile || refuse;
+  const lien = document.getElementById('alAvis');
+  if(lien) lien.hidden = !utile;
+}
+
+function refuserAvis(){
+  try { localStorage.setItem('avisAnnulationRefuses', '1'); } catch(_){}
+  majBoutonAvis();
+}
+
+async function activerAvis(){
+  if(estIphoneNonInstalle()){
+    alert("Sur iPhone, les avis fonctionnent seulement quand le logiciel est ajouté à l'écran d'accueil.\n\n" +
+          "1. Dans Safari, touche le bouton Partager (le carré avec la flèche vers le haut).\n" +
+          "2. Choisis « Sur l'écran d'accueil », puis « Ajouter ».\n" +
+          "3. Ouvre le logiciel depuis sa nouvelle icône et touche encore « Avis d'annulation ».");
+    return;
+  }
+  if(!avisPossibles()){ alert("Ce navigateur ne permet pas les avis."); return; }
+  if(Notification.permission === 'denied'){
+    alert("Les notifications sont bloquées pour le logiciel sur cet appareil. Réactive-les dans les Réglages, puis réessaie.");
+    return;
+  }
+  try {
+    if(await Notification.requestPermission() !== 'granted') return;
+    if(!swEnregistrement) swEnregistrement = await navigator.serviceWorker.register('sw.js');
+    await navigator.serviceWorker.ready;
+    let abo = await swEnregistrement.pushManager.getSubscription();
+    if(!abo){
+      abo = await swEnregistrement.pushManager.subscribe({
+        userVisibleOnly: true, applicationServerKey: cleEnOctets(VAPID_PUBLIQUE)
+      });
+    }
+    const j = abo.toJSON();
+    const { error } = await sbClient.rpc('enregistrer_abonnement_push', {
+      p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_appareil: navigator.userAgent
+    });
+    if(error){ alert('Inscription impossible : ' + error.message); return; }
+    // Un avis d'essai vers CET appareil : si la notification arrive, toute la chaîne fonctionne.
+    const { data, error: e2 } = await sbClient.functions.invoke('notifier-annulation', { body: { test: true } });
+    if(e2 || !data || !data.envoyes){
+      alert("L'appareil est inscrit, mais l'avis d'essai n'est pas parti.\n" + (e2 ? e2.message : JSON.stringify(data)));
+    }
+  } catch(e){
+    alert("Activation impossible : " + (e && e.message ? e.message : e));
+  }
+  majBoutonAvis();
 }
 
 /* ---------- L'heure actuelle dans l'Horaire ----------
