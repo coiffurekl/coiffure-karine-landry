@@ -199,6 +199,17 @@
   }
   .ecol2-hours-badge .off{ font-size:13px; font-weight:700; color:var(--ink-soft); line-height:1; }
   .ecol2-body{ position:relative; }
+  /* ---- Le nom reste affiché en haut pendant qu'on descend dans la journée, sur TOUS les écrans.
+     D'abord fait pour le cellulaire seulement ; Martin l'a demandé aussi sur ordinateur le
+     2026-09-16. La grille défile dans son propre cadre (hauteur plafonnée par fitHoraireGrid),
+     condition pour que position:sticky ait un effet ; l'axe des heures suit en synchro.
+     - align-items:flex-start : chaque colonne garde la hauteur de la JOURNÉE ; étirée à la
+       hauteur du cadre, l'en-tête collant décrochait en milieu d'après-midi.
+     - z-index 40 : au-dessus des rendez-vous en surbrillance (30) et des pastilles de double
+       booking (18) qui défilent dessous ; un rendez-vous qu'on glisse (50) reste par-dessus. */
+  .ecols-wrap{ align-items:flex-start; }
+  .ecol2-head{ position:sticky; top:0; z-index:40; }
+  .time-axis{ overflow:hidden; }
   /* Hachures diagonales pour les fermetures d'horaire régulière (avant/après les heures de travail,
      journées de congé habituelles). */
   .closed-block{ position:absolute; left:0; right:0; background:repeating-linear-gradient(45deg, rgba(32,48,47,.10), rgba(32,48,47,.10) 5px, transparent 5px, transparent 11px); }
@@ -1349,7 +1360,6 @@
        flex, elles s'étiraient sur la hauteur du conteneur (plafonnée plus haut) : l'en-tête
        collant, qui ne peut jamais sortir de sa colonne, décrochait donc passé le milieu de
        l'après-midi et disparaissait vers 21h. */
-    .ecols-wrap{ align-items:flex-start; }
     /* Pas de majuscules : « Ge… » se lit mieux que « GE… », et les accents restent lisibles. */
     .ecol2-head{ font-size:12px; padding:0 2px; height:32px; letter-spacing:0; text-transform:none; }
     /* Bascule vers l'abréviation posée par le JS (data-short) : on masque le nom complet en
@@ -1365,9 +1375,7 @@
        place réellement disponible à l'écran). L'axe des heures, qui est à côté et non dedans,
        est plafonné à la même hauteur et son défilement est synchronisé — sinon les heures
        se décaleraient des rendez-vous dès le premier glissement. */
-    .ecol2-head{ position:sticky; top:0; z-index:6; }
     .horaire-grid-wrap{ overflow:visible; }
-    .time-axis{ overflow:hidden; }
     .appt2{ left:2px; right:2px; padding:4px 5px; font-size:9.5px; border-radius:7px; line-height:1.25; }
     /* Le nom de la cliente passe sur sa propre ligne et se coupe avec « … » plutôt que de
        déborder du bloc ; le séparateur « · » n'a plus lieu d'être une fois les deux séparés. */
@@ -7720,22 +7728,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   }catch(e){}
 });
 
-/* ---------- Horaire sur cellulaire : en-tête collant ----------
-   Sur petit écran, la grille défile à l'intérieur de son propre cadre plutôt qu'avec la page.
-   C'est ce qui permet au nom des coiffeuses de rester affiché en haut (.ecol2-head est en
-   position:sticky) quand on descend dans la journée. Sur tablette/ordinateur, aucun plafond
-   n'est posé : la grille reprend son comportement habituel, inchangé. */
-const HORAIRE_STICKY_MAX_WIDTH = 640;   // même seuil que le bloc @media du CSS
-
+/* ---------- Horaire : en-tête collant, sur tous les écrans ----------
+   La grille défile à l'intérieur de son propre cadre plutôt qu'avec la page. C'est ce qui
+   permet au nom de chaque membre de l'équipe de rester affiché en haut (.ecol2-head est en
+   position:sticky) quand on descend dans la journée. D'abord réservé au cellulaire, étendu à
+   la tablette et à l'ordinateur le 2026-09-16. */
 function fitHoraireGrid(){
   const wrap = document.querySelector('#screen-horaire .ecols-wrap');
   if(!wrap) return;
   const axis = wrap.parentElement && wrap.parentElement.querySelector('.time-axis');
-  if(window.innerWidth > HORAIRE_STICKY_MAX_WIDTH){
-    wrap.style.maxHeight = '';
-    if(axis) axis.style.maxHeight = '';
-    return;
-  }
   // Hauteur réellement disponible entre le haut de la grille et le bas de l'écran, avec une
   // petite marge pour ne pas coller au bord. Mesurée plutôt que codée en dur : la barre de
   // navigation passe sur une ou deux lignes selon la largeur, donc la position varie.
@@ -7752,6 +7753,16 @@ function fitHoraireGrid(){
       if(ax) ax.scrollTop = wrap.scrollTop;   // garde les heures alignées sur les rendez-vous
     }, { passive:true });
     wrap.dataset.axisSyncBound = '1';
+  }
+  // Sur ordinateur, la molette au-dessus de la colonne des heures fait défiler la grille : la
+  // colonne des heures ne défile pas d'elle-même (elle ne fait que suivre la grille).
+  if(axis && !axis.dataset.molette){
+    axis.addEventListener('wheel', function(e){
+      if(wrap.scrollHeight <= wrap.clientHeight) return;
+      e.preventDefault();
+      wrap.scrollTop += e.deltaY;
+    }, { passive:false });
+    axis.dataset.molette = '1';
   }
 }
 
