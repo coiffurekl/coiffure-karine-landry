@@ -913,6 +913,14 @@
   .bset-pay-methods{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:8px; }
   .bset-pay-chip{ display:flex; align-items:center; gap:6px; padding:9px 15px; border:1px solid var(--line); border-radius:20px; font-family:'Poppins'; font-size:13.5px; cursor:pointer; user-select:none; color:var(--ink-soft); }
   .bset-pay-chip.on{ background:var(--teal); border-color:var(--teal); color:#fff; }
+  /* Modes ajoutés par le salon : une petite croix pour les retirer. Les 4 de base n'en ont pas —
+     on les décoche plutôt, « Comptant » en particulier a sa propre logique de monnaie à rendre. */
+  .bset-pay-chip .bpc-x{ margin-left:4px; margin-right:-5px; width:20px; height:20px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center; font-size:15px; line-height:1; opacity:.7; }
+  .bset-pay-chip .bpc-x:hover{ opacity:1; background:rgba(0,0,0,.12); }
+  .bset-pay-ajout{ display:flex; gap:10px; flex-wrap:wrap; margin:14px 0 6px; }
+  .bset-pay-ajout input{ flex:1; min-width:220px; }
+  .bset-pay-note{ margin:0 0 8px; font-size:13px; color:var(--ink-soft); }
   .fact-tip-optional{ text-transform:none; font-weight:400; opacity:.7; }
   .fact-tip-row{ display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
   .fact-tip-quick{ display:flex; gap:8px; }
@@ -2232,6 +2240,12 @@
 
       <div class="bset-section-title">Méthodes de paiement acceptées</div>
       <div class="bset-pay-methods" id="bsetPayMethods"></div>
+      <div class="bset-pay-ajout">
+        <input id="bsetNouveauMode" type="text" maxlength="40" placeholder="Nouveau mode de paiement — ex. Carte cadeau"
+          onkeydown="if(event.key==='Enter'){ event.preventDefault(); ajouterModePaiement(); }">
+        <button type="button" class="btn-outline" onclick="ajouterModePaiement()">+ Ajouter</button>
+      </div>
+      <p class="bset-pay-note">Les modes cochés sont proposés à la caisse. Ajouter ou supprimer un mode s'enregistre tout de suite.</p>
 
       <div class="bset-save-row">
         <span class="bset-saved-msg" id="bsetSavedMsg">&#10003; Enregistré</span>
@@ -3439,25 +3453,87 @@ async function loadBusinessSettingsScreen(){
   document.getElementById('bsetQstRate').value = s.qst_rate != null ? s.qst_rate : '';
   document.getElementById('bsetPrefix').value = s.invoice_prefix || '';
   document.getElementById('bsetNextNumber').value = s.next_invoice_number != null ? s.next_invoice_number : 1;
-  renderPaymentMethodChips(s.payment_methods || []);
+  renderPaymentMethodChips(s.payment_methods || [], catalogueModesPaiement(s));
 }
 
-function renderPaymentMethodChips(activeList){
+// La liste complète des modes affichés : celle du salon (business_settings.payment_methods_catalog),
+// ou les 4 de base si elle est vide. Un mode coché mais absent du catalogue y est rajouté, pour
+// qu'il ne disparaisse jamais de l'écran.
+function catalogueModesPaiement(s){
+  const cat = (s && s.payment_methods_catalog && s.payment_methods_catalog.length)
+    ? s.payment_methods_catalog.slice() : PAYMENT_METHOD_CATALOG.slice();
+  ((s && s.payment_methods) || []).forEach(m => { if(cat.indexOf(m) === -1) cat.push(m); });
+  return cat;
+}
+
+function renderPaymentMethodChips(activeList, catalog){
+  catalog = catalog || PAYMENT_METHOD_CATALOG;
   const wrap = document.getElementById('bsetPayMethods');
-  wrap.innerHTML = PAYMENT_METHOD_CATALOG.map(m=>{
+  wrap.innerHTML = catalog.map(m=>{
     const on = activeList.indexOf(m) !== -1;
-    return '<div class="bset-pay-chip'+(on?' on':'')+'" data-method="'+escapeHtml(m)+'" onclick="togglePayMethodChip(this)">'+(on?'&#10003; ':'')+escapeHtml(m)+'</div>';
+    const ajoute = PAYMENT_METHOD_CATALOG.indexOf(m) === -1;
+    return '<div class="bset-pay-chip'+(on?' on':'')+'" data-method="'+escapeHtml(m)+'" onclick="togglePayMethodChip(this)">'
+      + '<span class="bpc-txt">'+(on?'&#10003; ':'')+escapeHtml(m)+'</span>'
+      + (ajoute ? '<span class="bpc-x" title="Supprimer ce mode de paiement" onclick="event.stopPropagation(); supprimerModePaiement(this.parentNode)">&times;</span>' : '')
+      + '</div>';
   }).join('');
 }
 
 function togglePayMethodChip(el){
   el.classList.toggle('on');
   const on = el.classList.contains('on');
-  el.innerHTML = (on?'&#10003; ':'') + escapeHtml(el.dataset.method);
+  el.querySelector('.bpc-txt').innerHTML = (on?'&#10003; ':'') + escapeHtml(el.dataset.method);
+}
+
+function modesAffiches(){
+  return Array.from(document.querySelectorAll('#bsetPayMethods .bset-pay-chip')).map(el => el.dataset.method);
+}
+function modesCoches(){
+  return Array.from(document.querySelectorAll('#bsetPayMethods .bset-pay-chip.on')).map(el => el.dataset.method);
+}
+
+async function ajouterModePaiement(){
+  const champ = document.getElementById('bsetNouveauMode');
+  const nom = champ.value.trim().replace(/\s+/g, ' ');
+  if(!nom) return;
+  const catalogue = modesAffiches();
+  if(catalogue.some(m => m.toLowerCase() === nom.toLowerCase())){
+    alert('« ' + nom + ' » est déjà dans la liste.');
+    return;
+  }
+  // Un mode ajouté est coché d'office : on l'ajoute pour s'en servir à la caisse.
+  if(await enregistrerModesPaiement(catalogue.concat([nom]), modesCoches().concat([nom]))) champ.value = '';
+}
+
+async function supprimerModePaiement(chip){
+  const nom = chip.dataset.method;
+  if(!confirm('Supprimer le mode de paiement « ' + nom + ' » ?\n\nLes factures déjà payées de cette façon le gardent.')) return;
+  await enregistrerModesPaiement(modesAffiches().filter(m => m !== nom), modesCoches().filter(m => m !== nom));
+}
+
+// Enregistre tout de suite, sans toucher aux autres champs de l'écran (qui gardent leur bouton
+// « Enregistrer »). Une modification refusée par RLS ne renvoie aucune erreur : on relit la base
+// pour vérifier que la liste a vraiment changé.
+async function enregistrerModesPaiement(catalogue, coches){
+  coches = catalogue.filter(m => coches.indexOf(m) !== -1);   // dans l'ordre de la liste
+  const { error } = await sbClient.from('business_settings')
+    .update({ payment_methods_catalog: catalogue, payment_methods: coches, updated_at: new Date().toISOString() })
+    .eq('id', 1);
+  if(error){ alert('Erreur : ' + error.message); return false; }
+  const s = await loadBusinessSettings(true);
+  if(!s || JSON.stringify(s.payment_methods_catalog) !== JSON.stringify(catalogue)){
+    alert("Le changement n'a pas été enregistré. Vérifie que tu es connecté au compte gestionnaire.");
+    return false;
+  }
+  renderPaymentMethodChips(s.payment_methods || [], catalogueModesPaiement(s));
+  const msg = document.getElementById('bsetSavedMsg');
+  msg.classList.add('show');
+  setTimeout(()=>msg.classList.remove('show'), 2000);
+  return true;
 }
 
 async function saveBusinessSettings(){
-  const activeMethods = Array.from(document.querySelectorAll('.bset-pay-chip.on')).map(el=>el.dataset.method);
+  const activeMethods = modesCoches();
   const payload = {
     salon_name: document.getElementById('bsetName').value.trim(),
     address_line: document.getElementById('bsetAddress').value.trim() || null,
@@ -3471,6 +3547,7 @@ async function saveBusinessSettings(){
     invoice_prefix: document.getElementById('bsetPrefix').value.trim() || 'FAC-',
     next_invoice_number: parseInt(document.getElementById('bsetNextNumber').value, 10) || 1,
     payment_methods: activeMethods,
+    payment_methods_catalog: modesAffiches(),
     updated_at: new Date().toISOString()
   };
   const { error } = await sbClient.from('business_settings').update(payload).eq('id', 1);
@@ -7121,8 +7198,11 @@ async function openFactureEditInvoice(invoiceId){
   factEditPaymentMethod = inv.payment_method || null;
 
   const s = await loadBusinessSettings();
-  const methods = (s && s.payment_methods && s.payment_methods.length) ? s.payment_methods : PAYMENT_METHOD_CATALOG;
-  if(!factEditPaymentMethod || methods.indexOf(factEditPaymentMethod) === -1) factEditPaymentMethod = methods[0] || factEditPaymentMethod;
+  const methods = ((s && s.payment_methods && s.payment_methods.length) ? s.payment_methods : PAYMENT_METHOD_CATALOG).slice();
+  // Une facture payée avec un mode depuis décoché ou supprimé garde ce mode : avant, il était
+  // remplacé en silence par le premier de la liste (« Comptant ») dès qu'on modifiait la facture.
+  if(factEditPaymentMethod && methods.indexOf(factEditPaymentMethod) === -1) methods.push(factEditPaymentMethod);
+  if(!factEditPaymentMethod) factEditPaymentMethod = methods[0] || null;
   document.getElementById('factEditPayMethods').innerHTML = methods.map(m=>{
     const on = m === factEditPaymentMethod ? ' on' : '';
     return '<div class="bset-pay-chip'+on+'" data-method="'+escapeHtml(m)+'" onclick="selectFactureEditPaymentMethod(this)">'+escapeHtml(m)+'</div>';
