@@ -805,6 +805,13 @@
   .dh-option.on .dh-rond::after{ content:''; position:absolute; inset:3px; border-radius:50%; background:var(--teal-dk); }
   .dh-etiquette{ display:flex; flex-direction:column; gap:2px; }
   .dh-etiquette small{ font-size:12px; color:var(--ink-soft); }
+  .dh-special{ display:flex; flex-direction:column; gap:10px; padding:12px 14px 14px; border:1px solid var(--teal-dk); border-top:none;
+    border-radius:0 0 10px 10px; margin-top:-12px; background:rgba(39,101,108,.05); }
+  .dh-special-heures{ display:flex; gap:10px; }
+  .dh-special-heures label{ flex:1; display:flex; flex-direction:column; gap:4px; text-align:left; font-family:'Josefin Sans'; font-size:12px;
+    letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); }
+  .dh-special-heures input{ font-size:16px; padding:9px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
+  .dh-special-ok{ width:100%; }
   .dh-info{ font-family:'Josefin Sans'; font-size:12.5px; color:var(--ink-soft); margin:16px 0 0; line-height:1.5; }
   .ecol2-hours-badge.en-attente{ box-shadow:0 0 0 3px var(--ocre); }
   .dl-item{ display:flex; align-items:center; gap:12px; padding:14px 0; border-bottom:1px solid var(--line); }
@@ -2497,6 +2504,16 @@
       <button type="button" class="dh-option" data-statut="regular" onclick="choisirStatutJournee('regular')">
         <span class="dh-rond"></span><span class="dh-etiquette">Horaire régulier<small id="dhRegulierDetail"></small></span>
       </button>
+      <button type="button" class="dh-option" data-statut="special" onclick="ouvrirHoraireSpecial()">
+        <span class="dh-rond"></span><span class="dh-etiquette">Horaire spécial<small id="dhSpecialDetail">Ajouter ou enlever des heures</small></span>
+      </button>
+      <div class="dh-special" id="dhSpecial" hidden>
+        <div class="dh-special-heures">
+          <label>De<input type="time" id="dhSpecialDe" step="900"></label>
+          <label>À<input type="time" id="dhSpecialA" step="900"></label>
+        </div>
+        <button type="button" class="btn-solid dh-special-ok" onclick="enregistrerHoraireSpecial()">Enregistrer ces heures</button>
+      </div>
       <button type="button" class="dh-option" data-statut="absent" onclick="choisirStatutJournee('absent')">
         <span class="dh-rond"></span><span class="dh-etiquette">Absent(e)</span>
       </button>
@@ -7842,10 +7859,10 @@ async function chargerDemandesEnAttente(){
   majPastilleDemandes();
 }
 
-const DH_LIBELLE = { regular: 'Horaire régulier', absent: 'Absent(e)', vacation: 'En vacances' };
+const DH_LIBELLE = { regular: 'Horaire régulier', special: 'Horaire spécial', absent: 'Absent(e)', vacation: 'En vacances' };
 
-function ouvrirDemandeHoraire(employe, iso, override){
-  dhContexte = { employe, iso, override };
+function ouvrirDemandeHoraire(employe, iso, override, heures){
+  dhContexte = { employe, iso, override, heures: heures || null };
   const d = new Date(iso + 'T00:00:00');
   document.getElementById('dhNom').textContent = employe.name;
   document.getElementById('dhDate').textContent =
@@ -7854,6 +7871,10 @@ function ouvrirDemandeHoraire(employe, iso, override){
 
   const statutActuel = override ? override.status : 'regular';
   const enAttente = demandeEnAttentePour(employe.id, iso);
+  document.getElementById('dhSpecial').hidden = true;
+  document.getElementById('dhSpecialDetail').textContent = (override && override.status === 'special')
+    ? (override.start_time || '') + ' – ' + (override.end_time || '')
+    : 'Ajouter ou enlever des heures';
   document.querySelectorAll('#demandeHoraireOverlay .dh-option').forEach(b => {
     b.classList.toggle('on', b.dataset.statut === (enAttente ? enAttente.statut : statutActuel));
   });
@@ -7866,7 +7887,7 @@ function ouvrirDemandeHoraire(employe, iso, override){
   } else {
     info.textContent = enAttente
       ? 'Ta demande « ' + DH_LIBELLE[enAttente.statut] + ' » attend l’approbation de Karine. Touche un autre choix pour la changer.'
-      : 'Ton choix sera envoyé à Karine pour approbation. Rien ne change tant qu’elle n’a pas accepté.';
+      : 'Horaire spécial : s’applique tout de suite. Absence et vacances : envoyées à Karine pour approbation.';
   }
   document.getElementById('demandeHoraireOverlay').classList.add('show');
 }
@@ -7886,6 +7907,17 @@ async function choisirStatutJournee(statut){
   if(!estGestionnaire() && iso < jourMontreal(new Date())){
     err.textContent = 'On ne peut pas changer une journée déjà passée.';
     err.classList.add('show');
+    return;
+  }
+
+  const override = dhContexte.override;
+  if(!estGestionnaire() && statut === 'regular' && override && override.status === 'special'
+     && !demandeEnAttentePour(employe.id, iso)){
+    // Revenir à l'horaire habituel après un horaire spécial ne demande pas Karine non plus.
+    const erreur = await appliquerStatutJournee(employe.id, iso, 'regular');
+    if(erreur){ err.textContent = erreur; err.classList.add('show'); return; }
+    fermerDemandeHoraire();
+    if(currentScreenId === 'screen-horaire') loadHoraire();
     return;
   }
 
@@ -7912,6 +7944,60 @@ async function choisirStatutJournee(statut){
   }
 
   await chargerDemandesEnAttente();
+  fermerDemandeHoraire();
+  if(currentScreenId === 'screen-horaire') loadHoraire();
+}
+
+/* ---------- Horaire spécial ----------
+   Demandé par Martin le 2026-09-16 : changer les heures d'une seule journée (en ajouter ou en
+   enlever) sans l'approbation de Karine. Les heures remplacent celles de l'horaire habituel pour
+   ce jour-là. La base l'autorise pour un membre dès que « De » et « À » sont remplis. */
+function ouvrirHoraireSpecial(){
+  if(!dhContexte) return;
+  const { employe, iso, override } = dhContexte;
+  const bloc = document.getElementById('dhSpecial');
+  document.querySelectorAll('#demandeHoraireOverlay .dh-option').forEach(b => {
+    b.classList.toggle('on', b.dataset.statut === 'special');
+  });
+  // On part des heures déjà en place : l'horaire spécial du jour, sinon les heures affichées
+  // dans la pastille (l'horaire habituel). Il reste juste à allonger ou raccourcir.
+  let de = '', a = '';
+  if(override && override.status === 'special'){ de = override.start_time || ''; a = override.end_time || ''; }
+  else if(dhContexte.heures){ de = dhContexte.heures.start; a = dhContexte.heures.end; }
+  document.getElementById('dhSpecialDe').value = de;
+  document.getElementById('dhSpecialA').value = a;
+  bloc.hidden = false;
+  document.getElementById('dhErreur').classList.remove('show');
+}
+
+async function enregistrerHoraireSpecial(){
+  if(!dhContexte) return;
+  const { employe, iso } = dhContexte;
+  const err = document.getElementById('dhErreur');
+  err.classList.remove('show');
+  const de = document.getElementById('dhSpecialDe').value;
+  const a = document.getElementById('dhSpecialA').value;
+  const montrer = t => { err.textContent = t; err.classList.add('show'); };
+  if(!de || !a) return montrer('Indique l’heure de début et l’heure de fin.');
+  if(a <= de) return montrer('L’heure de fin doit être après l’heure de début.');
+  if(!estGestionnaire() && iso < jourMontreal(new Date())) return montrer('On ne peut pas changer une journée déjà passée.');
+
+  const { error } = await sbClient.from('employee_day_overrides')
+    .upsert({ employee_id: employe.id, date: iso, status: 'special', start_time: de, end_time: a, note: null },
+            { onConflict: 'employee_id,date' });
+  if(error){
+    montrer(/row-level security|permission denied/i.test(error.message || '')
+      ? 'Cette journée est déjà marquée absence ou vacances approuvée : seule la gestion peut la changer.'
+      : 'Enregistrement impossible : ' + error.message);
+    return;
+  }
+  // Un refus des règles d'accès peut passer sans erreur : on relit pour être sûr.
+  const { data: relu } = await sbClient.from('employee_day_overrides')
+    .select('status, start_time, end_time').eq('employee_id', employe.id).eq('date', iso).limit(1);
+  if(!relu || !relu[0] || relu[0].status !== 'special' || relu[0].start_time !== de || relu[0].end_time !== a){
+    montrer('Cette journée est déjà marquée absence ou vacances approuvée : seule la gestion peut la changer.');
+    return;
+  }
   fermerDemandeHoraire();
   if(currentScreenId === 'screen-horaire') loadHoraire();
 }
@@ -10531,7 +10617,7 @@ function renderHoursBadge(weeklyRow, overrideRow, employe, isoDate){
     circle.title = 'Changer le statut de cette journée';
     circle.addEventListener('click', function(ev){
       ev.stopPropagation();
-      ouvrirDemandeHoraire(employe, isoDate, overrideRow || null);
+      ouvrirDemandeHoraire(employe, isoDate, overrideRow || null, win);
     });
     if(demandeEnAttentePour(employe.id, isoDate)) circle.classList.add('en-attente');
   }
