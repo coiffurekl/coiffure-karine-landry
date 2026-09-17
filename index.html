@@ -2278,7 +2278,7 @@
         <input id="naDurationM" type="number" min="0" max="45" step="15" value="0" oninput="renderNaDurationChips()"><span class="qa-duration-unit">min</span>
       </div>
     </label>
-    <label>Coiffeur / Coiffeuse
+    <label>Coiffeur / Coiffeuse <span style="text-transform:none; letter-spacing:0; font-weight:400; opacity:.75;">— une ou plusieurs personnes</span>
       <div class="qa-cat-list" id="naEmpChips"></div>
     </label>
     <div id="naResultsWrap" style="display:none;">
@@ -7847,8 +7847,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('naEmpChips').addEventListener('click', e => {
     const chip = e.target.closest('.na-chip');
     if(!chip) return;
-    naSelectedEmpId = chip.dataset.empId || null;
-    Array.from(document.getElementById('naEmpChips').children).forEach(c => c.classList.toggle('active', c === chip));
+    // Plusieurs personnes à la fois (demandé par Martin, 17 sept. 2026) : chaque nom s'allume ou
+    // s'éteint ; « Toute l'équipe » vide la sélection, et s'allume dès qu'elle est vide.
+    const id = chip.dataset.empId || '';
+    if(!id) naSelectedEmpIds.clear();
+    else if(naSelectedEmpIds.has(id)) naSelectedEmpIds.delete(id);
+    else naSelectedEmpIds.add(id);
+    Array.from(document.getElementById('naEmpChips').children).forEach(c => {
+      const cid = c.dataset.empId || '';
+      c.classList.toggle('active', cid ? naSelectedEmpIds.has(cid) : naSelectedEmpIds.size === 0);
+    });
   });
   document.getElementById('naResults').addEventListener('click', e => {
     const row = e.target.closest('.na-result-row');
@@ -10281,7 +10289,7 @@ function computeBlockedRangesJour(weeklyRow, overrideRow){
 
 /* ---------- Prochaine disponibilité : cherche le créneau libre le plus proche, toutes coiffeuses
    ou une seule, selon la durée voulue, dans les 30 prochains jours. ---------- */
-let naSelectedEmpId = null; // null = toutes les coiffeuses
+const naSelectedEmpIds = new Set(); // vide = toute l'équipe
 
 function naGetDurationMinutes(){
   const h = parseInt(document.getElementById('naDurationH').value, 10) || 0;
@@ -10304,7 +10312,7 @@ async function populateNaEmployeeChips(){
   const wrap = document.getElementById('naEmpChips');
   if(!wrap) return;
   wrap.innerHTML = '<div class="qa-cat-chip na-chip active" data-emp-id="">Toute l’équipe</div>';
-  naSelectedEmpId = null;
+  naSelectedEmpIds.clear();
   const { data, error } = await sbClient.from('employees').select('*').order('sort_order');
   if(error){ console.error(error); return; }
   (data||[]).filter(isBookableEmployee).forEach(e => {
@@ -10365,7 +10373,7 @@ async function searchNextAvailability(){
   const { data: employeesData, error: eErr } = await sbClient.from('employees').select('*').order('sort_order');
   if(eErr){ resultsEl.innerHTML = '<div class="list-msg">Erreur de chargement.</div>'; console.error(eErr); return; }
   let candidates = (employeesData||[]).filter(isBookableEmployee);
-  if(naSelectedEmpId) candidates = candidates.filter(e => e.id === naSelectedEmpId);
+  if(naSelectedEmpIds.size) candidates = candidates.filter(e => naSelectedEmpIds.has(e.id));
   if(!candidates.length){ resultsEl.innerHTML = '<div class="list-msg">Personne à chercher.</div>'; return; }
 
   const empIds = candidates.map(e => e.id);
