@@ -260,11 +260,11 @@
      vert quand la cliente a confirme. Il sert aussi de bouton pour corriger a la main.
      La zone de touche (::after) deborde largement du rond visible : a 42px de colonne sur
      cellulaire, un rond de 10px serait impossible a viser au pouce. */
-  /* Coin inferieur droit. En haut, le rond se posait sur l'heure : dans une colonne de 38px,
-     « 09:00 » occupe deja 32px pour 28px disponibles. En bas a droite, la duree s'aligne a
-     gauche et laisse ce coin libre. */
+  /* Coin superieur droit (demande de Martin, 17 sept. 2026) : quand deux rendez-vous se
+     chevauchent, celui du dessus cachait le rond du bas de celui d'en dessous. La premiere ligne
+     (heure + nom) laisse la place au rond pour ne pas passer dessous. */
   .appt2-dot{
-    position:absolute; bottom:4px; right:4px; width:10px; height:10px; border-radius:50%;
+    position:absolute; top:5px; right:4px; width:10px; height:10px; border-radius:50%;
     border:1.5px solid rgba(255,255,255,.9); box-sizing:border-box; z-index:3; cursor:pointer;
   }
   .appt2-dot::after{ content:''; position:absolute; inset:-9px; border-radius:50%; }
@@ -364,7 +364,7 @@
   /* Le rendez-vous « soulevé » par un appui long : on voit qu'il est prêt à suivre le doigt. */
   .appt2.appt2-souleve{ transform:scale(1.05); box-shadow:0 12px 28px rgba(0,0,0,.35); z-index:50;
     transition:transform .12s ease, box-shadow .12s ease; }
-  .appt2 b{ display:block; font-size:12.5px; font-family:'Josefin Sans'; font-weight:600; margin-bottom:1px; }
+  .appt2 b{ display:block; font-size:12.5px; font-family:'Josefin Sans'; font-weight:600; margin-bottom:1px; padding-right:10px; }
   /* Plusieurs services choisis (ex. "Coupe, Couleur") : on laisse le texte revenir à la ligne au
      lieu de le tronquer avec des points de suspension — sinon le 2e service (et les suivants)
      disparaissaient carrément, invisibles sans cliquer sur le rendez-vous. La durée totale
@@ -1416,6 +1416,14 @@
        déborder du bloc ; le séparateur « · » n'a plus lieu d'être une fois les deux séparés. */
     .appt2 b .sep{ display:none; }
     .appt2 b .cli{ display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    /* Colonnes de ~33px : un rond en haut à droite cachait l'heure. Le statut devient une bande
+       de couleur sur le haut du bloc — toujours visible quand deux rendez-vous se chevauchent,
+       et toujours touchable (zone élargie vers le bas) pour corriger le statut. */
+    .appt2 b{ padding-right:0; }
+    .appt2-dot{ top:0; left:0; right:0; width:auto; height:4px; border-radius:0; border:none; }
+    .appt2-dot::after{ inset:0 0 -14px 0; border-radius:0; }
+    .appt2-dot.dot-aucun{ background:transparent; }
+    .appt2{ padding-top:6px; }
     .appt2 .svc{ font-size:8.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .appt2 .dur{ font-size:8.5px; }
 
