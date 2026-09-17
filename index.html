@@ -661,10 +661,16 @@
   .db-slot-chip svg{ width:13px; height:13px; flex-shrink:0; }
   .db-slot-chip b{ font-family:'Josefin Sans'; font-size:11.5px; font-weight:600; white-space:nowrap; }
   .db-slot-chip .db-slot-chip-dur{ font-family:'Josefin Sans'; font-size:10px; opacity:.85; white-space:nowrap; }
-  .db-slot-modal-card{ position:relative; overflow:visible; }
+  .db-slot-modal-card{ position:relative; overflow:visible; width:520px; max-width:calc(100vw - 32px); }
   .db-slot-close{ position:absolute; top:-14px; right:-14px; width:32px; height:32px; border-radius:50%; background:var(--ink); color:#fff; border:none; font-size:18px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px rgba(0,0,0,.3); }
   .db-slot-close:hover{ filter:brightness(1.2); }
-  .db-slot-actions{ display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
+  .db-slot-actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:10px; }
+  .db-slot-actions .db-slot-save{ margin-left:auto; }
+  /* Enregistrer les heures changées sans créer de rendez-vous (demandé par Martin, 17 sept. 2026). */
+  .db-slot-save{ height:42px; padding:0 18px; border-radius:11px; border:1px solid var(--teal-dk); background:#fff; color:var(--teal-dk);
+    font-family:'Josefin Sans'; font-size:12.5px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; cursor:pointer; }
+  .db-slot-save:hover{ background:var(--teal-dk); color:#fff; }
+  @media (max-width:480px){ .db-slot-create{ flex:1 1 100%; justify-content:center; } }
   .db-slot-delete{ width:42px; height:42px; border-radius:50%; border:1px solid var(--line); background:#fff; color:var(--ink-soft); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
   .db-slot-delete:hover{ background:#B23A3A; border-color:#B23A3A; color:#fff; }
   .db-slot-create{ display:flex; align-items:center; gap:9px; background:#2F86EB; color:#fff; border:none; border-radius:11px; padding:10px 18px; cursor:pointer; font-family:'Josefin Sans'; font-size:11px; text-transform:uppercase; letter-spacing:.03em; text-align:left; line-height:1.5; }
@@ -2023,6 +2029,7 @@
       <button type="button" class="db-slot-delete" onclick="deleteDbSlotBooking()" title="Retirer ce double-booking" aria-label="Effacer">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
       </button>
+      <button type="button" class="db-slot-save" onclick="enregistrerDbSlot()">Enregistrer</button>
       <button type="button" class="db-slot-create" onclick="createApptFromDbSlot()">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.6L12 3z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z"></path></svg>
         Créer un…<b>RENDEZ-VOUS</b>
@@ -10134,6 +10141,21 @@ async function deleteDbSlotBooking(){
   if(!confirm('Retirer ce double-booking ?')) return;
   const { error } = await sbClient.from('appointments').update({
     db_allowed: false, db_after_min: null, db_for_min: null, db_note: null
+  }).eq('id', dbSlotApptRaw.id);
+  if(error){ alert('Erreur : ' + error.message); return; }
+  closeDbSlotModal();
+  loadHoraire();
+}
+
+// Enregistre seulement les changements de la plage (heures, notes), sans créer de rendez-vous.
+async function enregistrerDbSlot(){
+  if(!dbSlotApptRaw) return;
+  const afterMin = parseInt(document.getElementById('dbSlotAfterMin').value, 10) || 0;
+  const forMin = parseInt(document.getElementById('dbSlotForMin').value, 10) || 0;
+  if(forMin <= 0){ alert('Choisis une durée pour le double-booking.'); return; }
+  const note = document.getElementById('dbSlotNote').value.trim();
+  const { error } = await sbClient.from('appointments').update({
+    db_allowed: true, db_after_min: afterMin, db_for_min: forMin, db_note: note || null
   }).eq('id', dbSlotApptRaw.id);
   if(error){ alert('Erreur : ' + error.message); return; }
   closeDbSlotModal();
