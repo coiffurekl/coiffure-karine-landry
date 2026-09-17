@@ -223,7 +223,12 @@
   .closed-block-editable.closed-block:not(.closed-block-absent):not(.closed-block-vacation):hover{ background:repeating-linear-gradient(45deg, rgba(32,48,47,.16), rgba(32,48,47,.16) 5px, transparent 5px, transparent 11px); }
   /* Survol des zones "Non-dispo" (points) : légèrement plus visible, même motif pâle. */
   .non-dispo{ z-index:2; cursor:pointer; overflow:hidden; }
-  .non-dispo .nd-texte{ display:block; padding:2px 5px; font-family:'Josefin Sans'; font-size:10.5px; line-height:1.25; color:var(--ink); }
+  /* Étiquette blanche (choix de Martin, 17 sept. 2026) : les pois restent pour reconnaître la
+     Non-dispo, mais l'heure et la note se lisent sur un fond opaque. */
+  .non-dispo .nd-texte{ display:block; margin:3px; padding:3px 6px; background:#fff; border:1px solid rgba(32,48,47,.22);
+    border-radius:6px; font-family:'Poppins'; font-size:11px; line-height:1.3; color:var(--ink);
+    overflow:hidden; overflow-wrap:break-word; box-shadow:0 1px 2px rgba(32,48,47,.08); }
+  .non-dispo .nd-texte b{ font-family:'Josefin Sans'; font-weight:700; }
   .closed-block-editable.closed-block-absent:hover{ background-color:rgba(32,48,47,.09); }
   .special-window-block{ position:absolute; left:0; right:0; background:rgba(224,138,29,.16); border-top:1px dashed rgba(224,138,29,.65); border-bottom:1px dashed rgba(224,138,29,.65); cursor:pointer; overflow:hidden; }
   .special-window-block:hover{ background:rgba(224,138,29,.26); }
@@ -1424,6 +1429,7 @@
     .appt2-dot::after{ inset:0 0 -14px 0; border-radius:0; }
     .appt2-dot.dot-aucun{ background:transparent; }
     .appt2{ padding-top:6px; }
+    .non-dispo .nd-texte{ margin:2px; padding:2px 3px; font-size:9px; border-radius:4px; }
     .appt2 .svc{ font-size:8.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .appt2 .dur{ font-size:8.5px; }
 
@@ -10511,7 +10517,7 @@ function renderNonDispos(body, liste, employe, dateObj){
     block.style.top = (top*HOR_PX_PER_MIN) + 'px';
     block.style.height = ((bottom-top)*HOR_PX_PER_MIN) + 'px';
     block.title = 'Non-dispo ' + n.start_time + '–' + n.end_time + (n.note ? ' · ' + n.note : '') + ' — cliquer pour modifier ou supprimer';
-    block.innerHTML = '<span class="nd-texte"><b>' + escapeHtml(n.start_time + '–' + n.end_time) + '</b>' + (n.note ? ' ' + escapeHtml(n.note) : '') + '</span>';
+    block.innerHTML = '<span class="nd-texte"><b>' + escapeHtml(n.start_time + '–' + n.end_time) + '</b>' + (n.note ? '<br>' + escapeHtml(n.note) : '') + '</span>';
     block.addEventListener('click', function(e){
       e.stopPropagation();
       openQuickNonDispo(employe, n.start_time, dateObj, n);
