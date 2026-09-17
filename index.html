@@ -5071,6 +5071,10 @@ async function chargerMonRole(){
 // les 21 barres de navigation et sur la page d'accueil, les chercher un par un serait fragile.
 function appliquerRole(){
   if(estGestionnaire()) return;
+  if(monNom){
+    const t = document.querySelector('#avisBandeau .ab-texte');
+    if(t) t.textContent = "Recevoir un avis et un chiffre rouge sur l'icône à chaque annulation de tes rendez-vous, même logiciel fermé.";
+  }
   document.querySelectorAll('[onclick]').forEach(el => {
     const action = el.getAttribute('onclick') || '';
     if(action.indexOf("go('screen-config')") !== -1 || action.indexOf("go('screen-comptable')") !== -1){
@@ -8288,6 +8292,9 @@ async function majPastilleAnnulations(){
 
   const aujourdhui = jourMontreal(new Date());
   annulationsCache = (data || []).filter(a => jourMontreal(new Date(a.start_at)) >= aujourdhui);
+  // Un compte relié à un membre de l'équipe ne voit que les annulations de SES rendez-vous (même
+  // règle que les avis sur le téléphone). Karine et le poste de la réception voient tout.
+  if(!estGestionnaire() && monNom) annulationsCache = annulationsCache.filter(a => a.employee_name === monNom);
 
   const n = annulationsCache.length;
   // Le rond rouge sur l'icône de l'app suit la pastille : sans ça, il resterait figé sur un vieux
