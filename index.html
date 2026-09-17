@@ -2278,6 +2278,14 @@
         <input id="naDurationM" type="number" min="0" max="45" step="15" value="0" oninput="renderNaDurationChips()"><span class="qa-duration-unit">min</span>
       </div>
     </label>
+    <label>Moment de la journée
+      <div class="qa-cat-list" id="naMomentChips">
+        <div class="qa-cat-chip na-chip active" data-moment="">Toute la journée</div>
+        <div class="qa-cat-chip na-chip" data-moment="am" title="Début avant midi">AM</div>
+        <div class="qa-cat-chip na-chip" data-moment="pm" title="Début entre midi et 17 h">PM</div>
+        <div class="qa-cat-chip na-chip" data-moment="soir" title="Début à 17 h ou plus tard">Soirée</div>
+      </div>
+    </label>
     <label>Coiffeur / Coiffeuse <span style="text-transform:none; letter-spacing:0; font-weight:400; opacity:.75;">— une ou plusieurs personnes</span>
       <div class="qa-cat-list" id="naEmpChips"></div>
     </label>
@@ -7844,6 +7852,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('naDurationM').value = mins%60;
     renderNaDurationChips();
   });
+  document.getElementById('naMomentChips').addEventListener('click', e => {
+    const chip = e.target.closest('.na-chip');
+    if(!chip) return;
+    const m = chip.dataset.moment || '';
+    if(!m) naMoments.clear();
+    else if(naMoments.has(m)) naMoments.delete(m);
+    else naMoments.add(m);
+    renderNaMomentChips();
+  });
   document.getElementById('naEmpChips').addEventListener('click', e => {
     const chip = e.target.closest('.na-chip');
     if(!chip) return;
@@ -10291,6 +10308,25 @@ function computeBlockedRangesJour(weeklyRow, overrideRow){
    ou une seule, selon la durée voulue, dans les 30 prochains jours. ---------- */
 const naSelectedEmpIds = new Set(); // vide = toute l'équipe
 
+/* Moment de la journée (demandé par Martin, 17 sept. 2026) : l'heure de DÉBUT du rendez-vous
+   doit tomber dans un des moments choisis. Vide = toute la journée. Un rendez-vous commencé en
+   matinée peut déborder après midi : on cherche « un rendez-vous le matin », pas « fini à midi ». */
+const naMoments = new Set();
+const NA_MOMENTS = { am:['00:00','12:00'], pm:['12:00','17:00'], soir:['17:00','24:00'] };
+
+function renderNaMomentChips(){
+  Array.from(document.getElementById('naMomentChips').children).forEach(c => {
+    const m = c.dataset.moment || '';
+    c.classList.toggle('active', m ? naMoments.has(m) : naMoments.size === 0);
+  });
+}
+
+// Plages de début permises, en minutes de la grille : [[début, fin), …]
+function naPlagesDeDebut(){
+  if(!naMoments.size) return [[-Infinity, Infinity]];
+  return [...naMoments].map(m => [toGridMin(NA_MOMENTS[m][0]), toGridMin(NA_MOMENTS[m][1])]);
+}
+
 function naGetDurationMinutes(){
   const h = parseInt(document.getElementById('naDurationH').value, 10) || 0;
   const m = parseInt(document.getElementById('naDurationM').value, 10) || 0;
@@ -10321,6 +10357,8 @@ async function populateNaEmployeeChips(){
 }
 
 function openNextAvailModal(){
+  naMoments.clear();
+  renderNaMomentChips();
   document.getElementById('naDurationH').value = 1;
   document.getElementById('naDurationM').value = 0;
   renderNaDurationChips();
@@ -10435,14 +10473,20 @@ async function searchNextAvailability(){
       // première heure OU la dernière heure disponible de la journée.
       openWindows.forEach(w => {
         if(w.end - w.start < duration) return;
-        const earliest = Math.ceil(w.start/15)*15;
-        const latest = Math.floor((w.end-duration)/15)*15;
-        if(earliest + duration <= w.end){
-          dayCandidates.push({ employeeId:emp.id, employeeName:emp.name, employeeColor:emp.color_hex, dateObj:new Date(dateObj), dateISO, startMin:earliest });
-        }
-        if(latest !== earliest && latest >= w.start && latest + duration <= w.end){
-          dayCandidates.push({ employeeId:emp.id, employeeName:emp.name, employeeColor:emp.color_hex, dateObj:new Date(dateObj), dateISO, startMin:latest });
-        }
+        // Chaque moment choisi (AM / PM / Soirée) restreint l'heure de début dans cette plage libre.
+        naPlagesDeDebut().forEach(([pDebut, pFin]) => {
+          const bas = Math.max(w.start, pDebut);
+          const haut = Math.min(w.end - duration, pFin - 1);
+          if(haut < bas) return;
+          const earliest = Math.ceil(bas/15)*15;
+          const latest = Math.floor(haut/15)*15;
+          if(earliest <= haut && earliest + duration <= w.end){
+            dayCandidates.push({ employeeId:emp.id, employeeName:emp.name, employeeColor:emp.color_hex, dateObj:new Date(dateObj), dateISO, startMin:earliest });
+          }
+          if(latest !== earliest && latest >= bas && latest + duration <= w.end){
+            dayCandidates.push({ employeeId:emp.id, employeeName:emp.name, employeeColor:emp.color_hex, dateObj:new Date(dateObj), dateISO, startMin:latest });
+          }
+        });
       });
     });
 
