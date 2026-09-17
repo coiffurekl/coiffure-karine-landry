@@ -5073,6 +5073,19 @@ function escapeHtml(s){
   return (s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
+/* La base renvoie au plus 1 000 lignes par demande. Depuis l'importation d'AssistTheo
+   (16 sept. 2026, plus de 4 300 clients), une liste complète doit être lue par tranches. */
+async function lireToutesLesLignes(construireRequete){
+  const TRANCHE = 1000;
+  let toutes = [];
+  for(let debut = 0; ; debut += TRANCHE){
+    const { data, error } = await construireRequete().range(debut, debut + TRANCHE - 1);
+    if(error) return { data: null, error };
+    toutes = toutes.concat(data || []);
+    if(!data || data.length < TRANCHE) return { data: toutes, error: null };
+  }
+}
+
 async function loadClients(){
   const backArrow = document.getElementById('clientsBackArrow');
   if(backArrow) backArrow.style.display = clientsReturnToHoraire ? 'inline' : 'none';
@@ -5080,7 +5093,8 @@ async function loadClients(){
   if(titleText) titleText.style.display = clientsReturnToHoraire ? 'none' : 'inline';
   const listEl = document.getElementById('clientListItems');
   listEl.innerHTML = '<div class="list-msg">Chargement...</div>';
-  const { data, error } = await sbClient.from('clients').select('*').order('last_name').order('first_name');
+  const { data, error } = await lireToutesLesLignes(() =>
+    sbClient.from('clients').select('*').order('last_name').order('first_name').order('id'));
   if(error){
     listEl.innerHTML = '<div class="list-msg">Erreur de connexion à la base de données.</div>';
     console.error(error);
@@ -5487,7 +5501,8 @@ function chiffresDuTelephone(valeur){
 async function clientsAvecLeMemeTelephone(telephone, saufId){
   const chiffres = chiffresDuTelephone(telephone);
   if(chiffres.length < 10) return [];   // trop court pour être un vrai numéro : on ne compare pas
-  const { data, error } = await sbClient.from('clients').select('id, first_name, last_name, phone');
+  const { data, error } = await lireToutesLesLignes(() =>
+    sbClient.from('clients').select('id, first_name, last_name, phone').order('id'));
   if(error){ console.error('Vérification des doublons impossible', error); return []; }
   return (data || []).filter(c => c.id !== saufId && chiffresDuTelephone(c.phone) === chiffres);
 }
