@@ -814,6 +814,17 @@
   .serv-liste label{ display:flex; align-items:center; gap:11px; padding:9px 10px; border-radius:8px; cursor:pointer; font-family:'Josefin Sans'; font-size:14.5px; color:var(--ink); }
   .serv-liste label:hover{ background:var(--paper2); }
   .serv-liste input{ width:19px; height:19px; accent-color:var(--teal-dk); flex-shrink:0; cursor:pointer; }
+  .serv-card{ width:520px; }
+  .serv-entete, .serv-ligne{ display:grid; grid-template-columns:1fr 104px 110px; gap:8px; align-items:center; }
+  .serv-entete{ font-family:'Josefin Sans'; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); padding:0 10px 2px; }
+  .serv-ligne{ border-radius:8px; padding-right:6px; }
+  .serv-ligne:hover{ background:var(--paper2); }
+  .serv-ligne label:hover{ background:transparent; }
+  .serv-liste .serv-champ{ display:flex; align-items:center; gap:4px; }
+  .serv-liste .serv-champ input{ width:auto; flex:1 1 auto; min-width:0; height:32px; padding:4px 6px; border:1px solid var(--line); border-radius:7px; font-size:14px; text-align:right; accent-color:auto; cursor:text; background:#fff; }
+  .serv-liste .serv-champ small{ font-size:11px; color:var(--ink-soft); flex:0 0 auto; }
+  .serv-ligne.serv-off .serv-champ{ opacity:.35; }
+  @media (max-width:480px){ .serv-entete, .serv-ligne{ grid-template-columns:1fr 70px 82px; } }
   .serv-liste .serv-vide{ font-size:11.5px; color:var(--ink-soft); font-style:italic; }
   .serv-retour{ font-family:'Josefin Sans'; font-size:13px; color:var(--teal-dk); cursor:pointer; padding:6px 2px 10px; }
   .serv-retour:hover{ text-decoration:underline; }
@@ -955,6 +966,9 @@
   table.prix th{ background:var(--teal); color:#fff; text-align:left; padding:18px 22px; font-size:16px; font-family:'Josefin Sans'; letter-spacing:.03em; text-transform:uppercase; font-weight:600; }
   table.prix td{ padding:18px 22px; font-size:20px; border-bottom:1px solid var(--line); }
   table.prix tr:nth-child(even) td{ background:var(--paper2); }
+  table.prix td.prix-apartir{ text-align:right; white-space:nowrap; font-weight:600; font-variant-numeric:tabular-nums; }
+  table.prix td.prix-apartir span{ font-family:'Josefin Sans'; font-size:13px; font-weight:500; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft); margin-right:6px; }
+  table.prix th:last-child{ text-align:right; }
 
   /* ---- Édition des prix (Zone Config > Services) ---- */
   table.prix-edit{ width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 6px 18px rgba(32,48,47,.05); }
@@ -2434,9 +2448,9 @@
   <div class="modal-card serv-card">
     <button type="button" class="db-slot-close" onclick="closeServicesModal()" aria-label="Fermer">&times;</button>
     <h3 class="acces-nom" id="servNom">Membre de l'équipe</h3>
-    <p class="serv-hint">Coche les services offerts. À la prise de rendez-vous, les catégories décochées ne seront pas proposées.</p>
+    <p class="serv-hint">Coche les services offerts et ajuste le temps et le prix de cette personne. Au départ, ce sont ceux du Niveau 3.</p>
     <p class="serv-tout"><span id="servToutBtn" onclick="basculerTousLesServices()">Tout cocher</span></p>
-    <div class="serv-liste" id="servListe" onchange="onServListeChange(event)"></div>
+    <div class="serv-liste" id="servListe" onchange="onServListeChange(event)" oninput="onServTarifInput(event)"></div>
     <p class="comptable-pin-error" id="servErreur"></p>
     <p class="comptable-pin-success" id="servSucces"></p>
     <div class="modal-actions">
@@ -3201,10 +3215,11 @@ async function loadPrixList(){
   const container = document.getElementById('prixContainer');
   if(container.dataset.loaded === '1') return;
   container.innerHTML = '<div class="list-msg">Chargement...</div>';
-  const [{ data: cats, error: e1 }, { data: svcs, error: e2 }, { data: tiers, error: e3 }] = await Promise.all([
+  const [{ data: cats, error: e1 }, { data: svcs, error: e2 }, { data: tiers, error: e3 }, { data: perso }] = await Promise.all([
     sbClient.from('service_categories').select('*').order('sort_order'),
     sbClient.from('services').select('*').order('sort_order'),
-    sbClient.from('service_tiers').select('*')
+    sbClient.from('service_tiers').select('*'),
+    sbClient.from('employee_services').select('service_id, price').not('price', 'is', null)
   ]);
   if(e1 || e2 || e3){
     container.innerHTML = '<div class="list-msg">Erreur de chargement des prix.</div>';
@@ -3216,16 +3231,15 @@ async function loadPrixList(){
     const catServices = svcs.filter(s => s.category_id === cat.id).sort((a,b)=>a.sort_order-b.sort_order);
     if(catServices.length === 0) return;
     html += '<div class="prix-cat">'+escapeHtml(cat.name)+'</div>';
-    html += '<table class="prix"><tr><th>Service</th>'+TIER_LEVEL_LABELS.map(t=>'<th>'+escapeHtml(t)+'</th>').join('')+'</tr>';
+    // Plus de colonnes par niveau (demandé par Martin, 17 sept. 2026) : un seul montant,
+    // « À partir de », le moins cher parmi tous les niveaux et les prix propres à chaque personne.
+    html += '<table class="prix"><tr><th>Service</th><th>Prix</th></tr>';
     catServices.forEach(svc => {
-      const svcTiers = tiers.filter(t => t.service_id === svc.id);
-      html += '<tr><td>'+escapeHtml(svc.name)+'</td>';
-      TIER_ORDER.forEach(tierLabel => {
-        const t = svcTiers.find(x => x.tier_label === tierLabel);
-        if(!t){ html += '<td>—</td>'; return; }
-        html += '<td>'+formatMoney(t.price)+'<br><span style="font-size:16px; color:var(--ink-soft); font-weight:500;">'+formatDuration(t.duration_minutes)+'</span></td>';
-      });
-      html += '</tr>';
+      const montants = tiers.filter(t => t.service_id === svc.id && t.price != null).map(t => Number(t.price))
+        .concat((perso || []).filter(p => p.service_id === svc.id).map(p => Number(p.price)));
+      const min = montants.length ? Math.min(...montants) : null;
+      html += '<tr><td>'+escapeHtml(svc.name)+'</td>' +
+        '<td class="prix-apartir">'+(min === null ? '—' : '<span>À partir de</span> '+formatMoney(min))+'</td></tr>';
     });
     html += '</table>';
   });
@@ -3813,6 +3827,7 @@ async function applyThemeOnLoad(){
 /* ---------- Zone Config > Équipe : niveaux de prix par employée ---------- */
 /* Correspondance entre le niveau affiché (1 à 4) et l'étiquette réelle dans service_tiers */
 const TIER_LEVEL_LABELS = ['Niveau 1', 'Niveau 2', 'Niveau 3', 'Niveau 4'];
+const NIVEAU_PAR_DEFAUT = TIER_ORDER[2];   // « Niveau 3 » (enregistré « Niv.2 ») : le défaut voulu par Martin
 
 const EMPLOYEE_COLOR_PALETTE = [
   '#27656C','#B5731A','#8FA09B','#A85C34','#20302F','#C98E7B','#5C707C','#D89A3E','#7A2C3E',
@@ -3938,16 +3953,23 @@ let servEmployeeId = null;
 let servCategoriesCache = null;  // toutes les catégories du salon
 let servServicesTous = null;     // tous les services, avec leur category_id
 let servNiveauxParService = {};  // les niveaux où chaque service a un VRAI prix
+let servDefautParService = {};   // prix et temps du Niveau 3, proposés par défaut
+let servTarifs = null;           // Map service_id -> { price, duration } en cours d'édition
 
 async function chargerCategoriesDuSalon(){
   if(servCategoriesCache) return;
   const [{ data: cats, error: e1 }, { data: svcs, error: e2 }, { data: tiers, error: e3 }] = await Promise.all([
     sbClient.from('service_categories').select('id, name').order('sort_order'),
     sbClient.from('services').select('id, category_id, name, sort_order'),
-    sbClient.from('service_tiers').select('service_id, tier_label, price')
+    sbClient.from('service_tiers').select('service_id, tier_label, price, duration_minutes')
   ]);
   if(e1 || e2 || e3){ console.error(e1||e2||e3); return; }
   servCategoriesCache = cats || [];
+  // Prix et temps proposés par défaut pour une personne : ceux du Niveau 3 (choix de Martin).
+  servDefautParService = {};
+  (tiers||[]).forEach(t => {
+    if(t.tier_label === NIVEAU_PAR_DEFAUT) servDefautParService[t.service_id] = { price: t.price != null ? Number(t.price) : null, duration: t.duration_minutes };
+  });
   servServicesTous = (svcs || []).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
   // Pour chaque service, les niveaux où il a un VRAI prix. Une ligne de tarif vide ne compte pas :
   // le service s'afficherait à la prise de rendez-vous avec un « — » à la place du montant, et
@@ -3991,6 +4013,15 @@ async function openServicesModal(employeeId){
   await Promise.all([chargerCategoriesDuSalon(), chargerServicesOfferts(true)]);
   const dejaOfferts = (emp && servicesOffertsParNom && servicesOffertsParNom[emp.name]) || new Set();
   servSelection = new Set(dejaOfferts);
+  const perso = (emp && tarifsParNom[emp.name]) || {};
+  servTarifs = new Map();
+  (servServicesTous || []).forEach(sv => {
+    const p = perso[sv.id] || {}, d = servDefautParService[sv.id] || {};
+    servTarifs.set(sv.id, {
+      price: p.price != null ? p.price : (d.price != null ? d.price : null),
+      duration: p.duration != null ? p.duration : (d.duration != null ? d.duration : null)
+    });
+  });
   renderServListe();
 }
 
@@ -4009,11 +4040,16 @@ function renderServListe(){
     boite.innerHTML =
       '<div class="serv-retour" onclick="servRetourAuxCategories()">&lsaquo; Toutes les catégories</div>' +
       '<div class="serv-sous-titre">' + escapeHtml(cat ? cat.name : '') + '</div>' +
+      '<div class="serv-entete"><span></span><span>Temps</span><span>Prix</span></div>' +
       services.map(sv => {
-        const sansPrix = niveau && !(servNiveauxParService[sv.id] || new Set()).has(niveau);
-        const note = sansPrix ? ' <span class="serv-vide">— aucun prix à son niveau</span>' : '';
-        return '<label><input type="checkbox" data-service="'+sv.id+'"'+(servSelection.has(sv.id)?' checked':'')+'>' +
-               '<span>'+escapeHtml(sv.name)+note+'</span></label>';
+        const coche = servSelection.has(sv.id);
+        const tf = servTarifs.get(sv.id) || {};
+        return '<div class="serv-ligne'+(coche?'':' serv-off')+'">' +
+               '<label><input type="checkbox" data-service="'+sv.id+'"'+(coche?' checked':'')+'>' +
+               '<span>'+escapeHtml(sv.name)+'</span></label>' +
+               '<span class="serv-champ"><input type="number" min="5" step="5" inputmode="numeric" class="serv-min" data-tarif="duration" data-sid="'+sv.id+'" value="'+(tf.duration != null ? tf.duration : '')+'"'+(coche?'':' disabled')+'><small>min</small></span>' +
+               '<span class="serv-champ"><input type="number" min="0" step="0.01" inputmode="decimal" class="serv-prix" data-tarif="price" data-sid="'+sv.id+'" value="'+(tf.price != null ? tf.price : '')+'"'+(coche?'':' disabled')+'><small>$</small></span>' +
+               '</div>';
       }).join('') || '<div class="list-msg">Aucun service dans cette catégorie.</div>';
   } else {
     boite.innerHTML = (servCategoriesCache||[]).map(c => {
@@ -4052,8 +4088,19 @@ function servRetourAuxCategories(){
 
 // Une case cochée met à jour la sélection en mémoire, puis on redessine pour que les compteurs
 // et les états intermédiaires suivent.
+function onServTarifInput(ev){
+  const el = ev && ev.target;
+  if(!el || !el.dataset.tarif || !servTarifs) return;
+  const tf = servTarifs.get(el.dataset.sid) || {};
+  const v = String(el.value).replace(',', '.').trim();
+  const n = v === '' ? null : Number(v);
+  tf[el.dataset.tarif] = (n === null || isNaN(n)) ? null : (el.dataset.tarif === 'duration' ? Math.round(n) : Math.round(n*100)/100);
+  servTarifs.set(el.dataset.sid, tf);
+}
+
 function onServListeChange(ev){
   const el = ev && ev.target;
+  if(el && el.dataset && el.dataset.tarif){ onServTarifInput(ev); return; }
   if(!el || el.type !== 'checkbox') return;
   if(el.dataset.service){
     if(el.checked) servSelection.add(el.dataset.service); else servSelection.delete(el.dataset.service);
@@ -4086,6 +4133,7 @@ function closeServicesModal(){
   servEmployeeId = null;
   servVueCategorie = null;
   servSelection = null;
+  servTarifs = null;
 }
 
 async function enregistrerServicesEmployee(){
@@ -4101,7 +4149,12 @@ async function enregistrerServicesEmployee(){
   let insErr = null;
   if(!delErr && choisis.length){
     ({ error: insErr } = await sbClient.from('employee_services')
-      .insert(choisis.map(id => ({ employee_id: servEmployeeId, service_id: id }))));
+      .insert(choisis.map(id => {
+        const tf = (servTarifs && servTarifs.get(id)) || {};
+        return { employee_id: servEmployeeId, service_id: id,
+                 price: tf.price != null ? tf.price : null,
+                 duration_minutes: tf.duration != null && tf.duration >= 5 ? tf.duration : null };
+      })));
   }
   btn.disabled = false; btn.textContent = 'Enregistrer';
 
@@ -4313,6 +4366,7 @@ function openAddEmployeeForm(){
   const levelSel = document.getElementById('teamAddLevel');
   levelSel.innerHTML = '<option value="">— Aucun niveau —</option>' +
     TIER_ORDER.map((raw, i) => '<option value="'+escapeHtml(raw)+'">'+TIER_LEVEL_LABELS[i]+'</option>').join('');
+  levelSel.value = NIVEAU_PAR_DEFAUT;
   document.getElementById('teamAddError').classList.remove('show');
   document.getElementById('teamAddRole').value = '';
   document.getElementById('teamAddEmail').value = '';
@@ -4361,6 +4415,18 @@ async function submitAddEmployee(){
   }
   employeeTierLevelCache = null;
   factEmployeesCache = null;
+
+  // Tous les services, avec les prix et les temps du Niveau 3 comme point de départ : on les
+  // ajuste ensuite dans « Services » de sa rangée.
+  servCategoriesCache = null;
+  await chargerCategoriesDuSalon();
+  if(servServicesTous && servServicesTous.length){
+    await sbClient.from('employee_services').insert(servServicesTous.map(sv => {
+      const d = servDefautParService[sv.id] || {};
+      return { employee_id: creee.id, service_id: sv.id, price: d.price != null ? d.price : null, duration_minutes: d.duration != null && d.duration >= 5 ? d.duration : null };
+    }));
+  }
+  servicesOffertsParNom = null;
 
   // La fiche est créée : même si l'envoi de l'accès échoue, on ne la défait pas. On garde le
   // formulaire ouvert avec le message, et Karine peut réessayer depuis le bouton de la rangée.
@@ -5669,6 +5735,7 @@ async function loadFactServiceOptions(){
   if(e1||e2||e3){ console.error(e1||e2||e3); return; }
   factCats = cats||[]; factSvcs = svcs||[]; factTiers = tiers||[];
   factServicesLoaded = true;
+  await chargerServicesOfferts();
 }
 
 // Peut être ouvert avec ou sans employée active : sans employée, tous les niveaux sont affichés
@@ -5684,6 +5751,7 @@ async function openFactureServicePicker(employeeName){
   closeFactureAddProduct();
   const levelMap = employeeName ? await getEmployeeTierLevelMap() : {};
   const tierLevel = employeeName ? (levelMap[employeeName] || null) : null;
+  await chargerServicesOfferts(true);
   document.getElementById('factPickerEmpName').textContent = employeeName ? ('Services de ' + employeeName) : 'Ajouter un service';
   renderFactCategoryList(tierLevel);
   document.getElementById('factServiceList').style.display = 'none';
@@ -5922,7 +5990,7 @@ function renderFactCategoryList(tierLevel){
   let html = '';
   factCats.forEach(cat=>{
     const catServiceIds = factSvcs.filter(s=>s.category_id===cat.id).map(s=>s.id);
-    const hasServices = factTiers.some(t => catServiceIds.includes(t.service_id) && (!tierLevel || t.tier_label===tierLevel));
+    const hasServices = catServiceIds.some(id => tiersPourPersonne(factTiers, id, tierLevel, factActiveEmployeeName).length);
     if(!hasServices) return;
     html += '<div class="qa-cat-chip" data-cat-id="'+cat.id+'">'+escapeHtml(cat.name)+'</div>';
   });
@@ -5934,10 +6002,10 @@ function showFactCategory(catId){
   const catServices = factSvcs.filter(s=>s.category_id===catId).sort((a,b)=>a.sort_order-b.sort_order);
   let html = '<div class="qa-svc-back" data-back="1">&lsaquo; Retour aux catégories</div>';
   catServices.forEach(svc=>{
-    let svcTiers = factTiers.filter(t=>t.service_id===svc.id);
-    if(tierLevel) svcTiers = svcTiers.filter(t=>t.tier_label===tierLevel);
+    const svcTiers = tiersPourPersonne(factTiers, svc.id, tierLevel, factActiveEmployeeName);
     svcTiers.forEach(t=>{
-      const meta = formatDuration(t.duration_minutes) + ' · ' + formatMoney(t.price);
+      const eff = tarifEffectif(factActiveEmployeeName, t);
+      const meta = formatDuration(eff.duration) + ' · ' + formatMoney(eff.price);
       html += '<div class="qa-svc-row" data-tier-id="'+t.id+'"><span class="name">'+escapeHtml(svc.name)+(tierLevel?'':(' — '+escapeHtml(t.tier_label)))+'</span><span class="meta">'+meta+'</span></div>';
     });
   });
@@ -5960,7 +6028,7 @@ async function addFactureItemFromTier(tierId){
     // le niveau de prix (tier_label) n'est jamais affiché sur la facture — seulement le nom du service
     description: svc ? svc.name : '',
     employeeName: factActiveEmployeeName || '',
-    unitPrice: t.price != null ? Number(t.price) : 0,
+    unitPrice: tarifEffectif(factActiveEmployeeName, t).price || 0,
     quantity: 1,
     serviceId: t.service_id,
     discountPercent: 0
@@ -9565,7 +9633,7 @@ async function openEditAppointment(a, knownClientId){
     qaSelectedTiers = a.service_tier_ids.split(',').map(id => id.trim()).filter(Boolean).map(tierId => {
       const t = qaTiers.find(x=>x.id===tierId);
       const svc = t ? qaSvcs.find(s=>s.id===t.service_id) : null;
-      return (t && svc) ? { tierId: t.id, label: svc.name, duration: t.duration_minutes || 0 } : null;
+      return (t && svc) ? { tierId: t.id, label: svc.name, duration: tarifEffectif(a.employee_name, t).duration } : null;
     }).filter(Boolean);
     if(qaSelectedTiers.length){ renderQaServiceSummary(); qaSetServiceView('summary'); }
   }
@@ -9618,14 +9686,14 @@ function matchFirstServiceTier(serviceTierIdsStr){
 // servicesLabelStr sert de filet de sécurité pour le nom : si un tarif a été supprimé du catalogue
 // depuis le rendez-vous, on retombe sur le nom déjà affiché sur le rendez-vous (sans prix connu)
 // plutôt que de perdre complètement ce service de la facture.
-function matchAllServiceTiers(serviceTierIdsStr, servicesLabelStr){
+function matchAllServiceTiers(serviceTierIdsStr, servicesLabelStr, nomEmploye){
   const tierIds = (serviceTierIdsStr || '').split(',').map(s=>s.trim()).filter(Boolean);
   const labels = (servicesLabelStr || '').split(', ').map(s=>s.trim()).filter(Boolean);
   return tierIds.map((tierId, i) => {
     const t = (typeof qaTiers !== 'undefined' && qaTiers) ? qaTiers.find(x=>x.id===tierId) : null;
     const svc = t ? (qaSvcs||[]).find(s=>s.id===t.service_id) : null;
     if(t && svc){
-      return { price: t.price != null ? Number(t.price) : null, serviceId: svc.id, serviceName: svc.name };
+      return { price: tarifEffectif(nomEmploye, t).price, serviceId: svc.id, serviceName: svc.name };
     }
     return { price: null, serviceId: null, serviceName: labels[i] || 'Service' };
   });
@@ -9686,7 +9754,7 @@ async function goFacturerFromAppt(){
       items: []
     };
     if(a.service_tier_ids){
-      factPrefill.items = matchAllServiceTiers(a.service_tier_ids, a.services_label).map(m => ({
+      factPrefill.items = matchAllServiceTiers(a.service_tier_ids, a.services_label, a.employee_name).map(m => ({
         description: m.serviceName, unitPrice: m.price, serviceId: m.serviceId
       }));
     } else {
@@ -9711,19 +9779,50 @@ async function goFacturerFromAppt(){
    En cas d'echec de chargement, on ne filtre RIEN : mieux vaut proposer trop que de vider
    l'horaire du salon sur une coupure de reseau. */
 let servicesOffertsParNom = null;
+/* Prix et temps propres à une personne (demandé par Martin le 2026-09-17) : pas toutes les
+   coiffeuses ne chargent le même prix. tarifsParNom[nom][service_id] = { price, duration } ;
+   une valeur vide veut dire « celle du niveau », comme avant. */
+let tarifsParNom = {};
 
 async function chargerServicesOfferts(forcer){
   if(servicesOffertsParNom && !forcer) return;
   const { data, error } = await sbClient
-    .from('employee_services').select('service_id, employees(name)');
+    .from('employee_services').select('service_id, price, duration_minutes, employees(name)');
   if(error){ console.error('Services offerts illisibles', error); return; }
-  const parNom = {};
+  const parNom = {}, tarifs = {};
   (data||[]).forEach(l => {
     const nom = l.employees && l.employees.name;
     if(!nom) return;
     (parNom[nom] = parNom[nom] || new Set()).add(l.service_id);
+    if(l.price != null || l.duration_minutes != null){
+      (tarifs[nom] = tarifs[nom] || {})[l.service_id] = {
+        price: l.price != null ? Number(l.price) : null, duration: l.duration_minutes
+      };
+    }
   });
   servicesOffertsParNom = parNom;
+  tarifsParNom = tarifs;
+}
+
+// Le prix et le temps qui s'appliquent vraiment à cette personne pour ce tarif.
+function tarifEffectif(nomEmploye, tier){
+  const perso = (nomEmploye && tarifsParNom[nomEmploye]) ? tarifsParNom[nomEmploye][tier.service_id] : null;
+  return {
+    price: perso && perso.price != null ? perso.price : (tier.price != null ? Number(tier.price) : null),
+    duration: perso && perso.duration != null ? perso.duration : (tier.duration_minutes || 0)
+  };
+}
+
+// Les tarifs à proposer pour un service : ceux du niveau de la personne. Si le niveau n'a pas de
+// tarif mais que la personne a son propre prix, on prend un tarif du service comme référence —
+// c'est ce qui permettra plus tard de retirer les niveaux.
+function tiersPourPersonne(tiers, serviceId, niveau, nomEmploye){
+  const duService = tiers.filter(t => t.service_id === serviceId);
+  if(!niveau) return duService;
+  const auNiveau = duService.filter(t => t.tier_label === niveau);
+  if(auNiveau.length) return auNiveau;
+  const perso = nomEmploye && tarifsParNom[nomEmploye] && tarifsParNom[nomEmploye][serviceId];
+  return perso && duService.length ? [duService[0]] : [];
 }
 
 async function loadQaServiceOptions(){
@@ -9749,8 +9848,7 @@ function renderQaCategoryList(){
     const avantFiltre = catServiceIds.length;
     // Le filtre ne s'applique que si on a pu lire la liste : sinon on laisse tout passer.
     if(offerts) catServiceIds = catServiceIds.filter(id => offerts.has(id));
-    const hasServices = qaTiers.some(t => catServiceIds.includes(t.service_id)
-      && (!qaEmployeeTierLevel || t.tier_label===qaEmployeeTierLevel));
+    const hasServices = catServiceIds.some(id => tiersPourPersonne(qaTiers, id, qaEmployeeTierLevel, nomChoisi).length);
     if(!hasServices){ if(avantFiltre && !catServiceIds.length) masqueesFauteDOffre++; return; }
     html += '<div class="qa-cat-chip" data-cat-id="'+cat.id+'">'+escapeHtml(cat.name)+'</div>';
   });
@@ -9771,13 +9869,12 @@ function showQaCategory(catId){
     .filter(s=>s.category_id===catId && (!offerts || offerts.has(s.id)))
     .sort((a,b)=>a.sort_order-b.sort_order);
   let html = '<div class="qa-svc-back" data-back="1">&lsaquo; Retour aux catégories</div>';
+  const nomQa = document.getElementById('qaEmployeeName').value;
   catServices.forEach(svc=>{
-    let svcTiers = qaTiers.filter(t=>t.service_id===svc.id);
-    if(qaEmployeeTierLevel){
-      svcTiers = svcTiers.filter(t=>t.tier_label===qaEmployeeTierLevel);
-    }
+    const svcTiers = tiersPourPersonne(qaTiers, svc.id, qaEmployeeTierLevel, nomQa);
     svcTiers.forEach(t=>{
-      const meta = formatDuration(t.duration_minutes) + ' · ' + formatMoney(t.price);
+      const eff = tarifEffectif(nomQa, t);
+      const meta = formatDuration(eff.duration) + ' · ' + formatMoney(eff.price);
       const added = qaSelectedTiers.some(x=>x.tierId===t.id);
       html += '<div class="qa-svc-row'+(added?' added':'')+'" data-tier-id="'+t.id+'"><span class="name">'+escapeHtml(svc.name)+(qaEmployeeTierLevel?'':(' — '+escapeHtml(t.tier_label)))+'</span><span class="meta">'+meta+'</span></div>';
     });
@@ -9831,7 +9928,7 @@ function selectQaTier(tierId){
   if(!t) return;
   const svc = qaSvcs.find(s=>s.id===t.service_id);
   const label = svc ? svc.name : '';
-  qaSelectedTiers.push({ tierId: t.id, label, duration: t.duration_minutes || 0 });
+  qaSelectedTiers.push({ tierId: t.id, label, duration: tarifEffectif(document.getElementById('qaEmployeeName').value, t).duration });
   qaRecomputeFromSelectedTiers();
   renderQaServiceSummary();
   qaSetServiceView('summary');
