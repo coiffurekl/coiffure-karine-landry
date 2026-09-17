@@ -222,6 +222,8 @@
   .closed-block-editable:hover{ filter:brightness(.94); }
   .closed-block-editable.closed-block:not(.closed-block-absent):not(.closed-block-vacation):hover{ background:repeating-linear-gradient(45deg, rgba(32,48,47,.16), rgba(32,48,47,.16) 5px, transparent 5px, transparent 11px); }
   /* Survol des zones "Non-dispo" (points) : légèrement plus visible, même motif pâle. */
+  .non-dispo{ z-index:2; cursor:pointer; overflow:hidden; }
+  .non-dispo .nd-texte{ display:block; padding:2px 5px; font-family:'Josefin Sans'; font-size:10.5px; line-height:1.25; color:var(--ink); }
   .closed-block-editable.closed-block-absent:hover{ background-color:rgba(32,48,47,.09); }
   .special-window-block{ position:absolute; left:0; right:0; background:rgba(224,138,29,.16); border-top:1px dashed rgba(224,138,29,.65); border-bottom:1px dashed rgba(224,138,29,.65); cursor:pointer; overflow:hidden; }
   .special-window-block:hover{ background:rgba(224,138,29,.26); }
@@ -2213,6 +2215,7 @@
     <label>À<input id="qndEnd" type="time"></label>
     <label>Raison (optionnel)<input id="qndNote" type="text" placeholder="Ex. Rendez-vous personnel"></label>
     <div class="modal-actions">
+      <button class="btn-outline qa-delete" id="qndDeleteBtn" onclick="supprimerNonDispo()" style="display:none;">Supprimer</button>
       <button class="btn-outline" onclick="closeQuickNonDispoModal()">Annuler</button>
       <button class="btn-solid" onclick="saveQuickNonDispo()">Enregistrer</button>
     </div>
@@ -4679,8 +4682,15 @@ async function saveDayStatus(){
       const start = document.getElementById('dsAbsentStart').value;
       const end = document.getElementById('dsAbsentEnd').value;
       if((start && !end) || (!start && end)){ alert('Indique une heure de début ET de fin, ou laisse les deux vides pour bloquer toute la journée.'); return; }
-      ({ error } = await sbClient.from('employee_day_overrides')
-        .upsert({ employee_id: empId, date: dsSelectedDateISO, status:'absent', start_time:start||null, end_time:end||null, note: note||null }, { onConflict: 'employee_id,date' }));
+      if(start && end){
+        // Avec des heures, c'est une Non-dispo : elle s'ajoute aux autres du jour sans rien remplacer.
+        if(end <= start){ alert('L\'heure de fin doit être après l\'heure de début.'); return; }
+        ({ error } = await sbClient.from('employee_non_dispos')
+          .insert({ employee_id: empId, date: dsSelectedDateISO, start_time:start, end_time:end, note: note||null }));
+      } else {
+        ({ error } = await sbClient.from('employee_day_overrides')
+          .upsert({ employee_id: empId, date: dsSelectedDateISO, status:'absent', start_time:null, end_time:null, note: note||null }, { onConflict: 'employee_id,date' }));
+      }
     } else if(status === 'vacation'){
       const startD = document.getElementById('dsVacStart').value;
       const endD = document.getElementById('dsVacEnd').value;
@@ -8752,16 +8762,29 @@ function addMinutesToTime(timeStr, minutesToAdd){
 
 let qndEmployeeId = null, qndDateISO = null;
 
-async function openQuickNonDispo(empName, timeStr, dateObj){
+let qndEnEdition = null;   // la Non-dispo ouverte en modification (null = nouvelle)
+
+async function openQuickNonDispo(empName, timeStr, dateObj, existante){
+  qndEnEdition = existante || null;
   document.getElementById('qndEmpName').textContent = empName;
   qndDateISO = horDateISO(dateObj);
   document.getElementById('qndDate').value = qndDateISO;
-  document.getElementById('qndStart').value = timeStr;
-  document.getElementById('qndEnd').value = addMinutesToTime(timeStr, 30);
-  document.getElementById('qndNote').value = '';
+  document.getElementById('qndStart').value = existante ? existante.start_time : timeStr;
+  document.getElementById('qndEnd').value = existante ? existante.end_time : addMinutesToTime(timeStr, 30);
+  document.getElementById('qndNote').value = existante ? (existante.note || '') : '';
+  document.getElementById('qndDeleteBtn').style.display = existante ? 'inline-block' : 'none';
   const { data } = await sbClient.from('employees').select('id').eq('name', empName).limit(1);
   qndEmployeeId = (data && data[0]) ? data[0].id : null;
   document.getElementById('quickNonDispoModalOverlay').classList.add('show');
+}
+
+async function supprimerNonDispo(){
+  if(!qndEnEdition) return;
+  if(!confirm('Supprimer cette Non-dispo ?')) return;
+  const { error } = await sbClient.from('employee_non_dispos').delete().eq('id', qndEnEdition.id);
+  if(error){ alert('Erreur : ' + error.message); return; }
+  closeQuickNonDispoModal();
+  loadHoraire();
 }
 
 function closeQuickNonDispoModal(){
@@ -8773,9 +8796,12 @@ async function saveQuickNonDispo(){
   const end = document.getElementById('qndEnd').value;
   const note = document.getElementById('qndNote').value.trim();
   if(!start || !end){ alert('Indique une heure de début et de fin.'); return; }
+  if(end <= start){ alert('L\'heure de fin doit être après l\'heure de début.'); return; }
   if(!qndEmployeeId){ alert('Membre de l\'équipe introuvable.'); return; }
-  const { error } = await sbClient.from('employee_day_overrides')
-    .upsert({ employee_id: qndEmployeeId, date: qndDateISO, status:'absent', start_time:start, end_time:end, note: note||null }, { onConflict: 'employee_id,date' });
+  const ligne = { employee_id: qndEmployeeId, date: qndDateISO, start_time:start, end_time:end, note: note||null };
+  const { error } = qndEnEdition
+    ? await sbClient.from('employee_non_dispos').update(ligne).eq('id', qndEnEdition.id)
+    : await sbClient.from('employee_non_dispos').insert(ligne);
   if(error){ alert('Erreur : ' + error.message); return; }
   closeQuickNonDispoModal();
   loadHoraire();
@@ -9174,7 +9200,8 @@ async function prepareClientDupAvailability(durationMinutes){
     (apptsByEmpDate[key] = apptsByEmpDate[key] || []).push({ start:startMin, end:startMin+dur });
   });
 
-  clientUpcomingDupAvail = { employees, weeklyByEmpWeekday, overrideByEmpDate, apptsByEmpDate, durationMinutes };
+  const nonDisposParEmpDate = await chargerNonDispos(q => q.in('employee_id', empIds).gte('date', horDateISO(rangeStart)).lt('date', horDateISO(rangeEnd)));
+  clientUpcomingDupAvail = { employees, weeklyByEmpWeekday, overrideByEmpDate, apptsByEmpDate, durationMinutes, nonDisposParEmpDate };
 }
 
 // Vrai si l'employée a, ce jour-là, au moins une plage libre assez grande pour la durée du
@@ -9187,7 +9214,7 @@ function dupIsEmployeeAvailable(empId, empName, dateObj){
   const dateISO = horDateISO(dateObj);
   const weeklyRow = lookupWeeklyRow(av.weeklyByEmpWeekday, empId, dateObj);
   const overrideRow = av.overrideByEmpDate[empId+'_'+dateISO];
-  const blocked = computeBlockedRanges(weeklyRow, overrideRow);
+  const blocked = computeBlockedRanges(weeklyRow, overrideRow, (av.nonDisposParEmpDate || {})[empId+'_'+dateISO]);
   const apptRanges = av.apptsByEmpDate[empName+'_'+dateISO] || [];
   const allBlocked = (blocked.ranges||[]).concat(apptRanges);
   const openWindows = naComputeOpenWindows(allBlocked, 0, horGridMinutes);
@@ -9845,7 +9872,8 @@ async function saveQuickAdd(){
     const availWeeklyRow = pickWeeklyRowForParity(availWeeklyRows, availParity);
     const availOverrideRow = (availOverrideRows && availOverrideRows[0]) || null;
     const endTimeStr = String(endAt.getHours()).padStart(2,'0')+':'+String(endAt.getMinutes()).padStart(2,'0');
-    if(isTimeBlockedForEmployee(availWeeklyRow, availOverrideRow, time, endTimeStr)){
+    const availNonDispos = (await chargerNonDispos(q => q.eq('employee_id', availEmpId).eq('date', availIsoDate)))[availEmpId + '_' + availIsoDate];
+    if(isTimeBlockedForEmployee(availWeeklyRow, availOverrideRow, time, endTimeStr, availNonDispos)){
       if(!confirm(employeeName + " n'est pas disponible à cette heure. Es-tu sûr de vouloir ajouter ce rendez-vous quand même ?")) return;
     }
   }
@@ -10126,8 +10154,8 @@ function toGridMin(t){ return horToMin(t) - HOR_START_H*60; } // minutes relativ
 
 // Vérifie si la plage [startTimeStr, endTimeStr) tombe (même partiellement) dans une plage non disponible
 // (horaire régulier fermé, absence, vacances...) telle que calculée par computeBlockedRanges().
-function isTimeBlockedForEmployee(weeklyRow, overrideRow, startTimeStr, endTimeStr){
-  const result = computeBlockedRanges(weeklyRow, overrideRow);
+function isTimeBlockedForEmployee(weeklyRow, overrideRow, startTimeStr, endTimeStr, nonDispos){
+  const result = computeBlockedRanges(weeklyRow, overrideRow, nonDispos);
   if(!result || !result.configured) return false;
   const startMin = toGridMin(startTimeStr);
   const endMin = toGridMin(endTimeStr);
@@ -10148,7 +10176,28 @@ function subtractWindow(ranges, ws, we){
   return result;
 }
 
-function computeBlockedRanges(weeklyRow, overrideRow){
+/* ---------- Non-dispo multiples ----------
+   Demandé par Martin le 2026-09-16 : autant de Non-dispo que voulu par personne et par jour.
+   Elles vivent dans employee_non_dispos (une ligne par plage), à part du statut du jour
+   (employee_day_overrides : horaire spécial, absence complète, vacances, plage d'exception). */
+async function chargerNonDispos(filtrer){
+  const { data, error } = await filtrer(sbClient.from('employee_non_dispos').select('*').order('start_time'));
+  if(error){ console.error('Non-dispo :', error); return {}; }
+  const index = {};
+  (data || []).forEach(n => { (index[n.employee_id + '_' + n.date] = index[n.employee_id + '_' + n.date] || []).push(n); });
+  return index;
+}
+
+function computeBlockedRanges(weeklyRow, overrideRow, nonDispos){
+  const res = computeBlockedRangesJour(weeklyRow, overrideRow);
+  if(nonDispos && nonDispos.length){
+    res.configured = true;
+    res.ranges = (res.ranges || []).concat(nonDispos.map(n => ({ start: toGridMin(n.start_time), end: toGridMin(n.end_time), reason:'nondispo' })));
+  }
+  return res;
+}
+
+function computeBlockedRangesJour(weeklyRow, overrideRow){
   const fullDay = (reason) => [{ start:-Infinity, end:Infinity, reason }];
 
   if(overrideRow && overrideRow.status === 'vacation'){
@@ -10299,6 +10348,7 @@ async function searchNextAvailability(){
   if(aErr) console.error(aErr);
 
   const weeklyIndex = buildWeeklyHoursIndex(weeklyData);
+  const nonDisposParEmpDate = await chargerNonDispos(q => q.in('employee_id', empIds).gte('date', horDateISO(today)).lt('date', horDateISO(rangeEnd)));
   const overrideByEmpDate = {};
   (overrideData||[]).forEach(o => { overrideByEmpDate[o.employee_id+'_'+o.date] = o; });
   const apptsByEmpDate = {};
@@ -10328,7 +10378,7 @@ async function searchNextAvailability(){
     candidates.forEach(emp => {
       const weeklyRow = lookupWeeklyRow(weeklyIndex, emp.id, dateObj);
       const overrideRow = overrideByEmpDate[emp.id+'_'+dateISO];
-      const blocked = computeBlockedRanges(weeklyRow, overrideRow);
+      const blocked = computeBlockedRanges(weeklyRow, overrideRow, nonDisposParEmpDate[emp.id+'_'+dateISO]);
       const apptRanges = apptsByEmpDate[emp.name+'_'+dateISO] || [];
       const allBlocked = (blocked.ranges||[]).concat(apptRanges);
       const openWindows = naComputeOpenWindows(allBlocked, minAllowedStart, horGridMinutes);
@@ -10390,6 +10440,7 @@ async function chooseNextAvailResult(empName, dateISO, timeStr, duration){
 function renderBlockedOverlay(body, result, ctx){
   if(!result || !result.configured) return;
   result.ranges.forEach(r=>{
+    if(r.reason === 'nondispo') return;          // dessinées par renderNonDispos, avec leur note
     const top = Math.max(r.start, 0);
     const bottom = Math.min(r.end, horGridMinutes);
     if(bottom <= top) return;
@@ -10440,6 +10491,25 @@ function renderSpecialWindow(body, overrideRow, ctx){
     });
   }
   body.appendChild(block);
+}
+
+function renderNonDispos(body, liste, employe, dateObj){
+  (liste || []).forEach(n => {
+    const top = Math.max(toGridMin(n.start_time), 0);
+    const bottom = Math.min(toGridMin(n.end_time), horGridMinutes);
+    if(bottom <= top) return;
+    const block = document.createElement('div');
+    block.className = 'closed-block closed-block-absent closed-block-editable non-dispo';
+    block.style.top = (top*HOR_PX_PER_MIN) + 'px';
+    block.style.height = ((bottom-top)*HOR_PX_PER_MIN) + 'px';
+    block.title = 'Non-dispo ' + n.start_time + '–' + n.end_time + (n.note ? ' · ' + n.note : '') + ' — cliquer pour modifier ou supprimer';
+    block.innerHTML = '<span class="nd-texte"><b>' + escapeHtml(n.start_time + '–' + n.end_time) + '</b>' + (n.note ? ' ' + escapeHtml(n.note) : '') + '</span>';
+    block.addEventListener('click', function(e){
+      e.stopPropagation();
+      openQuickNonDispo(employe, n.start_time, dateObj, n);
+    });
+    body.appendChild(block);
+  });
 }
 
 function editBlockedRange(ctx){
@@ -10799,7 +10869,7 @@ async function loadHoraire(){
   }
   wrap.innerHTML = '<div class="list-msg">Chargement...</div>';
 
-  let employees, appts, weeklyByEmp = {}, overrideByEmp = {};
+  let employees, appts, weeklyByEmp = {}, overrideByEmp = {}, nonDisposJour = {};
   try {
     const dayStart = new Date(currentViewDate); dayStart.setHours(0,0,0,0);
     const dayEnd = new Date(currentViewDate); dayEnd.setHours(23,59,59,999);
@@ -10814,6 +10884,7 @@ async function loadHoraire(){
       sbClient.from('employee_weekly_hours').select('*').eq('weekday', weekday),
       sbClient.from('employee_day_overrides').select('*').eq('date', isoDate)
     ]);
+    nonDisposJour = await chargerNonDispos(q => q.eq('date', isoDate));
     if(e1 || !employeesData){ wrap.innerHTML = '<div class="list-msg">Erreur de chargement.</div>'; console.error(e1); return; }
     if(e2) console.error(e2);
     if(e3) console.error(e3);
@@ -10845,7 +10916,8 @@ async function loadHoraire(){
   const dayCols = []; // colonnes de dépôt pour le glisser-déposer (une par employée), remplies au fil de la boucle
   employees.forEach(emp=>{
     const empAppts = (appts||[]).filter(a => a.employee_name === emp.name);
-    const empWindow = computeBlockedRanges(weeklyByEmp[emp.id], overrideByEmp[emp.id]);
+    const empNonDispos = nonDisposJour[emp.id + '_' + horDateISO(currentViewDate)] || [];
+    const empWindow = computeBlockedRanges(weeklyByEmp[emp.id], overrideByEmp[emp.id], empNonDispos);
     const col = document.createElement('div');
     col.className = 'ecol2';
 
@@ -10898,6 +10970,7 @@ async function loadHoraire(){
       dateISO: horDateISO(currentViewDate), dateObj: new Date(currentViewDate)
     } : null;
     renderBlockedOverlay(body, empWindow, empOverrideCtx);
+    renderNonDispos(body, empNonDispos, emp.name, new Date(currentViewDate));
     renderSpecialWindow(body, empOverride, empOverride ? { employeeId: emp.id, employeeName: emp.name, dateISO: horDateISO(currentViewDate), dateObj: new Date(currentViewDate) } : null);
 
     // lignes horaires
@@ -10951,7 +11024,7 @@ async function loadHoraireWeek(wrap){
   const weekStart = getWeekStart(currentViewDate);
   const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate()+7);
 
-  let employee, appts, weeklyByWeekday = {}, overrideByDate = {};
+  let employee, appts, weeklyByWeekday = {}, overrideByDate = {}, nonDisposSemaine = {};
   try {
     const isoStart = horDateISO(weekStart), isoEndExclusive = horDateISO(weekEnd);
     const [{ data: employeesData, error: e1 }, { data: apptsData, error: e2 }, { data: weeklyData, error: e3 }, { data: overrideData, error: e4 }] = await Promise.all([
@@ -10962,6 +11035,7 @@ async function loadHoraireWeek(wrap){
       sbClient.from('employee_weekly_hours').select('*'),
       sbClient.from('employee_day_overrides').select('*').gte('date', isoStart).lt('date', isoEndExclusive)
     ]);
+    nonDisposSemaine = await chargerNonDispos(q => q.gte('date', isoStart).lt('date', isoEndExclusive));
     if(e1 || !employeesData || !employeesData.length){ wrap.innerHTML = '<div class="list-msg">Erreur de chargement.</div>'; console.error(e1); return; }
     if(e2) console.error(e2);
     if(e3) console.error(e3);
@@ -11000,7 +11074,8 @@ async function loadHoraireWeek(wrap){
     dayDate.setDate(dayDate.getDate()+i);
     const dayAppts = appts.filter(a => new Date(a.start_at).toDateString() === dayDate.toDateString());
     const dayISO = horDateISO(dayDate);
-    const dayWindow = computeBlockedRanges(weeklyByWeekday[dayDate.getDay()], overrideByDate[dayISO]);
+    const dayNonDispos = nonDisposSemaine[employee.id + '_' + dayISO] || [];
+    const dayWindow = computeBlockedRanges(weeklyByWeekday[dayDate.getDay()], overrideByDate[dayISO], dayNonDispos);
 
     const col = document.createElement('div');
     col.className = 'ecol2';
@@ -11039,6 +11114,7 @@ async function loadHoraireWeek(wrap){
       dateISO: dayISO, dateObj: dayDate
     } : null;
     renderBlockedOverlay(body, dayWindow, dayOverrideCtx);
+    renderNonDispos(body, dayNonDispos, employee.name, dayDate);
     renderSpecialWindow(body, dayOverride, dayOverride ? { employeeId: employee.id, employeeName: employee.name, dateISO: dayISO, dateObj: dayDate } : null);
 
     for(let m=0; m<=horGridMinutes; m+=15){
@@ -11267,7 +11343,8 @@ async function avertissementsPlage(employe, debut, dureeMin, saufId){
       ]);
       const hDebut = String(debut.getHours()).padStart(2,'0') + ':' + String(debut.getMinutes()).padStart(2,'0');
       const hFin = String(fin.getHours()).padStart(2,'0') + ':' + String(fin.getMinutes()).padStart(2,'0');
-      if(isTimeBlockedForEmployee(pickWeeklyRowForParity(sem, getScheduleWeekParity(debut)), (exc && exc[0]) || null, hDebut, hFin)){
+      const nd = (await chargerNonDispos(q => q.eq('employee_id', emps[0].id).eq('date', horDateISO(debut))))[emps[0].id + '_' + horDateISO(debut)];
+      if(isTimeBlockedForEmployee(pickWeeklyRowForParity(sem, getScheduleWeekParity(debut)), (exc && exc[0]) || null, hDebut, hFin, nd)){
         avert.push(employe + " n'est pas disponible à cette heure.");
       }
     }
