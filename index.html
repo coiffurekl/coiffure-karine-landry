@@ -1108,6 +1108,8 @@
   .comptable-hub-btn-pourboires{ background:var(--ocre); }
   .comptable-hub-btn-vendeurs{ background:#7C8F52; }
   .comptable-hub-btn-taxes{ background:#8C5A3E; }
+  .comptable-hub-btn-commissions{ background:#3E7C6E; }
+  .comptable-hub-btn-rapports{ background:#2F5E7A; }
   .comptable-hub-btn-equipe{ background:#5A6B8C; }
   .comptable-hub-btn-theme{ background:#8C5A7A; }
   .comptable-hub-btn-horaires{ background:#4E7C8C; }
@@ -1142,6 +1144,104 @@
   .crep-table-row .ctr-total{ text-align:right; font-family:'Playfair Display'; font-weight:600; }
   .crep-received-line{ font-family:'Josefin Sans'; font-size:13px; color:var(--ink-soft); text-align:right; margin:0 0 6px; }
   .crep-received-line b{ color:var(--teal-dk); font-family:'Playfair Display'; font-style:italic; font-size:17px; }
+  /* ---- Zone Gestionnaire : Rapport ---- */
+  .rap-groupes{ display:flex; flex-wrap:wrap; gap:4px; border-bottom:2px solid var(--line); margin:0 0 16px; }
+  .rap-groupe{ padding:10px 16px 11px; border:none; background:none; border-bottom:3px solid transparent; margin-bottom:-2px; font-family:'Playfair Display'; font-style:italic; font-size:18px; color:var(--ink-soft); cursor:pointer; }
+  .rap-groupe:hover{ color:var(--teal-dk); }
+  .rap-groupe.on{ color:var(--teal-dk); border-bottom-color:var(--ocre); font-weight:600; }
+  .rap-groupe:focus-visible{ outline:2px solid var(--ocre); outline-offset:2px; }
+  .rap-onglets{ display:flex; flex-wrap:wrap; gap:8px; margin:0 0 12px; }
+  .rap-desc{ font-family:'Josefin Sans'; font-size:13.5px; line-height:1.55; color:var(--ink-soft); max-width:760px; margin:0 0 22px; }
+  .rap-comparer{ display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin:0 0 12px; }
+  .rap-comp-lbl{ font-family:'Josefin Sans'; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); margin-right:4px; }
+  .rap-chiffre .rc-comp{ font-family:'Josefin Sans'; font-size:12px; color:var(--ink-soft); margin-top:8px; padding-top:8px; border-top:1px dashed var(--line); }
+  .rap-chiffre .rc-comp b{ color:var(--ink); font-weight:600; }
+  .rap-precision{ font-family:'Josefin Sans'; font-size:13px; color:var(--ink-soft); margin:-6px 0 14px; }
+  .rap-ligne{ grid-template-columns:var(--cols); }
+  .rap-ligne.fort{ font-weight:700; background:#F3F7F7; }
+  .rap-barre{ display:block; height:8px; border-radius:999px; background:var(--paper2); overflow:hidden; }
+  .rap-barre > span{ display:block; height:100%; border-radius:999px; background:var(--teal); }
+  .rap-obj{ padding:7px 8px; border:1px solid var(--line); border-radius:8px; font-family:'Josefin Sans'; font-size:13px; text-align:right; }
+  .rap-objectifs{ display:grid; grid-template-columns:repeat(auto-fill, minmax(330px, 1fr)); gap:14px; margin:0 0 26px; }
+  .rap-obj-carte{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px 18px 16px; }
+  .rap-obj-carte .roc-nom{ display:flex; align-items:center; gap:8px; font-family:'Playfair Display'; font-style:italic; font-size:18px; color:var(--teal-dk); margin-bottom:6px; }
+  .rap-obj-carte .pt{ width:10px; height:10px; border-radius:50%; }
+  .roc-ligne{ display:grid; grid-template-columns:72px 1fr auto; gap:6px 12px; align-items:center; padding:10px 0; border-top:1px solid var(--line); font-family:'Josefin Sans'; font-size:13.5px; }
+  .roc-lbl{ font-weight:700; color:var(--ink); }
+  .roc-cible{ display:flex; align-items:center; gap:8px; font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; }
+  .roc-cible .rap-obj{ width:100px; }
+  .roc-fait{ text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+  .roc-prog{ grid-column:1 / -1; }
+  .roc-pct{ display:block; font-size:12px; color:var(--ink-soft); margin-top:5px; }
+  .rap-chaleur-wrap{ overflow-x:auto; margin:0 0 26px; }
+  .rap-chaleur{ display:grid; grid-template-columns:48px repeat(7, minmax(38px, 1fr)); gap:3px; min-width:340px; font-family:'Josefin Sans'; font-size:12px; }
+  .rap-chaleur .rh-j{ text-align:center; font-weight:700; color:var(--teal-dk); padding:4px 0; }
+  .rap-chaleur .rh-h{ color:var(--ink-soft); text-align:right; padding-right:6px; align-self:center; }
+  .rap-chaleur .rh-c{ height:30px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-variant-numeric:tabular-nums;
+    background:rgba(39,101,108, calc(.05 + var(--a) * .9)); color:var(--teal-dk); }
+  .rap-chaleur .rh-c.fonce{ color:#fff; }
+  .rap-legende{ display:flex; gap:16px; font-family:'Josefin Sans'; font-size:12.5px; color:var(--ink-soft); margin:0 0 10px; }
+  .rap-legende i{ display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px; }
+  .rap-colonnes{ display:grid; grid-template-columns:repeat(12, 1fr); gap:6px; align-items:end; height:220px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 14px 10px; margin:0 0 26px; }
+  .rap-col{ display:flex; flex-direction:column; height:100%; min-width:0; }
+  .rap-col .rc-pile{ flex:1; display:flex; flex-direction:column; justify-content:flex-end; }
+  .rap-col .rc-s{ background:var(--teal); border-radius:0 0 4px 4px; }
+  .rap-col .rc-pr{ background:var(--ocre-lt); border-radius:4px 4px 0 0; }
+  .rap-col .rc-mois{ text-align:center; font-family:'Josefin Sans'; font-size:11px; color:var(--ink-soft); margin-top:6px; white-space:nowrap; overflow:hidden; }
+  .rap-palmares{ display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:14px; margin:0 0 26px; }
+  .rap-podium{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px 18px; }
+  .rap-podium .rp-titre{ font-family:'Playfair Display'; font-style:italic; font-size:17px; color:var(--teal-dk); margin-bottom:10px; }
+  .rap-podium .rp-place{ display:flex; align-items:center; gap:8px; padding:8px 0; border-top:1px solid var(--line); font-family:'Josefin Sans'; font-size:13.5px; }
+  .rap-podium .rp-place:first-of-type{ border-top:none; }
+  .rap-podium .rp-rang{ width:30px; font-weight:700; color:var(--ink-soft); }
+  .rap-podium .rp-1 .rp-rang{ color:var(--ocre); }
+  .rap-podium .rp-1 .rp-nom{ font-weight:700; }
+  .rap-podium .pt{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .rap-podium .rp-nom{ flex:1; }
+  .rap-podium .rp-val{ font-variant-numeric:tabular-nums; }
+  .rap-podium .rp-vide{ font-family:'Josefin Sans'; font-size:13px; color:var(--ink-soft); }
+  .rap-onglets{ display:flex; flex-wrap:wrap; gap:8px; margin:0 0 12px; }
+  .rap-onglet{ padding:10px 18px; border-radius:999px; border:1px solid var(--line); background:var(--white); font-family:'Josefin Sans'; font-size:12.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--teal-dk); cursor:pointer; }
+  .rap-onglet:hover{ border-color:var(--teal); }
+  .rap-onglet.on{ background:var(--teal-dk); color:#fff; border-color:var(--teal-dk); }
+  .rap-onglet:focus-visible, .rap-chip:focus-visible{ outline:2px solid var(--ocre); outline-offset:2px; }
+  .rap-personnes{ display:flex; flex-wrap:wrap; gap:7px; margin:0 0 24px; }
+  .rap-chip{ display:inline-flex; align-items:center; gap:7px; padding:8px 14px; border-radius:999px; border:1px solid var(--line); background:var(--paper2); font-family:'Poppins'; font-size:13px; color:var(--ink); cursor:pointer; }
+  .rap-chip .pt{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .rap-chip.on{ background:var(--teal); color:#fff; border-color:var(--teal); }
+  .rap-chiffres{ display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:12px; margin:0 0 24px; }
+  .rap-chiffre{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px 20px; }
+  .rap-chiffre .rc-lbl{ font-family:'Josefin Sans'; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); }
+  .rap-chiffre .rc-val{ font-family:'Playfair Display'; font-size:30px; font-weight:600; color:var(--teal-dk); margin-top:6px; font-variant-numeric:tabular-nums; }
+  .rap-chiffre .rc-sous{ font-family:'Josefin Sans'; font-size:12.5px; color:var(--ink-soft); margin-top:4px; }
+  .rap-soustitre{ font-family:'Playfair Display'; font-style:italic; color:var(--teal-dk); font-size:19px; margin:6px 0 12px; }
+  .rap-table{ border:1px solid var(--line); border-radius:12px; overflow:hidden; margin:0 0 26px; }
+  .rap-ligne{ display:grid; gap:10px; align-items:center; padding:12px 18px; background:#fff; border-top:1px solid var(--line); font-family:'Josefin Sans'; font-size:13.5px; color:var(--ink); }
+  .rap-ligne.head{ background:var(--teal); color:#fff; border-top:none; font-weight:700; text-transform:uppercase; font-size:11px; letter-spacing:.04em; }
+  .rap-ligne.total{ background:var(--teal-dk); color:#fff; font-weight:700; }
+  .rap-ligne.sous{ background:var(--paper2); font-size:12.5px; color:var(--ink-soft); padding-top:8px; padding-bottom:8px; }
+  .rap-ligne.sous > span:first-child{ padding-left:18px; }
+  .rap-ligne .n{ text-align:right; font-variant-numeric:tabular-nums; }
+  .rap-ligne .fin{ color:var(--ink-soft); font-size:12.5px; }
+  .rap-ecart.hausse{ color:#2E7D4F; font-weight:700; }
+  .rap-ecart.baisse{ color:#C0392B; font-weight:700; }
+  .rap-ligne.total .rap-ecart{ color:#fff; }
+  .rap-vide{ padding:22px; text-align:center; background:#fff; color:var(--ink-soft); font-family:'Josefin Sans'; font-size:13px; }
+  .rap-note{ font-family:'Josefin Sans'; font-size:13px; line-height:1.55; color:var(--ink-soft); background:var(--paper2); border:1px solid var(--line); border-radius:10px; padding:12px 16px; margin:0 0 20px; }
+  .rap-chargement{ padding:30px; text-align:center; color:var(--ink-soft); font-family:'Josefin Sans'; font-size:13px; }
+  @media (max-width:640px){
+    .rap-onglet{ padding:9px 13px; font-size:11.5px; }
+    .rap-ligne{ padding:10px 12px; gap:8px; font-size:12.5px; }
+    .rap-ligne.sous > span:first-child{ padding-left:10px; }
+    .rap-cache-tel{ display:none; }
+    .rap-ligne{ grid-template-columns:var(--cols-tel); }
+    .rap-groupe{ font-size:15.5px; padding:8px 10px 9px; }
+    .rap-colonnes{ gap:3px; padding:12px 8px 8px; height:180px; }
+    .rap-col .rc-mois{ font-size:9.5px; }
+    .rap-objectifs{ grid-template-columns:1fr; }
+    .roc-cible > span{ display:none; }
+    .rap-chiffre .rc-val{ font-size:26px; }
+  }
   .crep-hint{ color:var(--ink-soft); font-size:13.5px; margin-top:-10px; margin-bottom:22px; font-family:'Josefin Sans'; }
   .crep-cat-row{ cursor:pointer; }
   .crep-cat-row:hover{ background:var(--paper2); }
@@ -2705,6 +2805,8 @@
         <button type="button" class="comptable-hub-btn comptable-hub-btn-ventes" onclick="go('screen-comptable-ventes')">Ventes</button>
         <button type="button" class="comptable-hub-btn comptable-hub-btn-pourboires" onclick="go('screen-comptable-pourboires')">Pourboires</button>
         <button type="button" class="comptable-hub-btn comptable-hub-btn-vendeurs" onclick="go('screen-comptable-vendeurs')">Vendeurs</button>
+        <button type="button" class="comptable-hub-btn comptable-hub-btn-commissions" onclick="go('screen-comptable-commissions')">Calcul commissions</button>
+        <button type="button" class="comptable-hub-btn comptable-hub-btn-rapports" onclick="go('screen-comptable-rapports')">Rapport</button>
         <button type="button" class="comptable-hub-btn comptable-hub-btn-taxes" onclick="go('screen-comptable-taxes')">Rapport de taxes</button>
         <button type="button" class="comptable-hub-btn comptable-hub-btn-equipe" onclick="go('screen-comptable-equipe')">Équipe</button>
         <button type="button" class="comptable-hub-btn comptable-hub-btn-theme" onclick="go('screen-comptable-theme')">Thème saisonnier</button>
@@ -2713,10 +2815,6 @@
         <button type="button" class="comptable-hub-btn comptable-hub-btn-services" onclick="go('screen-services-edit')">Services et prix</button>
         <button type="button" class="comptable-hub-btn comptable-hub-btn-produits" onclick="go('screen-produits')">Produits</button>
         <button type="button" class="comptable-hub-btn comptable-hub-btn-coordonnees" onclick="go('screen-business-settings')">Coordonnées d'affaires</button>
-      </div>
-      <div class="comptable-hub-shortcut">
-        <span class="comptable-hub-shortcut-label">Raccourci utile :</span>
-        <button type="button" class="comptable-hub-commissions-btn" onclick="go('screen-comptable-commissions')">Calcul commissions</button>
       </div>
       <p class="comptable-hub-taxlink"><span class="clickable" onclick="go('screen-comptable-taxes')">Rapport de taxes?</span></p>
       <p class="comptable-hub-taxlink"><span class="clickable" onclick="openComptablePinChangeModal()">Changer le code d'accès</span></p>
@@ -2880,6 +2978,33 @@
       <b><input type="number" id="commProduitTaux" min="0" max="100" step="0.5" style="width:80px; padding:7px 9px; border:1px solid var(--line); border-radius:8px; font-family:'Josefin Sans'; font-size:14px; text-align:right;" onchange="enregistrerTauxProduits(this)"> %</b>
     </div>
     <div id="commissionsTableBody"></div>
+  </div>
+</div>
+
+<!-- ======================= ZONE GESTIONNAIRE : Rapport ======================= -->
+<div class="screen" id="screen-comptable-rapports">
+  <div class="app-nav">
+    <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+  </div>
+  <div class="app-shell">
+    <div class="page-head"><h1><span class="clickable" onclick="go('screen-comptable')" title="Retour">&larr;</span> Rapport</h1></div>
+    <div class="rap-groupes" id="rapGroupes"></div>
+    <div class="rap-onglets" id="rapOnglets"></div>
+    <p class="rap-desc" id="rapDesc"></p>
+
+    <div class="crep-period-nav">
+      <button type="button" class="crep-period-arrow" onclick="comptableRepShift(-1)">&lsaquo;</button>
+      <div class="crep-period-label clickable" onclick="openComptableRangePicker('rapports')">
+        <div class="crep-period-title" id="rapportsPeriodTitle"></div>
+        <div class="crep-period-range" id="rapportsPeriodRange"></div>
+      </div>
+      <button type="button" class="crep-period-arrow" onclick="comptableRepShift(1)">&rsaquo;</button>
+    </div>
+
+    <div class="rap-comparer" id="rapComparer"></div>
+    <div class="rap-personnes" id="rapPersonnes"></div>
+    <div id="rapContenu"></div>
   </div>
 </div>
 
@@ -3067,6 +3192,7 @@ function performGo(id){
   if(id === 'screen-comptable-vendeurs') loadComptableVendeurs();
   if(id === 'screen-comptable-pourboires') loadComptablePourboires();
   if(id === 'screen-comptable-commissions') loadComptableCommissions();
+  if(id === 'screen-comptable-rapports'){ rapCache.clear(); loadRapports(); }
   if(id === 'screen-comptable-taxes') loadComptableTaxes();
   if(id === 'screen-performances') loadPerformances();
   if(id === 'screen-caisse') enterCaisseScreen();
@@ -6664,9 +6790,9 @@ async function confirmFacturePaiement(){
 
 /* ---------- Zone Comptable : rapports (Ventes, Vendeurs, Pourboires, Commissions) ---------- */
 let comptableActiveReport = null;
-const comptableRepMonthOffset = { ventes:0, vendeurs:0, pourboires:0, commissions:0, taxes:0, performances:0 };
+const comptableRepMonthOffset = { ventes:0, vendeurs:0, pourboires:0, commissions:0, taxes:0, performances:0, rapports:0 };
 const comptableRepState = {
-  ventes: { type:'month' }, vendeurs: { type:'month' }, pourboires: { type:'month' }, commissions: { type:'preset', key:'thisweek' }, taxes: { type:'month' }, performances: { type:'preset', key:'today' }
+  ventes: { type:'month' }, vendeurs: { type:'month' }, pourboires: { type:'month' }, commissions: { type:'preset', key:'thisweek' }, taxes: { type:'month' }, performances: { type:'preset', key:'today' }, rapports: { type:'month' }
 };
 let comptableRepInvoicesCache = [];
 let comptableRepItemsCache = [];
@@ -6811,6 +6937,7 @@ function reloadComptableActiveReport(){
   if(comptableActiveReport === 'commissions') return loadComptableCommissions();
   if(comptableActiveReport === 'taxes') return loadComptableTaxes();
   if(comptableActiveReport === 'performances') return loadPerformances();
+  if(comptableActiveReport === 'rapports') return loadRapports();
 }
 
 /* ---- Sélecteur de période personnalisée (presets + calendriers) ---- */
@@ -7185,6 +7312,853 @@ function renderComptableTaxesCards(){
   document.getElementById('taxesTvq').textContent = formatMoney(totals.qst);
   document.getElementById('taxesTotal').textContent = formatMoney(totals.gst + totals.qst);
 }
+
+/* ---- Rapport (Zone Gestionnaire) ----
+   Un seul écran, tous les rapports. La période, les personnes choisies et la comparaison restent
+   les mêmes quand on passe d'un rapport à l'autre. Aucune personne cochée = toute l'équipe.
+   Montants avant taxes et sans pourboires, sauf « Modes de paiement » (ce qui a été encaissé). */
+const RAP_GROUPES = [
+  { cle:'clientele', titre:'Clientèle' },
+  { cle:'horaire',   titre:'Horaire' },
+  { cle:'ventes',    titre:'Ventes' },
+  { cle:'produits',  titre:'Produits' },
+  { cle:'equipe',    titre:'Équipe' }
+];
+const RAPPORTS = [
+  { cle:'nouveaux',        groupe:'clientele', titre:'Nouveaux clients',            desc:'Les fiches créées pendant la période. Les clients transférés d’AssistTheo étaient déjà connus du salon : ils ne comptent pas. Chaque nouveau client revient à la personne de son premier rendez-vous.' },
+  { cle:'reviennent',      groupe:'clientele', titre:'Clients qui reviennent',      desc:'Parmi les nouveaux clients de la période, ceux qui sont revenus une 2e fois (jusqu’à aujourd’hui) et ceux qui ont déjà un autre rendez-vous.' },
+  { cle:'meilleurs',       groupe:'clientele', titre:'Meilleurs clients',           desc:'Les clients qui ont dépensé le plus pendant la période.' },
+  { cle:'relancer',        groupe:'clientele', titre:'Clients à relancer',          desc:'Les clients venus pendant la période qui ne sont pas revenus depuis et n’ont aucun rendez-vous à venir. Choisis par exemple « il y a 3 mois » pour trouver qui rappeler.', sansComparaison:true },
+  { cle:'nouveauxReguliers', groupe:'clientele', titre:'Nouveaux et habitués',      desc:'La part des ventes qui vient des nouveaux clients de la période et celle qui vient des habitués.' },
+  { cle:'depenseMoy',      groupe:'clientele', titre:'Dépense moyenne par client',  desc:'Combien un client dépense en moyenne pendant la période, toutes ses visites comprises.' },
+  { cle:'prisPar',         groupe:'clientele', titre:'Rendez-vous pris par qui',    desc:'Combien de rendez-vous chaque accès a créés pendant la période (d’après l’historique des rendez-vous). Les personnes choisies filtrent la personne AVEC qui le rendez-vous est pris.' },
+  { cle:'occupation',      groupe:'horaire',   titre:'Taux d’occupation',           desc:'Les heures en rendez-vous comparées aux heures à l’horaire (horaire régulier, horaires spéciaux, absences, vacances et Non-dispo compris). Fonctionne aussi pour les semaines à venir.' },
+  { cle:'annulations',     groupe:'horaire',   titre:'Annulations',                 desc:'Les rendez-vous de la période qui ont été annulés.' },
+  { cle:'achalandage',     groupe:'horaire',   titre:'Moments achalandés',          desc:'Le nombre de rendez-vous par jour de la semaine et par heure. Plus la case est foncée, plus c’est occupé.' },
+  { cle:'anpasse',         groupe:'ventes',    titre:'Cette année vs l’an passé',   desc:'Les ventes de la période comparées aux mêmes dates l’an passé, calculées toutes seules.', sansComparaison:true },
+  { cle:'evolution',       groupe:'ventes',    titre:'Évolution sur 12 mois',       desc:'Les ventes mois par mois pendant les 12 mois qui se terminent avec la période choisie.', sansComparaison:true },
+  { cle:'jours',           groupe:'ventes',    titre:'Ventes par jour de la semaine', desc:'Quels jours de la semaine rapportent le plus.' },
+  { cle:'servicesPop',     groupe:'ventes',    titre:'Services populaires',         desc:'Les services les plus faits, et combien ils rapportent.' },
+  { cle:'categories',      groupe:'ventes',    titre:'Ventes par catégorie',        desc:'Les ventes de services par catégorie : coupe, coloration, mèches, soins, barbier…' },
+  { cle:'factureMoy',      groupe:'ventes',    titre:'Facture moyenne',             desc:'Le montant moyen d’une facture. Pour une personne : la moyenne de SA part des factures où elle a travaillé.' },
+  { cle:'servicesAjoutes', groupe:'ventes',    titre:'Services ajoutés',            desc:'Le % des factures où la personne a fait plus d’un service (par exemple une coupe et un toner). Les quantités de couleur ne comptent pas comme un service.' },
+  { cle:'revenuHeure',     groupe:'ventes',    titre:'Revenu par heure travaillée', desc:'Les ventes de services divisées par les heures passées en rendez-vous (rendez-vous déjà passés, non annulés).' },
+  { cle:'rabais',          groupe:'ventes',    titre:'Rabais accordés',             desc:'Le total des rabais donnés sur les factures.' },
+  { cle:'paiements',       groupe:'ventes',    titre:'Modes de paiement',           desc:'Ce qui a été encaissé selon le mode de paiement, taxes et pourboires compris. Un paiement partagé est réparti entre ses modes.' },
+  { cle:'couleur',         groupe:'ventes',    titre:'Consommation de couleur',     desc:'Les quantités de couleur, déco, royal et Brésilian Kératine facturées, en grammes (une quantité = 10 g). Utile pour prévoir les commandes.' },
+  { cle:'produits',        groupe:'produits',  titre:'Produits vendus',             desc:'Le nombre de produits vendus et leur montant, par personne.' },
+  { cle:'meilleursProduits', groupe:'produits', titre:'Meilleurs produits',         desc:'Le classement des produits les plus vendus, et le meilleur produit de chaque personne.' },
+  { cle:'revente',         groupe:'produits',  titre:'Taux de revente',             desc:'Le % des factures qui contiennent un produit, et la part des produits dans les ventes.' },
+  { cle:'fournisseurs',    groupe:'produits',  titre:'Ventes par fournisseur',      desc:'Les ventes de produits regroupées par fournisseur.' },
+  { cle:'dormants',        groupe:'produits',  titre:'Produits qui ne se vendent pas', desc:'Les produits de la liste qui n’ont eu aucune vente pendant la période.', sansComparaison:true },
+  { cle:'objectifs',       groupe:'equipe',    titre:'Objectifs de vente',          desc:'Karine fixe un objectif MENSUEL par personne ; la barre montre où chacun en est pendant la période. Pour une période autre qu’un mois, l’objectif est ajusté au nombre de jours.', sansComparaison:true },
+  { cle:'palmares',        groupe:'equipe',    titre:'Palmarès',                    desc:'Le classement amical de la période : les 3 premières places de chaque catégorie.', sansComparaison:true }
+];
+
+let rapActif = 'nouveaux';
+let rapPersonnes = new Set();
+let rapComparer = 'aucune';
+let rapEquipe = [];
+let rapJeton = 0;
+const rapCache = new Map();
+
+function rapDef(cle){ return RAPPORTS.find(r => r.cle === cle) || RAPPORTS[0]; }
+function choisirGroupeRapport(groupe){ rapActif = RAPPORTS.find(r => r.groupe === groupe).cle; return loadRapports(); }
+function choisirRapport(cle){ rapActif = cle; return loadRapports(); }
+function choisirComparaison(mode){ rapComparer = mode; return loadRapports(); }
+function basculerPersonneRapport(nom){
+  if(!nom) rapPersonnes.clear();
+  else if(rapPersonnes.has(nom)) rapPersonnes.delete(nom);
+  else rapPersonnes.add(nom);
+  return loadRapports();
+}
+function rapGarde(nom){ return rapPersonnes.size === 0 || rapPersonnes.has(nom); }
+
+function renderRapportEntete(){
+  const def = rapDef(rapActif);
+  document.getElementById('rapGroupes').innerHTML = RAP_GROUPES.map(g =>
+    '<button type="button" class="rap-groupe'+(g.cle === def.groupe ? ' on' : '')+'" onclick="choisirGroupeRapport(\''+g.cle+'\')">'+g.titre+'</button>').join('');
+  document.getElementById('rapOnglets').innerHTML = RAPPORTS.filter(r => r.groupe === def.groupe).map(r =>
+    '<button type="button" class="rap-onglet'+(r.cle === def.cle ? ' on' : '')+'" onclick="choisirRapport(\''+r.cle+'\')">'+escapeHtml(r.titre)+'</button>').join('');
+  document.getElementById('rapDesc').textContent = def.desc;
+
+  const comp = document.getElementById('rapComparer');
+  if(def.sansComparaison){ comp.innerHTML = ''; comp.style.display = 'none'; }
+  else {
+    comp.style.display = '';
+    comp.innerHTML = '<span class="rap-comp-lbl">Comparer avec</span>' + [['aucune','Rien'],['precedente','Période précédente'],['anpasse','L’an passé']].map(([m, t]) =>
+      '<button type="button" class="rap-chip'+(rapComparer === m ? ' on' : '')+'" onclick="choisirComparaison(\''+m+'\')">'+t+'</button>').join('');
+  }
+
+  let html = '<button type="button" class="rap-chip'+(rapPersonnes.size ? '' : ' on')+'" data-nom="" onclick="basculerPersonneRapport(this.dataset.nom)">Toute l’équipe</button>';
+  rapEquipe.forEach(e => {
+    html += '<button type="button" class="rap-chip'+(rapPersonnes.has(e.name) ? ' on' : '')+'" data-nom="'+escapeHtml(e.name)+'" onclick="basculerPersonneRapport(this.dataset.nom)">'
+      + '<span class="pt" style="background:'+escapeHtml(e.color_hex || '#999')+'"></span>'+escapeHtml(e.name)+'</button>';
+  });
+  document.getElementById('rapPersonnes').innerHTML = html;
+}
+
+async function loadRapports(){
+  comptableActiveReport = 'rapports';
+  const jeton = ++rapJeton;
+  renderComptablePeriodNav('rapports');
+  if(!rapEquipe.length){
+    const { data } = await sbClient.from('employees').select('id, name, color_hex, sort_order').eq('active', true).order('sort_order');
+    rapEquipe = (data || []).filter(e => e.name !== 'Madame Patron');
+  }
+  renderRapportEntete();
+  const def = rapDef(rapActif);
+  const box = document.getElementById('rapContenu');
+  box.innerHTML = '<div class="rap-chargement">Calcul en cours…</div>';
+  const plage = comptableRepRangeFor('rapports');
+  const plageComp = def.sansComparaison ? null : rapPlageComparaison(plage);
+  let html;
+  try{
+    const [res, resComp] = await Promise.all([RAP_CALCULS[def.cle](plage), plageComp ? RAP_CALCULS[def.cle](plageComp) : null]);
+    html = rapCartesHtml(res.cartes || [], resComp && resComp.cartes, plageComp) + res.html;
+  }catch(e){
+    console.error(e);
+    html = '<div class="rap-note">Le rapport n’a pas pu être calculé. Vérifie ta connexion Internet, puis réessaie.</div>';
+  }
+  if(jeton !== rapJeton) return;   // une autre demande est partie entre-temps
+  box.innerHTML = html;
+}
+
+/* ---------- outils ---------- */
+function rapAnPrecedent(d){ return new Date(d.getFullYear() - 1, d.getMonth(), d.getDate()); }
+function rapPlageComparaison(p){
+  if(rapComparer === 'anpasse') return { start: rapAnPrecedent(p.start), end: rapAnPrecedent(p.end) };
+  if(rapComparer === 'precedente'){
+    if(comptableEstMoisCivil(p.start, p.end)) return { start: new Date(p.start.getFullYear(), p.start.getMonth() - 1, 1), end: new Date(p.start) };
+    const jours = Math.max(1, Math.round((p.end - p.start) / 86400000));
+    return { start: comptableDecalerJours(p.start, -jours), end: new Date(p.start) };
+  }
+  return null;
+}
+function rapDateCourte(d){ return d.toLocaleDateString('fr-CA', { day:'numeric', month:'short', year:'numeric' }); }
+function rapPlageTexte(debut, fin){
+  const dernier = new Date(fin.getFullYear(), fin.getMonth(), fin.getDate() - 1);
+  return dernier.getTime() === debut.getTime() ? rapDateCourte(debut) : rapDateCourte(debut)+' au '+rapDateCourte(dernier);
+}
+function rapNombre(n){ return formatQuantite(Math.round((n || 0) * 100) / 100); }
+function rapHeures(min){ const h = Math.floor((min || 0) / 60), m = Math.round((min || 0) % 60); return h+' h'+(m ? ' '+String(m).padStart(2, '0') : ''); }
+function rapTaux(x, sur){ return sur ? x / sur : null; }
+function rapFmt(v, fmt){
+  if(v === null || v === undefined || isNaN(v)) return '—';
+  if(fmt === 'argent') return formatMoney(v);
+  if(fmt === 'pct') return Math.round(v * 100)+' %';
+  if(fmt === 'heures') return rapHeures(v);
+  return rapNombre(v);
+}
+function rapEcart(actuel, avant, fmt){
+  if(actuel === null || avant === null || actuel === undefined || avant === undefined) return '—';
+  if(fmt === 'pct'){
+    const d = Math.round((actuel - avant) * 100);
+    return '<span class="rap-ecart '+(d > 0 ? 'hausse' : d < 0 ? 'baisse' : '')+'">'+(d > 0 ? '+' : d < 0 ? '−' : '')+Math.abs(d)+' pts</span>';
+  }
+  if(!avant) return actuel ? '<span class="rap-ecart hausse">nouveau</span>' : '—';
+  const p = Math.round((actuel - avant) / avant * 100);
+  return '<span class="rap-ecart '+(p > 0 ? 'hausse' : p < 0 ? 'baisse' : '')+'">'+(p > 0 ? '+' : p < 0 ? '−' : '')+Math.abs(p)+' %</span>';
+}
+function rapCarte(lbl, val, fmt, sous){ return { lbl, val, fmt, sous }; }
+function rapCartesHtml(cartes, comp, plageComp){
+  if(!cartes.length) return '';
+  return '<div class="rap-chiffres">' + cartes.map((c, i) => {
+    let bas = c.sous ? '<div class="rc-sous">'+escapeHtml(c.sous)+'</div>' : '';
+    if(comp && comp[i]){
+      bas += '<div class="rc-comp">'+escapeHtml(rapPlageTexte(plageComp.start, plageComp.end))+' : <b>'+rapFmt(comp[i].val, c.fmt)+'</b> '+rapEcart(c.val, comp[i].val, c.fmt)+'</div>';
+    }
+    return '<div class="rap-chiffre"><div class="rc-lbl">'+escapeHtml(c.lbl)+'</div><div class="rc-val">'+rapFmt(c.val, c.fmt)+'</div>'+bas+'</div>';
+  }).join('') + '</div>';
+}
+/* Un tableau : cols = largeurs CSS ; entetes = [texte] ; les colonnes listées dans « droite »
+   sont alignées à droite (chiffres), celles dans « tel » disparaissent sur téléphone. */
+function rapTableau(titre, cols, entetes, lignes, opts){
+  opts = opts || {};
+  const droite = opts.droite || [], tel = opts.tel || [];
+  const cls = i => (droite.includes(i) ? ' class="n'+(tel.includes(i) ? ' rap-cache-tel' : '')+'"' : (tel.includes(i) ? ' class="rap-cache-tel"' : ''));
+  const colsTel = tel.length ? cols.split(' ').filter((_, i) => !tel.includes(i)).join(' ') : cols;
+  const style = ' style="--cols:'+cols+'; --cols-tel:'+colsTel+';"';
+  let html = (titre ? '<h2 class="rap-soustitre">'+escapeHtml(titre)+'</h2>' : '') + '<div class="rap-table">';
+  html += '<div class="rap-ligne head"'+style+'>'+entetes.map((t, i) => '<span'+cls(i)+'>'+t+'</span>').join('')+'</div>';
+  if(!lignes.length) html += '<div class="rap-vide">'+(opts.vide || 'Rien pendant cette période.')+'</div>';
+  lignes.forEach(l => {
+    const cellules = l.cellules || l;
+    html += '<div class="rap-ligne'+(l.cls ? ' '+l.cls : '')+'"'+style+'>'+cellules.map((t, i) => '<span'+cls(i)+'>'+t+'</span>').join('')+'</div>';
+  });
+  if(opts.total) html += '<div class="rap-ligne total"'+style+'>'+opts.total.map((t, i) => '<span'+cls(i)+'>'+t+'</span>').join('')+'</div>';
+  return html + '</div>';
+}
+function rapBarre(fraction, couleur){
+  const w = Math.max(0, Math.min(100, Math.round((fraction || 0) * 100)));
+  return '<span class="rap-barre"><span style="width:'+w+'%;'+(couleur ? 'background:'+escapeHtml(couleur)+';' : '')+'"></span></span>';
+}
+function rapCouleur(nom){ const e = rapEquipe.find(x => x.name === nom); return e ? e.color_hex : null; }
+function rapNomClient(c){ return c ? (((c.first_name || '') + ' ' + (c.last_name || '')).trim() || '(sans nom)') : '(sans fiche)'; }
+function rapSomme(liste, f){ return liste.reduce((s, x) => s + (Number(f(x)) || 0), 0); }
+function rapGrouper(liste, cle){
+  const g = {};
+  liste.forEach(x => { const k = cle(x); (g[k] = g[k] || []).push(x); });
+  return g;
+}
+function rapJourISO(d){ return horDateISO(new Date(d)); }
+function rapVideSelection(){ return rapPersonnes.size ? ' pour les personnes choisies' : ''; }
+const RAP_QUANTITE = /^(quantit|br[ée]silian k[ée]ratine)/i;
+
+async function rapMemo(cle, fn){
+  if(!rapCache.has(cle)) rapCache.set(cle, fn().catch(e => { rapCache.delete(cle); throw e; }));
+  return rapCache.get(cle);
+}
+const rapCle = (k, p) => k+'|'+p.start.getTime()+'|'+p.end.getTime();
+
+/* ---------- données ---------- */
+// Les lignes de facture payées, avec la personne à qui la vente revient.
+function rapVentes(p){
+  return rapMemo(rapCle('ventes', p), async () => {
+    const { data, error } = await lireToutesLesLignes(() => sbClient.from('invoice_items')
+      .select('id, invoice_id, service_id, description, supplier, quantity, unit_price, discount_percent, line_total, is_product, employee_name, invoices!inner(id, issued_at, status, employee_name, payment_method, client_id, total)')
+      .eq('invoices.status', 'paid')
+      .gte('invoices.issued_at', p.start.toISOString())
+      .lt('invoices.issued_at', p.end.toISOString())
+      .order('id'));
+    if(error) throw error;
+    return (data || []).map(it => ({ ...it, montant: Number(it.line_total) || 0, qte: Number(it.quantity) || 0,
+      personne: it.employee_name || (it.invoices && it.invoices.employee_name) || 'Sans nom', facture: it.invoices }));
+  });
+}
+async function rapVentesChoisies(p){ return (await rapVentes(p)).filter(it => rapGarde(it.personne)); }
+
+function rapRdv(p){
+  return rapMemo(rapCle('rdv', p), async () => {
+    const { data, error } = await lireToutesLesLignes(() => sbClient.from('appointments')
+      .select('id, client_id, employee_name, start_at, duration_minutes, client_status, client_status_at, services_label, clients(first_name, last_name, phone)')
+      .gte('start_at', p.start.toISOString()).lt('start_at', p.end.toISOString())
+      .order('start_at').order('id'));
+    if(error) throw error;
+    return data || [];
+  });
+}
+
+async function rapClients(ids){
+  const res = {};
+  for(let i = 0; i < ids.length; i += 150){
+    const { data, error } = await sbClient.from('clients').select('id, first_name, last_name, phone, created_at, vient_d_assistheo').in('id', ids.slice(i, i + 150));
+    if(error) throw error;
+    (data || []).forEach(c => { res[c.id] = c; });
+  }
+  return res;
+}
+
+// Toutes les visites (rendez-vous passés non annulés + factures) et le prochain rendez-vous de chaque client.
+async function rapVisites(ids){
+  const res = {};
+  const maintenant = Date.now();
+  ids.forEach(id => { res[id] = { jours:new Set(), visites:[], prochain:null }; });
+  for(let i = 0; i < ids.length; i += 150){
+    const lot = ids.slice(i, i + 150);
+    const [r, f] = await Promise.all([
+      lireToutesLesLignes(() => sbClient.from('appointments').select('id, client_id, employee_name, start_at, client_status').in('client_id', lot).order('start_at').order('id')),
+      lireToutesLesLignes(() => sbClient.from('invoices').select('id, client_id, employee_name, issued_at').in('client_id', lot).eq('status', 'paid').order('issued_at').order('id'))
+    ]);
+    if(r.error) throw r.error;
+    if(f.error) throw f.error;
+    (r.data || []).forEach(a => {
+      if(a.client_status === 'cancelled') return;
+      const v = res[a.client_id], t = new Date(a.start_at).getTime();
+      if(t >= maintenant){ if(!v.prochain || t < v.prochain.t) v.prochain = { t, nom:a.employee_name }; return; }
+      v.jours.add(rapJourISO(t)); v.visites.push({ t, nom:a.employee_name });
+    });
+    (f.data || []).forEach(x => {
+      const v = res[x.client_id], t = new Date(x.issued_at).getTime();
+      v.jours.add(rapJourISO(t)); v.visites.push({ t, nom:x.employee_name });
+    });
+  }
+  Object.values(res).forEach(v => v.visites.sort((a, b) => a.t - b.t));
+  return res;
+}
+
+// Les nouveaux clients de la période, chacun rattaché à la personne de son premier rendez-vous.
+function rapNouveaux(p){
+  return rapMemo(rapCle('nouveaux', p), async () => {
+    const { data: clients, error } = await lireToutesLesLignes(() => sbClient.from('clients')
+      .select('id, first_name, last_name, phone, created_at')
+      .eq('vient_d_assistheo', false)
+      .gte('created_at', p.start.toISOString()).lt('created_at', p.end.toISOString())
+      .order('created_at').order('id'));
+    if(error) throw error;
+    const ids = (clients || []).map(c => c.id);
+    const premier = {};
+    for(let i = 0; i < ids.length; i += 150){
+      const lot = ids.slice(i, i + 150);
+      const [r, f] = await Promise.all([
+        lireToutesLesLignes(() => sbClient.from('appointments').select('client_id, employee_name, start_at, client_status').in('client_id', lot).order('start_at').order('id')),
+        lireToutesLesLignes(() => sbClient.from('invoices').select('client_id, employee_name, issued_at').in('client_id', lot).eq('status', 'paid').order('issued_at').order('id'))
+      ]);
+      (r.data || []).forEach(a => { if(a.client_status !== 'cancelled' && !premier[a.client_id]) premier[a.client_id] = { nom:a.employee_name, quand:a.start_at }; });
+      (f.data || []).forEach(x => { if(!premier[x.client_id]) premier[x.client_id] = { nom:x.employee_name, quand:x.issued_at }; });
+    }
+    return (clients || []).map(c => ({ ...c, premier: premier[c.id] || null, personne: (premier[c.id] && premier[c.id].nom) || 'Pas encore de rendez-vous' }));
+  });
+}
+async function rapNouveauxChoisis(p){ return (await rapNouveaux(p)).filter(c => rapPersonnes.size === 0 || rapPersonnes.has(c.personne)); }
+
+/* ---------- les rapports ---------- */
+const RAP_CALCULS = {};
+
+RAP_CALCULS.nouveaux = async p => {
+  const liste = await rapNouveauxChoisis(p);
+  const parPersonne = rapGrouper(liste, c => c.personne);
+  const lignes = Object.keys(parPersonne).sort((a, b) => parPersonne[b].length - parPersonne[a].length || a.localeCompare(b, 'fr'))
+    .map(nom => [escapeHtml(nom), String(parPersonne[nom].length)]);
+  const clients = liste.slice().reverse().map(c => [escapeHtml(rapNomClient(c)), '<span class="fin">'+escapeHtml(rapDateCourte(new Date(c.created_at)))+'</span>',
+    '<span class="fin">'+(c.premier ? escapeHtml(rapDateCourte(new Date(c.premier.quand))+' · '+(c.premier.nom || '')) : '—')+'</span>']);
+  return {
+    cartes: [rapCarte('Nouveaux clients', liste.length, 'nombre', rapPlageTexte(p.start, p.end))],
+    html: liste.length ? rapTableau('Par personne', '1fr 120px', ['Personne', 'Nouveaux'], lignes, { droite:[1] })
+      + rapTableau('Les clients', '1.3fr 1fr 1.3fr', ['Client', 'Fiche créée le', 'Premier rendez-vous'], clients, { tel:[1] })
+      : rapTableau('', '1fr', [''], [], { vide:'Aucun nouveau client pendant cette période'+rapVideSelection()+'.' })
+  };
+};
+
+RAP_CALCULS.reviennent = async p => {
+  const liste = await rapNouveauxChoisis(p);
+  const visites = await rapVisites(liste.map(c => c.id));
+  liste.forEach(c => { const v = visites[c.id]; c.revenu = v.jours.size >= 2; c.prochain = v.prochain; });
+  const revenus = liste.filter(c => c.revenu).length, aVenir = liste.filter(c => !c.revenu && c.prochain).length;
+  const parPersonne = rapGrouper(liste, c => c.personne);
+  const lignes = Object.keys(parPersonne).sort((a, b) => parPersonne[b].length - parPersonne[a].length).map(nom => {
+    const l = parPersonne[nom], r = l.filter(c => c.revenu).length, v = l.filter(c => !c.revenu && c.prochain).length;
+    return [escapeHtml(nom), String(l.length), String(r), String(v), rapFmt(rapTaux(r + v, l.length), 'pct')];
+  });
+  const clients = liste.slice().reverse().map(c => [escapeHtml(rapNomClient(c)), escapeHtml(c.personne),
+    c.revenu ? '<span class="rap-ecart hausse">Revenu</span>' : c.prochain ? 'Rendez-vous le '+escapeHtml(rapDateCourte(new Date(c.prochain.t))) : '<span class="fin">Pas encore revenu</span>']);
+  return {
+    cartes: [rapCarte('Nouveaux clients', liste.length, 'nombre'), rapCarte('Sont revenus', revenus, 'nombre', liste.length ? Math.round(revenus / liste.length * 100)+' % des nouveaux' : ''),
+      rapCarte('Ont un autre rendez-vous', aVenir, 'nombre', 'pas encore revenus, mais réservés'), rapCarte('Fidélisation', rapTaux(revenus + aVenir, liste.length), 'pct', 'revenus ou réservés')],
+    html: liste.length ? rapTableau('Par personne', '1fr 90px 90px 110px 90px', ['Personne', 'Nouveaux', 'Revenus', 'Réservés', 'Fidélisation'], lignes, { droite:[1,2,3,4], tel:[3] })
+      + rapTableau('Les clients', '1.2fr 1fr 1.3fr', ['Client', 'Avec', 'Statut'], clients)
+      : rapTableau('', '1fr', [''], [], { vide:'Aucun nouveau client pendant cette période'+rapVideSelection()+'.' })
+  };
+};
+
+RAP_CALCULS.meilleurs = async p => {
+  const items = (await rapVentesChoisies(p)).filter(it => it.facture.client_id);
+  const parClient = rapGrouper(items, it => it.facture.client_id);
+  const ids = Object.keys(parClient);
+  const fiches = await rapClients(ids);
+  const total = rapSomme(items, it => it.montant);
+  const classes = ids.map(id => ({ id, montant: rapSomme(parClient[id], it => it.montant), visites: new Set(parClient[id].map(it => it.invoice_id)).size,
+    derniere: Math.max(...parClient[id].map(it => new Date(it.facture.issued_at).getTime())) })).sort((a, b) => b.montant - a.montant);
+  const top10 = rapSomme(classes.slice(0, 10), c => c.montant);
+  const lignes = classes.slice(0, 50).map((c, i) => [String(i + 1), escapeHtml(rapNomClient(fiches[c.id])), String(c.visites), '<span class="fin">'+escapeHtml(rapDateCourte(new Date(c.derniere)))+'</span>', formatMoney(c.montant)]);
+  return {
+    cartes: [rapCarte('Clients servis', ids.length, 'nombre'), rapCarte('Part des 10 meilleurs', rapTaux(top10, total), 'pct', 'des ventes de la période')],
+    html: rapTableau('Les 50 meilleurs clients', '40px 1.4fr 70px 1fr 120px', ['#', 'Client', 'Visites', 'Dernière visite', 'Dépensé'], lignes, { droite:[2,4], tel:[3], vide:'Aucune vente à un client pendant cette période'+rapVideSelection()+'.' })
+  };
+};
+
+RAP_CALCULS.relancer = async p => {
+  const maintenant = Date.now();
+  const [rdvs, ventes] = await Promise.all([rapRdv(p), rapVentes(p)]);
+  const derniere = {};
+  const noter = (id, t, nom) => { if(!id || t >= maintenant) return; if(!derniere[id] || t > derniere[id].t) derniere[id] = { t, nom }; };
+  rdvs.forEach(a => { if(a.client_status !== 'cancelled') noter(a.client_id, new Date(a.start_at).getTime(), a.employee_name); });
+  ventes.forEach(it => noter(it.facture.client_id, new Date(it.facture.issued_at).getTime(), it.personne));
+  const ids = Object.keys(derniere).filter(id => rapGarde(derniere[id].nom));
+  const [visites, fiches] = await Promise.all([rapVisites(ids), rapClients(ids)]);
+  const aRelancer = ids.filter(id => {
+    const v = visites[id], jour = rapJourISO(derniere[id].t);
+    return !v.prochain && !v.visites.some(x => rapJourISO(x.t) > jour);
+  }).sort((a, b) => derniere[a].t - derniere[b].t);
+  const lignes = aRelancer.map(id => {
+    const f = fiches[id], jours = Math.floor((maintenant - derniere[id].t) / 86400000);
+    return [escapeHtml(rapNomClient(f)), escapeHtml((f && f.phone) || '—'), escapeHtml(rapDateCourte(new Date(derniere[id].t))), escapeHtml(derniere[id].nom || ''), '<span class="fin">il y a '+jours+' j</span>'];
+  });
+  return {
+    cartes: [rapCarte('Clients à relancer', aRelancer.length, 'nombre', 'sur '+ids.length+' venus pendant la période')],
+    html: '<div class="rap-note">L’historique d’AssistTheo n’a pas été transféré : ce rapport ne voit que les visites faites dans le nouveau logiciel. Il deviendra vraiment utile quelques mois après le lancement.</div>'
+      + rapTableau('', '1.3fr 1fr 1fr .8fr .8fr', ['Client', 'Téléphone', 'Dernière visite', 'Avec', 'Depuis'], lignes, { tel:[4], vide:'Aucun client à relancer pour cette période'+rapVideSelection()+'.' })
+  };
+};
+
+RAP_CALCULS.nouveauxReguliers = async p => {
+  const items = await rapVentesChoisies(p);
+  const fiches = await rapClients([...new Set(items.map(it => it.facture.client_id).filter(Boolean))]);
+  const estNouveau = it => { const c = fiches[it.facture.client_id]; return !!c && !c.vient_d_assistheo && new Date(c.created_at) >= p.start; };
+  const nouv = items.filter(estNouveau), habit = items.filter(it => !estNouveau(it));
+  const total = rapSomme(items, it => it.montant), mN = rapSomme(nouv, it => it.montant), mH = rapSomme(habit, it => it.montant);
+  const cN = new Set(nouv.map(it => it.facture.client_id)).size, cH = new Set(habit.map(it => it.facture.client_id || it.invoice_id)).size;
+  const parPersonne = rapGrouper(items, it => it.personne);
+  const lignes = Object.keys(parPersonne).sort().map(nom => {
+    const l = parPersonne[nom], n = rapSomme(l.filter(estNouveau), it => it.montant), t = rapSomme(l, it => it.montant);
+    return [escapeHtml(nom), formatMoney(n), formatMoney(t - n), rapFmt(rapTaux(n, t), 'pct')];
+  });
+  return {
+    cartes: [rapCarte('Ventes aux nouveaux clients', mN, 'argent', cN+' client'+(cN > 1 ? 's' : '')), rapCarte('Ventes aux habitués', mH, 'argent', cH+' client'+(cH > 1 ? 's' : '')),
+      rapCarte('Part des nouveaux clients', rapTaux(mN, total), 'pct', 'des ventes')],
+    html: rapTableau('Par personne', '1fr 1fr 1fr 90px', ['Personne', 'Nouveaux', 'Habitués', 'Part nouveaux'], lignes, { droite:[1,2,3], vide:'Aucune vente pendant cette période'+rapVideSelection()+'.' })
+  };
+};
+
+RAP_CALCULS.depenseMoy = async p => {
+  const items = (await rapVentesChoisies(p)).filter(it => it.facture.client_id);
+  const calc = l => { const c = new Set(l.map(it => it.facture.client_id)).size, f = new Set(l.map(it => it.invoice_id)).size, m = rapSomme(l, it => it.montant);
+    return { c, f, m, moy: c ? m / c : null, vis: c ? f / c : null }; };
+  const g = calc(items);
+  const parPersonne = rapGrouper(items, it => it.personne);
+  const lignes = Object.keys(parPersonne).map(nom => ({ nom, ...calc(parPersonne[nom]) })).sort((a, b) => (b.moy || 0) - (a.moy || 0))
+    .map(x => [escapeHtml(x.nom), String(x.c), rapNombre(x.vis), rapFmt(x.moy, 'argent')]);
+  return {
+    cartes: [rapCarte('Dépense moyenne par client', g.moy, 'argent'), rapCarte('Visites par client', g.vis, 'nombre'), rapCarte('Clients servis', g.c, 'nombre')],
+    html: rapTableau('Par personne', '1fr 80px 110px 130px', ['Personne', 'Clients', 'Visites / client', 'Dépense moyenne'], lignes, { droite:[1,2,3], vide:'Aucune vente pendant cette période'+rapVideSelection()+'.' })
+  };
+};
+
+RAP_CALCULS.prisPar = async p => {
+  const { data, error } = await lireToutesLesLignes(() => sbClient.from('rdv_historique').select('id, par_nom, nouvel_employe')
+    .eq('action', 'cree').gte('fait_le', p.start.toISOString()).lt('fait_le', p.end.toISOString()).order('id'));
+  if(error) throw error;
+  const tous = (data || []).filter(h => rapGarde(h.nouvel_employe));
+  const transferes = tous.filter(h => /AssistTheo/i.test(h.par_nom || ''));
+  const liste = tous.filter(h => !/AssistTheo/i.test(h.par_nom || ''));
+  const parQui = rapGrouper(liste, h => h.par_nom || 'Inconnu');
+  const lignes = Object.keys(parQui).sort((a, b) => parQui[b].length - parQui[a].length).map(nom => {
+    const l = parQui[nom], soi = l.filter(h => h.nouvel_employe === nom).length;
+    return [escapeHtml(nom), String(l.length), String(soi), String(l.length - soi), rapBarre(l.length / liste.length)];
+  });
+  return {
+    cartes: [rapCarte('Rendez-vous créés', liste.length, 'nombre', transferes.length ? '+ '+transferes.length+' transférés d’AssistTheo' : '')],
+    html: rapTableau('', '1.1fr 70px 110px 120px 1fr', ['Pris par', 'Total', 'Pour soi-même', 'Pour les autres', ''], lignes, { droite:[1,2,3], tel:[4], vide:'Aucun rendez-vous créé dans le logiciel pendant cette période'+rapVideSelection()+'.' })
+  };
+};
+
+RAP_CALCULS.occupation = async p => {
+  const equipe = rapEquipe.filter(e => rapGarde(e.name));
+  const ids = equipe.map(e => e.id);
+  const debutISO = horDateISO(p.start), finISO = horDateISO(p.end);
+  const [wk, ov, rdvs, nd] = await Promise.all([
+    sbClient.from('employee_weekly_hours').select('*').in('employee_id', ids),
+    lireToutesLesLignes(() => sbClient.from('employee_day_overrides').select('*').in('employee_id', ids).gte('date', debutISO).lt('date', finISO).order('id')),
+    rapRdv(p),
+    chargerNonDispos(q => q.in('employee_id', ids).gte('date', debutISO).lt('date', finISO))
+  ]);
+  if(wk.error) throw wk.error;
+  const index = buildWeeklyHoursIndex(wk.data);
+  const overrides = {};
+  (ov.data || []).forEach(o => { overrides[o.employee_id+'_'+o.date] = o; });
+  const reserve = {};
+  rdvs.forEach(a => { if(a.client_status !== 'cancelled') reserve[a.employee_name] = (reserve[a.employee_name] || 0) + (a.duration_minutes || 0); });
+  const res = equipe.map(e => {
+    let horaire = 0;
+    for(let d = new Date(p.start); d < p.end; d = comptableDecalerJours(d, 1)){
+      const iso = horDateISO(d);
+      const b = computeBlockedRanges(lookupWeeklyRow(index, e.id, d), overrides[e.id+'_'+iso], (nd || {})[e.id+'_'+iso]);
+      if(!b.configured) continue;
+      horaire += rapSomme(naComputeOpenWindows(b.ranges, 0, horGridMinutes), w => w.end - w.start);
+    }
+    return { nom:e.name, horaire, reserve: reserve[e.name] || 0 };
+  }).filter(x => x.horaire || x.reserve);
+  const H = rapSomme(res, x => x.horaire), R = rapSomme(res, x => x.reserve);
+  const lignes = res.sort((a, b) => (rapTaux(b.reserve, b.horaire) || 0) - (rapTaux(a.reserve, a.horaire) || 0))
+    .map(x => [escapeHtml(x.nom), rapHeures(x.horaire), rapHeures(x.reserve), rapFmt(rapTaux(x.reserve, x.horaire), 'pct'), rapBarre(rapTaux(x.reserve, x.horaire), rapCouleur(x.nom))]);
+  return {
+    cartes: [rapCarte('Taux d’occupation', rapTaux(R, H), 'pct'), rapCarte('Heures à l’horaire', H, 'heures'), rapCarte('Heures en rendez-vous', R, 'heures')],
+    html: rapTableau('Par personne', '1fr 90px 100px 70px 1.2fr', ['Personne', 'À l’horaire', 'Réservé', 'Taux', ''], lignes, { droite:[1,2,3], tel:[4], vide:'Personne n’a d’horaire pendant cette période'+rapVideSelection()+'.' })
+  };
+};
+
+RAP_CALCULS.annulations = async p => {
+  const rdvs = (await rapRdv(p)).filter(a => rapGarde(a.employee_name));
+  const annul = rdvs.filter(a => a.client_status === 'cancelled');
+  const parPersonne = rapGrouper(rdvs, a => a.employee_name || 'Sans nom');
+  const lignes = Object.keys(parPersonne).sort().map(nom => {
+    const l = parPersonne[nom], n = l.filter(a => a.client_status === 'cancelled').length;
+    return [escapeHtml(nom), String(l.length), String(n), rapFmt(rapTaux(n, l.length), 'pct')];
+  });
+  const liste = annul.map(a => [escapeHtml(rapDateCourte(new Date(a.start_at))), escapeHtml(rapNomClient(a.clients)), escapeHtml(a.employee_name || ''),
+    '<span class="fin">'+(a.client_status_at ? escapeHtml(rapDateCourte(new Date(a.client_status_at))) : '—')+'</span>']);
+  return {
+    cartes: [rapCarte('Annulations', annul.length, 'nombre', 'sur '+rdvs.length+' rendez-vous'), rapCarte('Taux d’annulation', rapTaux(annul.length, rdvs.length), 'pct')],
+    html: rapTableau('Par personne', '1fr 110px 100px 80px', ['Personne', 'Rendez-vous', 'Annulés', 'Taux'], lignes, { droite:[1,2,3], vide:'Aucun rendez-vous pendant cette période'+rapVideSelection()+'.' })
+      + (annul.length ? rapTableau('Les annulations', '1fr 1.3fr 1fr 1fr', ['Rendez-vous du', 'Client', 'Avec', 'Annulé le'], liste, { tel:[3] }) : '')
+  };
+};
+
+RAP_CALCULS.achalandage = async p => {
+  const rdvs = (await rapRdv(p)).filter(a => a.client_status !== 'cancelled' && rapGarde(a.employee_name));
+  const JOURS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+  const grille = {}, parJour = [0,0,0,0,0,0,0], parHeure = {};
+  rdvs.forEach(a => {
+    const d = new Date(a.start_at), j = (d.getDay() + 6) % 7, h = d.getHours();
+    grille[j+'_'+h] = (grille[j+'_'+h] || 0) + 1; parJour[j]++; parHeure[h] = (parHeure[h] || 0) + 1;
+  });
+  const heures = Object.keys(parHeure).map(Number);
+  const hMin = heures.length ? Math.min(...heures) : 9, hMax = heures.length ? Math.max(...heures) : 17;
+  const max = Math.max(1, ...Object.values(grille));
+  let html = '<h2 class="rap-soustitre">Rendez-vous par jour et par heure</h2><div class="rap-chaleur-wrap"><div class="rap-chaleur"><span></span>'+JOURS.map(j => '<span class="rh-j">'+j+'</span>').join('');
+  for(let h = hMin; h <= hMax; h++){
+    html += '<span class="rh-h">'+h+' h</span>';
+    for(let j = 0; j < 7; j++){
+      const n = grille[j+'_'+h] || 0;
+      html += '<span class="rh-c'+(n / max > .55 ? ' fonce' : '')+'" style="--a:'+(n / max).toFixed(2)+'" title="'+JOURS[j]+' '+h+' h : '+n+' rendez-vous">'+(n || '')+'</span>';
+    }
+  }
+  html += '</div></div>';
+  const meilleurJour = parJour.indexOf(Math.max(...parJour));
+  const meilleureHeure = heures.sort((a, b) => parHeure[b] - parHeure[a])[0];
+  const JOURS_LONGS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+  return {
+    cartes: [rapCarte('Rendez-vous', rdvs.length, 'nombre'),
+      { lbl:'Jour le plus occupé', val: rdvs.length ? parJour[meilleurJour] : null, fmt:'nombre', sous: rdvs.length ? JOURS_LONGS[meilleurJour] : '' },
+      { lbl:'Heure la plus occupée', val: rdvs.length ? parHeure[meilleureHeure] : null, fmt:'nombre', sous: rdvs.length ? meilleureHeure+' h à '+(meilleureHeure + 1)+' h' : '' }],
+    html: rdvs.length ? html : rapTableau('', '1fr', [''], [], { vide:'Aucun rendez-vous pendant cette période'+rapVideSelection()+'.' })
+  };
+};
+
+function rapTotaux(items){
+  const t = { services:0, produits:0, articles:0, factures:new Set() };
+  items.forEach(it => {
+    if(it.is_product){ t.produits += it.montant; t.articles += it.qte; } else t.services += it.montant;
+    t.factures.add(it.invoice_id);
+  });
+  t.total = t.services + t.produits;
+  return t;
+}
+
+RAP_CALCULS.anpasse = async p => {
+  const avantP = { start: rapAnPrecedent(p.start), end: rapAnPrecedent(p.end) };
+  const [maintenant, avant] = await Promise.all([rapVentes(p), rapVentes(avantP)]);
+  const cetteAnnee = maintenant.filter(it => rapGarde(it.personne)), anPasse = avant.filter(it => rapGarde(it.personne));
+  const a = rapTotaux(cetteAnnee), b = rapTotaux(anPasse);
+  const anA = String(p.start.getFullYear()) === String(new Date(p.end.getTime() - 1).getFullYear()) ? String(p.start.getFullYear()) : 'Cette année';
+  const anB = String(avantP.start.getFullYear()) === String(new Date(avantP.end.getTime() - 1).getFullYear()) ? String(avantP.start.getFullYear()) : 'L’an passé';
+  const L = (lbl, x, y, argent, cls) => ({ cls, cellules: [lbl, argent ? formatMoney(x) : rapNombre(x), argent ? formatMoney(y) : rapNombre(y), rapEcart(x, y)] });
+  let html = '';
+  if(!avant.length) html += '<div class="rap-note">Aucune vente n’est enregistrée du '+escapeHtml(rapPlageTexte(avantP.start, avantP.end))
+    + '. Les ventes de l’ancien logiciel n’ont pas été transférées : les factures commencent le 17 août 2026. La colonne de l’an passé se remplira d’elle-même à partir d’août 2027.</div>';
+  html += '<p class="rap-precision">Du '+escapeHtml(rapPlageTexte(p.start, p.end))+', comparé au '+escapeHtml(rapPlageTexte(avantP.start, avantP.end))+'.</p>';
+  html += rapTableau('', '1.2fr 1fr 1fr 80px', ['', anA, anB, 'Écart'], [
+    L('Services', a.services, b.services, true), L('Produits', a.produits, b.produits, true), L('<b>TOTAL</b>', a.total, b.total, true, 'fort'),
+    L('Articles vendus', a.articles, b.articles, false, 'sous'), L('Factures', a.factures.size, b.factures.size, false, 'sous')], { droite:[1,2,3] });
+  const noms = [...new Set([...cetteAnnee, ...anPasse].map(it => it.personne))];
+  if(noms.length){
+    const parA = rapGrouper(cetteAnnee, it => it.personne), parB = rapGrouper(anPasse, it => it.personne);
+    const lignes = [];
+    noms.map(nom => ({ nom, x: rapTotaux(parA[nom] || []), y: rapTotaux(parB[nom] || []) })).sort((m, n) => n.x.total - m.x.total || n.y.total - m.y.total).forEach(m => {
+      lignes.push(L('<b>'+escapeHtml(m.nom)+'</b>', m.x.total, m.y.total, true), L('Services', m.x.services, m.y.services, true, 'sous'), L('Produits', m.x.produits, m.y.produits, true, 'sous'));
+    });
+    html += rapTableau('Par personne', '1.2fr 1fr 1fr 80px', ['Personne', anA, anB, 'Écart'], lignes, { droite:[1,2,3] });
+  }
+  return { cartes: [rapCarte('Ventes '+anA, a.total, 'argent'), rapCarte('Ventes '+anB, b.total, 'argent')], html };
+};
+
+RAP_CALCULS.evolution = async p => {
+  const fin = new Date(p.end.getTime() - 1);
+  const debut = new Date(fin.getFullYear(), fin.getMonth() - 11, 1);
+  const plage = { start: debut, end: new Date(fin.getFullYear(), fin.getMonth() + 1, 1) };
+  const items = await rapVentesChoisies(plage);
+  const mois = [];
+  for(let i = 0; i < 12; i++) mois.push({ d: new Date(debut.getFullYear(), debut.getMonth() + i, 1), s:0, pr:0 });
+  items.forEach(it => {
+    const d = new Date(it.facture.issued_at), m = mois.find(x => x.d.getFullYear() === d.getFullYear() && x.d.getMonth() === d.getMonth());
+    if(!m) return;
+    if(it.is_product) m.pr += it.montant; else m.s += it.montant;
+  });
+  const max = Math.max(1, ...mois.map(m => m.s + m.pr));
+  let html = '<div class="rap-legende"><span><i style="background:var(--teal)"></i>Services</span><span><i style="background:var(--ocre-lt)"></i>Produits</span></div><div class="rap-colonnes">';
+  mois.forEach(m => {
+    const t = m.s + m.pr;
+    html += '<div class="rap-col" title="'+escapeHtml(m.d.toLocaleDateString('fr-CA', { month:'long', year:'numeric' }))+' : '+formatMoney(t)+'"><div class="rc-pile">'
+      + '<span class="rc-pr" style="height:'+(m.pr / max * 100).toFixed(1)+'%"></span><span class="rc-s" style="height:'+(m.s / max * 100).toFixed(1)+'%"></span></div>'
+      + '<div class="rc-mois">'+escapeHtml(m.d.toLocaleDateString('fr-CA', { month:'short' }).replace('.', ''))+'</div></div>';
+  });
+  html += '</div>';
+  const lignes = mois.slice().reverse().map(m => [escapeHtml(m.d.toLocaleDateString('fr-CA', { month:'long', year:'numeric' })), formatMoney(m.s), formatMoney(m.pr), formatMoney(m.s + m.pr)]);
+  const total = rapSomme(mois, m => m.s + m.pr);
+  return {
+    cartes: [rapCarte('Ventes des 12 mois', total, 'argent', rapPlageTexte(plage.start, plage.end)), rapCarte('Moyenne par mois', total / 12, 'argent')],
+    html: html + rapTableau('Mois par mois', '1.2fr 1fr 1fr 1fr', ['Mois', 'Services', 'Produits', 'Total'], lignes, { droite:[1,2,3] })
+  };
+};
+
+RAP_CALCULS.jours = async p => {
+  const items = await rapVentesChoisies(p);
+  const JOURS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+  const t = JOURS.map(() => ({ m:0, f:new Set() }));
+  items.forEach(it => { const j = (new Date(it.facture.issued_at).getDay() + 6) % 7; t[j].m += it.montant; t[j].f.add(it.invoice_id); });
+  const nbJours = JOURS.map(() => 0);
+  for(let d = new Date(p.start); d < p.end; d = comptableDecalerJours(d, 1)) nbJours[(d.getDay() + 6) % 7]++;
+  const max = Math.max(1, ...t.map(x => x.m));
+  const lignes = JOURS.map((nom, j) => [nom, String(t[j].f.size), formatMoney(t[j].m), nbJours[j] ? formatMoney(t[j].m / nbJours[j]) : '—', rapBarre(t[j].m / max)]);
+  const meilleur = t.map(x => x.m).indexOf(Math.max(...t.map(x => x.m)));
+  return {
+    cartes: [{ lbl:'Meilleur jour', val: items.length ? t[meilleur].m : null, fmt:'argent', sous: items.length ? JOURS[meilleur] : '' }],
+    html: rapTableau('', '1fr 80px 1fr 1fr 1.2fr', ['Jour', 'Factures', 'Ventes', 'Moyenne par journée', ''], lignes, { droite:[1,2,3], tel:[4] })
+  };
+};
+
+RAP_CALCULS.servicesPop = async p => {
+  const items = (await rapVentesChoisies(p)).filter(it => !it.is_product);
+  const g = rapGrouper(items, it => it.description || '(sans nom)');
+  const total = rapSomme(items, it => it.montant);
+  const lignes = Object.keys(g).map(nom => ({ nom, fois: g[nom].length, m: rapSomme(g[nom], it => it.montant) })).sort((a, b) => b.fois - a.fois || b.m - a.m)
+    .map((x, i) => [String(i + 1), escapeHtml(x.nom), String(x.fois), formatMoney(x.m), rapFmt(rapTaux(x.m, total), 'pct')]);
+  return {
+    cartes: [rapCarte('Services faits', items.length, 'nombre'), rapCarte('Ventes de services', total, 'argent')],
+    html: rapTableau('', '40px 1.6fr 70px 1fr 70px', ['#', 'Service', 'Fois', 'Montant', 'Part'], lignes, { droite:[2,3,4], tel:[4], vide:'Aucun service facturé pendant cette période'+rapVideSelection()+'.' })
+  };
+};
+
+RAP_CALCULS.categories = async p => {
+  const items = (await rapVentesChoisies(p)).filter(it => !it.is_product);
+  const cat = await ensureComptableServiceCategoryMap();
+  const g = rapGrouper(items, it => cat[it.service_id] || 'Sans catégorie');
+  const total = rapSomme(items, it => it.montant);
+  const lignes = Object.keys(g).map(nom => ({ nom, fois: g[nom].length, m: rapSomme(g[nom], it => it.montant) })).sort((a, b) => b.m - a.m)
+    .map(x => [escapeHtml(x.nom), String(x.fois), formatMoney(x.m), rapFmt(rapTaux(x.m, total), 'pct'), rapBarre(rapTaux(x.m, total))]);
+  return {
+    cartes: [rapCarte('Ventes de services', total, 'argent'), rapCarte('Catégories', Object.keys(g).length, 'nombre')],
+    html: rapTableau('', '1.3fr 70px 1fr 70px 1.2fr', ['Catégorie', 'Fois', 'Montant', 'Part', ''], lignes, { droite:[1,2,3], tel:[4], vide:'Aucun service facturé pendant cette période'+rapVideSelection()+'.' })
+  };
+};
+
+RAP_CALCULS.factureMoy = async p => {
+  const items = await rapVentesChoisies(p);
+  const calc = l => { const f = new Set(l.map(it => it.invoice_id)).size, m = rapSomme(l, it => it.montant); return { f, m, moy: f ? m / f : null }; };
+  const g = calc(items);
+  const parPersonne = rapGrouper(items, it => it.personne);
+  const lignes = Object.keys(parPersonne).map(nom => ({ nom, ...calc(parPersonne[nom]) })).sort((a, b) => (b.moy || 0) - (a.moy || 0))
+    .map(x => [escapeHtml(x.nom), String(x.f), formatMoney(x.m), rapFmt(x.moy, 'argent')]);
+  return {
+    cartes: [rapCarte('Facture moyenne', g.moy, 'argent'), rapCarte('Factures', g.f, 'nombre')],
+    html: rapTableau('Par personne', '1fr 80px 1fr 1fr', ['Personne', 'Factures', 'Ventes', 'Moyenne'], lignes, { droite:[1,2,3], vide:'Aucune facture pendant cette période'+rapVideSelection()+'.' })
+  };
+};
+
+RAP_CALCULS.servicesAjoutes = async p => {
+  const items = (await rapVentesChoisies(p)).filter(it => !it.is_product && !RAP_QUANTITE.test(it.description || ''));
+  const calc = l => {
+    const parFacture = rapGrouper(l, it => it.invoice_id), f = Object.keys(parFacture).length;
+    const plus = Object.values(parFacture).filter(x => x.length >= 2).length;
+    return { f, plus, taux: rapTaux(plus, f), moy: f ? l.length / f : null };
+  };
+  const parPersonne = rapGrouper(items, it => it.personne);
+  const lignes = Object.keys(parPersonne).map(nom => ({ nom, ...calc(parPersonne[nom]) })).sort((a, b) => (b.taux || 0) - (a.taux || 0))
+    .map(x => [escapeHtml(x.nom), String(x.f), String(x.plus), rapFmt(x.taux, 'pct'), rapNombre(x.moy)]);
+  const tous = Object.values(parPersonne).map(calc);
+  const F = rapSomme(tous, x => x.f), P = rapSomme(tous, x => x.plus);
+  return {
+    cartes: [rapCarte('Factures avec plus d’un service', rapTaux(P, F), 'pct', P+' sur '+F), rapCarte('Services par facture', F ? items.length / F : null, 'nombre', 'en moyenne')],
+    html: rapTableau('Par personne', '1fr 80px 110px 80px 110px', ['Personne', 'Factures', 'Plus d’un service', 'Taux', 'Services / facture'], lignes, { droite:[1,2,3,4], tel:[4], vide:'Aucun service facturé pendant cette période'+rapVideSelection()+'.' })
+  };
+};
+
+RAP_CALCULS.revenuHeure = async p => {
+  const maintenant = Date.now();
+  const [items, rdvs] = await Promise.all([rapVentesChoisies(p), rapRdv(p)]);
+  const minutes = {};
+  rdvs.forEach(a => { if(a.client_status !== 'cancelled' && new Date(a.start_at).getTime() < maintenant && rapGarde(a.employee_name)) minutes[a.employee_name] = (minutes[a.employee_name] || 0) + (a.duration_minutes || 0); });
+  const services = {};
+  items.filter(it => !it.is_product).forEach(it => { services[it.personne] = (services[it.personne] || 0) + it.montant; });
+  const noms = [...new Set([...Object.keys(minutes), ...Object.keys(services)])];
+  const lignes = noms.map(nom => ({ nom, min: minutes[nom] || 0, m: services[nom] || 0 })).sort((a, b) => (b.min ? b.m / b.min : 0) - (a.min ? a.m / a.min : 0))
+    .map(x => [escapeHtml(x.nom), rapHeures(x.min), formatMoney(x.m), x.min ? formatMoney(x.m / x.min * 60) : '—']);
+  const M = rapSomme(Object.values(minutes), x => x), S = rapSomme(Object.values(services), x => x);
+  return {
+    cartes: [rapCarte('Revenu par heure', M ? S / M * 60 : null, 'argent', 'en services'), rapCarte('Heures en rendez-vous', M, 'heures'), rapCarte('Ventes de services', S, 'argent')],
+    html: rapTableau('Par personne', '1fr 100px 1fr 1fr', ['Personne', 'Heures', 'Services', 'Par heure'], lignes, { droite:[1,2,3], vide:'Rien pendant cette période'+rapVideSelection()+'.' })
+  };
+};
+
+RAP_CALCULS.rabais = async p => {
+  const items = await rapVentesChoisies(p);
+  const rabaisDe = it => Math.max(0, (Number(it.unit_price) || 0) * it.qte - it.montant);
+  const avec = items.filter(it => Number(it.discount_percent) > 0 && rabaisDe(it) > 0.004);
+  const R = rapSomme(avec, rabaisDe), avant = rapSomme(items, it => it.montant) + R;
+  const parPersonne = rapGrouper(avec, it => it.personne);
+  const lignes = Object.keys(parPersonne).sort((a, b) => rapSomme(parPersonne[b], rabaisDe) - rapSomme(parPersonne[a], rabaisDe))
+    .map(nom => [escapeHtml(nom), String(parPersonne[nom].length), formatMoney(rapSomme(parPersonne[nom], rabaisDe))]);
+  const liste = avec.slice().sort((a, b) => new Date(b.facture.issued_at) - new Date(a.facture.issued_at)).map(it => [escapeHtml(rapDateCourte(new Date(it.facture.issued_at))),
+    escapeHtml(it.description || ''), escapeHtml(it.personne), rapNombre(Number(it.discount_percent))+' %', formatMoney(rabaisDe(it))]);
+  return {
+    cartes: [rapCarte('Rabais accordés', R, 'argent'), rapCarte('Lignes avec rabais', avec.length, 'nombre'), rapCarte('Part des ventes', rapTaux(R, avant), 'pct', 'avant rabais')],
+    html: rapTableau('Par personne', '1fr 90px 1fr', ['Personne', 'Lignes', 'Rabais'], lignes, { droite:[1,2], vide:'Aucun rabais pendant cette période'+rapVideSelection()+'.' })
+      + (liste.length ? rapTableau('Le détail', '.9fr 1.5fr 1fr 60px 1fr', ['Date', 'Service ou produit', 'Personne', 'Rabais', 'Montant'], liste, { droite:[3,4], tel:[2] }) : '')
+  };
+};
+
+RAP_CALCULS.paiements = async p => {
+  const items = await rapVentesChoisies(p);
+  const factures = {};
+  items.forEach(it => { factures[it.invoice_id] = it.facture; });
+  const ids = Object.keys(factures);
+  const parts = {};
+  for(let i = 0; i < ids.length; i += 150){
+    const { data, error } = await sbClient.from('invoice_payments').select('invoice_id, method, amount').in('invoice_id', ids.slice(i, i + 150));
+    if(error) throw error;
+    (data || []).forEach(x => { (parts[x.invoice_id] = parts[x.invoice_id] || []).push(x); });
+  }
+  const modes = {};
+  const ajouter = (m, montant, id) => { const e = modes[m] || (modes[m] = { m:0, f:new Set() }); e.m += Number(montant) || 0; e.f.add(id); };
+  ids.forEach(id => {
+    if(parts[id] && parts[id].length) parts[id].forEach(x => ajouter(x.method || 'Non précisé', x.amount, id));
+    else ajouter(factures[id].payment_method || 'Non précisé', factures[id].total, id);
+  });
+  const T = rapSomme(Object.values(modes), x => x.m);
+  const lignes = Object.keys(modes).sort((a, b) => modes[b].m - modes[a].m)
+    .map(m => [escapeHtml(m), String(modes[m].f.size), formatMoney(modes[m].m), rapFmt(rapTaux(modes[m].m, T), 'pct'), rapBarre(rapTaux(modes[m].m, T))]);
+  return {
+    cartes: [rapCarte('Total encaissé', T, 'argent', 'taxes et pourboires compris'), rapCarte('Factures', ids.length, 'nombre')],
+    html: rapTableau('', '1.2fr 80px 1fr 70px 1.2fr', ['Mode de paiement', 'Factures', 'Montant', 'Part', ''], lignes, { droite:[1,2,3], tel:[4], vide:'Aucune facture pendant cette période'+rapVideSelection()+'.' })
+  };
+};
+
+RAP_CALCULS.couleur = async p => {
+  const items = (await rapVentesChoisies(p)).filter(it => !it.is_product && RAP_QUANTITE.test(it.description || ''));
+  const nomCourt = d => /d[ée]co/i.test(d) ? 'Déco' : /royal/i.test(d) ? 'Royal' : /k[ée]ratine/i.test(d) ? 'Brésilian Kératine' : /toner/i.test(d) ? 'Toner' : /colo/i.test(d) ? 'Couleur' : d;
+  const g = rapGrouper(items, it => nomCourt(it.description || ''));
+  const lignes = Object.keys(g).sort((a, b) => rapSomme(g[b], it => it.qte) - rapSomme(g[a], it => it.qte))
+    .map(nom => [escapeHtml(nom), rapNombre(rapSomme(g[nom], it => it.qte)), rapNombre(rapSomme(g[nom], it => it.qte) * 10)+' g', formatMoney(rapSomme(g[nom], it => it.montant))]);
+  const parPersonne = rapGrouper(items, it => it.personne);
+  const lignesP = Object.keys(parPersonne).sort((a, b) => rapSomme(parPersonne[b], it => it.qte) - rapSomme(parPersonne[a], it => it.qte))
+    .map(nom => [escapeHtml(nom), ...Object.keys(g).map(k => { const q = rapSomme(parPersonne[nom].filter(it => nomCourt(it.description || '') === k), it => it.qte); return q ? rapNombre(q * 10)+' g' : '—'; })]);
+  const cles = Object.keys(g);
+  return {
+    cartes: ['Couleur', 'Déco', 'Royal', 'Brésilian Kératine'].map(k => rapCarte(k, rapSomme(g[k] || [], it => it.qte) * 10, 'nombre', 'grammes')),
+    html: rapTableau('Par produit', '1.3fr 90px 1fr 1fr', ['Produit', 'Quantités', 'Grammes', 'Facturé'], lignes, { droite:[1,2,3], vide:'Aucune quantité de couleur facturée pendant cette période'+rapVideSelection()+'.' })
+      + (cles.length ? rapTableau('Par personne (en grammes)', '1fr'+' 1fr'.repeat(cles.length), ['Personne', ...cles.map(escapeHtml)], lignesP, { droite: cles.map((_, i) => i + 1) }) : '')
+  };
+};
+
+RAP_CALCULS.produits = async p => {
+  const produits = (await rapVentesChoisies(p)).filter(it => it.is_product);
+  const qte = rapSomme(produits, it => it.qte), montant = rapSomme(produits, it => it.montant);
+  const parPersonne = rapGrouper(produits, it => it.personne);
+  const lignes = Object.keys(parPersonne).sort((a, b) => rapSomme(parPersonne[b], it => it.montant) - rapSomme(parPersonne[a], it => it.montant))
+    .map(nom => [escapeHtml(nom), rapNombre(rapSomme(parPersonne[nom], it => it.qte)), formatMoney(rapSomme(parPersonne[nom], it => it.montant))]);
+  return {
+    cartes: [rapCarte('Produits vendus', qte, 'nombre', 'articles'), rapCarte('Montant', montant, 'argent', 'avant taxes'), rapCarte('Factures avec produits', new Set(produits.map(it => it.invoice_id)).size, 'nombre')],
+    html: rapTableau('Par personne', '1fr 100px 130px', ['Personne', 'Articles', 'Montant'], lignes, { droite:[1,2], total: lignes.length ? ['TOTAL', rapNombre(qte), formatMoney(montant)] : null, vide:'Aucun produit vendu pendant cette période'+rapVideSelection()+'.' })
+  };
+};
+
+RAP_CALCULS.meilleursProduits = async p => {
+  const produits = (await rapVentesChoisies(p)).filter(it => it.is_product);
+  const cle = it => (it.description || '(sans nom)') + ' ' + (it.supplier || '');
+  const g = rapGrouper(produits, cle);
+  const classes = Object.keys(g).map(k => ({ nom: g[k][0].description || '(sans nom)', fournisseur: g[k][0].supplier || '', q: rapSomme(g[k], it => it.qte), m: rapSomme(g[k], it => it.montant) }))
+    .sort((a, b) => b.q - a.q || b.m - a.m);
+  const lignes = classes.map((x, i) => [String(i + 1), escapeHtml(x.nom), '<span class="fin">'+escapeHtml(x.fournisseur || '—')+'</span>', rapNombre(x.q), formatMoney(x.m)]);
+  const parPersonne = rapGrouper(produits, it => it.personne);
+  const lignesP = Object.keys(parPersonne).sort().map(nom => {
+    const gp = rapGrouper(parPersonne[nom], it => it.description || '(sans nom)');
+    const best = Object.keys(gp).sort((a, b) => rapSomme(gp[b], it => it.qte) - rapSomme(gp[a], it => it.qte))[0];
+    return [escapeHtml(nom), escapeHtml(best), rapNombre(rapSomme(gp[best], it => it.qte))];
+  });
+  return {
+    cartes: [{ lbl:'Produit no 1', val: classes.length ? classes[0].q : null, fmt:'nombre', sous: classes.length ? classes[0].nom : '' }, rapCarte('Produits différents vendus', classes.length, 'nombre')],
+    html: rapTableau('Classement', '40px 1.6fr .9fr 70px 110px', ['#', 'Produit', 'Fournisseur', 'Qté', 'Montant'], lignes, { droite:[3,4], tel:[2], vide:'Aucun produit vendu pendant cette période'+rapVideSelection()+'.' })
+      + (lignesP.length ? rapTableau('Le meilleur produit de chaque personne', '1fr 1.6fr 70px', ['Personne', 'Produit', 'Qté'], lignesP, { droite:[2] }) : '')
+  };
+};
+
+RAP_CALCULS.revente = async p => {
+  const items = await rapVentesChoisies(p);
+  const calc = l => {
+    const f = new Set(l.map(it => it.invoice_id)).size, fp = new Set(l.filter(it => it.is_product).map(it => it.invoice_id)).size;
+    const m = rapSomme(l, it => it.montant), mp = rapSomme(l.filter(it => it.is_product), it => it.montant);
+    return { f, fp, taux: rapTaux(fp, f), part: rapTaux(mp, m) };
+  };
+  const g = calc(items);
+  const parPersonne = rapGrouper(items, it => it.personne);
+  const lignes = Object.keys(parPersonne).map(nom => ({ nom, ...calc(parPersonne[nom]) })).sort((a, b) => (b.taux || 0) - (a.taux || 0))
+    .map(x => [escapeHtml(x.nom), String(x.f), String(x.fp), rapFmt(x.taux, 'pct'), rapFmt(x.part, 'pct')]);
+  return {
+    cartes: [rapCarte('Taux de revente', g.taux, 'pct', g.fp+' factures sur '+g.f), rapCarte('Part des produits', g.part, 'pct', 'dans les ventes')],
+    html: rapTableau('Par personne', '1fr 80px 110px 80px 100px', ['Personne', 'Factures', 'Avec produit', 'Taux', 'Part produits'], lignes, { droite:[1,2,3,4], tel:[1], vide:'Aucune facture pendant cette période'+rapVideSelection()+'.' })
+  };
+};
+
+RAP_CALCULS.fournisseurs = async p => {
+  const produits = (await rapVentesChoisies(p)).filter(it => it.is_product);
+  const g = rapGrouper(produits, it => it.supplier || 'Fournisseur non précisé');
+  const T = rapSomme(produits, it => it.montant);
+  const lignes = Object.keys(g).sort((a, b) => rapSomme(g[b], it => it.montant) - rapSomme(g[a], it => it.montant))
+    .map(nom => [escapeHtml(nom), rapNombre(rapSomme(g[nom], it => it.qte)), formatMoney(rapSomme(g[nom], it => it.montant)), rapFmt(rapTaux(rapSomme(g[nom], it => it.montant), T), 'pct'), rapBarre(rapTaux(rapSomme(g[nom], it => it.montant), T))]);
+  return {
+    cartes: [rapCarte('Ventes de produits', T, 'argent'), rapCarte('Fournisseurs', Object.keys(g).length, 'nombre')],
+    html: rapTableau('', '1.3fr 80px 1fr 70px 1.2fr', ['Fournisseur', 'Articles', 'Montant', 'Part', ''], lignes, { droite:[1,2,3], tel:[4], vide:'Aucun produit vendu pendant cette période'+rapVideSelection()+'.' })
+  };
+};
+
+RAP_CALCULS.dormants = async p => {
+  const [ventes, prods] = await Promise.all([rapVentesChoisies(p), lireToutesLesLignes(() => sbClient.from('products').select('id, name, supplier, price').eq('active', true).order('name').order('id'))]);
+  if(prods.error) throw prods.error;
+  const vendus = new Set(ventes.filter(it => it.is_product).map(it => (it.description || '').trim().toLowerCase()));
+  const dormants = (prods.data || []).filter(pr => !vendus.has((pr.name || '').trim().toLowerCase()));
+  const lignes = dormants.map(pr => [escapeHtml(pr.name || ''), '<span class="fin">'+escapeHtml(pr.supplier || '—')+'</span>', pr.price != null ? formatMoney(Number(pr.price)) : '—']);
+  return {
+    cartes: [rapCarte('Produits sans vente', dormants.length, 'nombre', 'sur '+(prods.data || []).length+' produits actifs')],
+    html: rapTableau('', '1.8fr 1fr 100px', ['Produit', 'Fournisseur', 'Prix'], lignes, { droite:[2], vide:'Tous les produits ont été vendus au moins une fois.' })
+  };
+};
+
+RAP_CALCULS.objectifs = async p => {
+  const [items, obj] = await Promise.all([rapVentes(p), sbClient.from('objectifs_vente').select('*')]);
+  if(obj.error) throw obj.error;
+  const objectifs = {};
+  (obj.data || []).forEach(o => { objectifs[o.employee_name] = o; });
+  const facteur = comptableEstMoisCivil(p.start, p.end) ? 1 : Math.round((p.end - p.start) / 86400000) / 30.44;
+  const champ = (nom, cle) => { const v = objectifs[nom] && objectifs[nom][cle]; return '<input type="number" min="0" step="50" inputmode="decimal" class="rap-obj" value="'+(v != null ? Number(v) : '')+'" placeholder="Objectif" aria-label="Objectif '+(cle === 'services' ? 'services' : 'produits')+' par mois de '+escapeHtml(nom)+'" data-nom="'+escapeHtml(nom)+'" data-champ="'+cle+'" onchange="enregistrerObjectif(this)">'; };
+  const ligne = (nom, cle, lbl, fait, cibleMois) => {
+    const cible = cibleMois * facteur;
+    const prog = cible ? rapBarre(fait / cible, fait >= cible ? '#2E7D4F' : null)+'<span class="roc-pct">'+Math.round(fait / cible * 100)+' %'+(fait >= cible ? ' — atteint' : ' de '+formatMoney(cible))+'</span>' : '<span class="roc-pct">Aucun objectif</span>';
+    return '<div class="roc-ligne"><span class="roc-lbl">'+lbl+'</span><label class="roc-cible"><span>Objectif / mois</span>'+champ(nom, cle)+'</label><span class="roc-fait">'+formatMoney(fait)+'</span><div class="roc-prog">'+prog+'</div></div>';
+  };
+  const cartes = rapEquipe.filter(e => rapGarde(e.name)).map(e => {
+    const l = items.filter(it => it.personne === e.name);
+    const s = rapSomme(l.filter(it => !it.is_product), it => it.montant), pr = rapSomme(l.filter(it => it.is_product), it => it.montant);
+    const o = objectifs[e.name] || {};
+    return '<div class="rap-obj-carte"><div class="roc-nom"><span class="pt" style="background:'+escapeHtml(e.color_hex || '#999')+'"></span>'+escapeHtml(e.name)+'</div>'
+      + ligne(e.name, 'services', 'Services', s, Number(o.services) || 0) + ligne(e.name, 'produits', 'Produits', pr, Number(o.produits) || 0) + '</div>';
+  }).join('');
+  return {
+    cartes: [],
+    html: '<p class="rap-precision">Écris l’objectif mensuel dans la case : il s’enregistre tout seul.'+(facteur !== 1 ? ' Pour cette période de '+Math.round((p.end - p.start) / 86400000)+' jours, les objectifs sont ajustés au nombre de jours.' : '')+'</p>'
+      + '<div class="rap-objectifs">'+cartes+'</div>'
+  };
+};
+
+async function enregistrerObjectif(input){
+  const nom = input.dataset.nom, champ = input.dataset.champ;
+  const v = input.value.trim() === '' ? null : Number(input.value.replace(',', '.'));
+  if(v !== null && (isNaN(v) || v < 0)){ alert('Entre un montant.'); return; }
+  const ligne = { employee_name: nom, modifie_le: new Date().toISOString() };
+  ligne[champ] = v;
+  const { error } = await sbClient.from('objectifs_vente').upsert(ligne, { onConflict: 'employee_name' });
+  if(error){ console.error(error); alert('L’objectif n’a pas été enregistré. Vérifie ta connexion Internet, puis réessaie.'); return; }
+  return loadRapports();
+}
+
+RAP_CALCULS.palmares = async p => {
+  const [items, nouveaux] = await Promise.all([rapVentesChoisies(p), rapNouveauxChoisis(p)]);
+  const parPersonne = rapGrouper(items, it => it.personne);
+  const stats = Object.keys(parPersonne).map(nom => {
+    const l = parPersonne[nom], f = new Set(l.map(it => it.invoice_id)).size;
+    return { nom, ventes: rapSomme(l, it => it.montant), produits: rapSomme(l.filter(it => it.is_product), it => it.qte), facture: f ? rapSomme(l, it => it.montant) / f : 0,
+      revente: rapTaux(new Set(l.filter(it => it.is_product).map(it => it.invoice_id)).size, f) || 0, nouveaux: nouveaux.filter(c => c.personne === nom).length };
+  });
+  rapEquipe.forEach(e => { if(rapGarde(e.name) && !stats.find(s => s.nom === e.name)) { const n = nouveaux.filter(c => c.personne === e.name).length; if(n) stats.push({ nom:e.name, ventes:0, produits:0, facture:0, revente:0, nouveaux:n }); } });
+  const cats = [['ventes', 'Plus de ventes', 'argent'], ['produits', 'Plus de produits vendus', 'nombre'], ['nouveaux', 'Plus de nouveaux clients', 'nombre'], ['facture', 'Meilleure facture moyenne', 'argent'], ['revente', 'Meilleur taux de revente', 'pct']];
+  const PLACES = ['1re', '2e', '3e'];
+  const html = '<div class="rap-palmares">' + cats.map(([k, titre, fmt]) => {
+    const top = stats.filter(s => s[k] > 0).sort((a, b) => b[k] - a[k]).slice(0, 3);
+    return '<div class="rap-podium"><div class="rp-titre">'+titre+'</div>' + (top.length ? top.map((s, i) =>
+      '<div class="rp-place rp-'+(i + 1)+'"><span class="rp-rang">'+PLACES[i]+'</span><span class="pt" style="background:'+escapeHtml(rapCouleur(s.nom) || '#999')+'"></span><span class="rp-nom">'+escapeHtml(s.nom)+'</span><span class="rp-val">'+rapFmt(s[k], fmt)+'</span></div>').join('')
+      : '<div class="rp-vide">Personne encore</div>') + '</div>';
+  }).join('') + '</div>';
+  return { cartes: [], html };
+};
 
 /* ---- Mes performances (par coiffeuse) ---- */
 let performancesActiveEmployee = null;
