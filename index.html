@@ -7040,22 +7040,28 @@ function applyComptablePreset(key){
 
 async function loadComptableReportData(report){
   const { start, end } = comptableRepRangeFor(report);
-  const { data: invoices, error } = await sbClient.from('invoices')
+  // Depuis le transfert des ventes d'AssistTheo (≈ 600 factures par mois), une période peut
+  // dépasser les 1 000 lignes que la base renvoie d'un coup : on lit tout, par tranches, et les
+  // lignes de facture par paquets de 150 factures (une liste de milliers d'identifiants ne
+  // tiendrait pas dans l'adresse de la requête).
+  const { data: invoices, error } = await lireToutesLesLignes(() => sbClient.from('invoices')
     .select('*, clients(first_name,last_name,email)')
     .eq('status', 'paid')
     .gte('issued_at', start.toISOString())
     .lt('issued_at', end.toISOString())
-    .order('issued_at', { ascending:false });
+    .order('issued_at', { ascending:false }).order('id'));
   if(error){ console.error(error); comptableRepInvoicesCache = []; comptableRepItemsCache = []; return; }
   comptableRepInvoicesCache = invoices || [];
   const ids = comptableRepInvoicesCache.map(i=>i.id);
-  if(ids.length){
-    const { data: items, error: itemsErr } = await sbClient.from('invoice_items').select('*').in('invoice_id', ids);
-    if(itemsErr){ console.error(itemsErr); comptableRepItemsCache = []; }
-    else comptableRepItemsCache = items || [];
-  } else {
-    comptableRepItemsCache = [];
+  const paquets = [];
+  for(let i = 0; i < ids.length; i += 150){
+    const lot = ids.slice(i, i + 150);
+    paquets.push(lireToutesLesLignes(() => sbClient.from('invoice_items').select('*').in('invoice_id', lot).order('id')));
   }
+  const resultats = await Promise.all(paquets);
+  const echec = resultats.find(r => r.error);
+  if(echec){ console.error(echec.error); comptableRepItemsCache = []; }
+  else comptableRepItemsCache = [].concat(...resultats.map(r => r.data || []));
 }
 
 /* ---- Rapport de Ventes ---- */
@@ -7350,7 +7356,7 @@ const RAPPORTS = [
   { cle:'meilleursProduits', groupe:'produits', titre:'Meilleurs produits',         desc:'Le classement des produits les plus vendus, et le meilleur produit de chaque personne.' },
   { cle:'revente',         groupe:'produits',  titre:'Taux de revente',             desc:'Le % des factures qui contiennent un produit, et la part des produits dans les ventes.' },
   { cle:'fournisseurs',    groupe:'produits',  titre:'Ventes par fournisseur',      desc:'Les ventes de produits regroupées par fournisseur.' },
-  { cle:'dormants',        groupe:'produits',  titre:'Produits qui ne se vendent pas', desc:'Les produits de la liste qui n’ont eu aucune vente pendant la période.', sansComparaison:true },
+  { cle:'dormants',        groupe:'produits',  titre:'Produits qui ne se vendent pas', desc:'Les produits de la liste qui n’ont eu aucune vente pendant la période. Les ventes transférées d’AssistTheo portent parfois un nom un peu différent de ta liste : ce rapport est fiable pour les ventes faites dans le nouveau logiciel.', sansComparaison:true },
   { cle:'objectifs',       groupe:'equipe',    titre:'Objectifs de vente',          desc:'Karine fixe un objectif MENSUEL par personne ; la barre montre où chacun en est pendant la période. Pour une période autre qu’un mois, l’objectif est ajusté au nombre de jours.', sansComparaison:true },
   { cle:'palmares',        groupe:'equipe',    titre:'Palmarès',                    desc:'Le classement amical de la période : les 3 premières places de chaque catégorie.', sansComparaison:true }
 ];
@@ -7513,7 +7519,21 @@ const rapCle = (k, p) => k+'|'+p.start.getTime()+'|'+p.end.getTime();
 
 /* ---------- données ---------- */
 // Les lignes de facture payées, avec la personne à qui la vente revient.
-function rapVentes(p){
+// Une longue période est lue mois par mois, en parallèle : ≈ 1 500 lignes par mois depuis le
+// transfert des ventes d'AssistTheo, et une seule requête paginée prendrait une vingtaine de secondes.
+async function rapVentes(p){
+  const jours = (p.end - p.start) / 86400000;
+  if(jours <= 40) return rapVentesBloc(p);
+  const blocs = [];
+  let d = new Date(p.start);
+  while(d < p.end){
+    const fin = new Date(Math.min(new Date(d.getFullYear(), d.getMonth() + 1, 1).getTime(), p.end.getTime()));
+    blocs.push({ start: d, end: fin });
+    d = fin;
+  }
+  return [].concat(...await Promise.all(blocs.map(rapVentesBloc)));
+}
+function rapVentesBloc(p){
   return rapMemo(rapCle('ventes', p), async () => {
     const { data, error } = await lireToutesLesLignes(() => sbClient.from('invoice_items')
       .select('id, invoice_id, service_id, description, supplier, quantity, unit_price, discount_percent, line_total, is_product, employee_name, invoices!inner(id, issued_at, status, employee_name, payment_method, client_id, total)')
@@ -8442,7 +8462,11 @@ function renderComptableInvoiceList(){
     box.innerHTML = '<div class="comptable-invoice-empty">Aucune facture pour cette période.</div>';
     return;
   }
-  box.innerHTML = rows.map(inv => {
+  // Une année complète compte des milliers de factures : on en affiche 500, la recherche trouve les autres.
+  const MAX_AFFICHEES = 500;
+  const plus = rows.length > MAX_AFFICHEES
+    ? '<div class="comptable-invoice-empty">'+MAX_AFFICHEES+' factures les plus récentes sur '+rows.length+'. Cherche un client ou un numéro pour trouver les autres.</div>' : '';
+  box.innerHTML = rows.slice(0, MAX_AFFICHEES).map(inv => {
     const clientName = inv.clients ? ((inv.clients.first_name||'')+' '+(inv.clients.last_name||'')).trim() : '—';
     const d = new Date(inv.issued_at);
     const dateLabel = d.toLocaleDateString('fr-CA', { day:'numeric', month:'short' });
@@ -8454,7 +8478,7 @@ function renderComptableInvoiceList(){
       '<span>'+escapeHtml(inv.payment_method || '—')+'</span>'+
       '<span class="cir-total">'+formatMoney(Number(inv.total))+'</span>'+
       '</div>';
-  }).join('');
+  }).join('') + plus;
 }
 
 // Affiche le reçu d'une facture existante, peu importe d'où on l'appelle (historique Comptable,
