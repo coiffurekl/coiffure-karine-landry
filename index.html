@@ -10520,38 +10520,45 @@ async function searchNextAvailability(){
 
   const empIds = candidates.map(e => e.id);
   const empNames = candidates.map(e => e.name);
+  // Plus de limite de 30 jours (demandé par Martin, 19 sept. 2026) : on avance par tranches d'un
+  // mois jusqu'à trouver les 10 prochaines disponibilités, sans dépasser deux ans. Une tranche à la
+  // fois pour que la base ne renvoie jamais plus de 1 000 rendez-vous d'un coup.
   const today = new Date(); today.setHours(0,0,0,0);
-  const rangeDays = 30;
-  const rangeEnd = new Date(today); rangeEnd.setDate(rangeEnd.getDate() + rangeDays);
-
-  const [{ data: weeklyData, error: wErr }, { data: overrideData, error: oErr }, { data: apptsData, error: aErr }] = await Promise.all([
-    sbClient.from('employee_weekly_hours').select('*').in('employee_id', empIds),
-    sbClient.from('employee_day_overrides').select('*').in('employee_id', empIds).gte('date', horDateISO(today)).lt('date', horDateISO(rangeEnd)),
-    sbClient.from('appointments').select('employee_name, start_at, duration_minutes').in('employee_name', empNames).gte('start_at', today.toISOString()).lt('start_at', rangeEnd.toISOString())
-  ]);
+  const TRANCHE_JOURS = 30, MAX_JOURS = 730;
+  const { data: weeklyData, error: wErr } = await sbClient.from('employee_weekly_hours').select('*').in('employee_id', empIds);
   if(wErr) console.error(wErr);
-  if(oErr) console.error(oErr);
-  if(aErr) console.error(aErr);
-
   const weeklyIndex = buildWeeklyHoursIndex(weeklyData);
-  const nonDisposParEmpDate = await chargerNonDispos(q => q.in('employee_id', empIds).gte('date', horDateISO(today)).lt('date', horDateISO(rangeEnd)));
-  const overrideByEmpDate = {};
-  (overrideData||[]).forEach(o => { overrideByEmpDate[o.employee_id+'_'+o.date] = o; });
-  const apptsByEmpDate = {};
-  (apptsData||[]).forEach(a => {
-    const dt = new Date(a.start_at);
-    const dateISO = horDateISO(dt);
-    const key = a.employee_name+'_'+dateISO;
-    const startMin = toGridMin(String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0'));
-    const dur = a.duration_minutes || 30;
-    (apptsByEmpDate[key] = apptsByEmpDate[key] || []).push({ start:startMin, end:startMin+dur });
-  });
 
   const now = new Date();
   const results = [];
   const maxResults = 10;
 
-  for(let dayOffset=0; dayOffset<=rangeDays && results.length < maxResults; dayOffset++){
+  for(let debutTranche = 0; debutTranche < MAX_JOURS && results.length < maxResults; debutTranche += TRANCHE_JOURS){
+    const rangeStart = new Date(today); rangeStart.setDate(rangeStart.getDate() + debutTranche);
+    const rangeEnd = new Date(today); rangeEnd.setDate(rangeEnd.getDate() + debutTranche + TRANCHE_JOURS);
+    if(debutTranche > 0){
+      resultsEl.innerHTML = '<div class="list-msg">Recherche en cours… (' + escapeHtml(rangeStart.toLocaleDateString('fr-CA', { month:'long', year:'numeric' })) + ')</div>';
+    }
+    const [{ data: overrideData, error: oErr }, { data: apptsData, error: aErr }, nonDisposParEmpDate] = await Promise.all([
+      sbClient.from('employee_day_overrides').select('*').in('employee_id', empIds).gte('date', horDateISO(rangeStart)).lt('date', horDateISO(rangeEnd)),
+      sbClient.from('appointments').select('employee_name, start_at, duration_minutes').in('employee_name', empNames).gte('start_at', rangeStart.toISOString()).lt('start_at', rangeEnd.toISOString()),
+      chargerNonDispos(q => q.in('employee_id', empIds).gte('date', horDateISO(rangeStart)).lt('date', horDateISO(rangeEnd)))
+    ]);
+    if(oErr) console.error(oErr);
+    if(aErr) console.error(aErr);
+    const overrideByEmpDate = {};
+    (overrideData||[]).forEach(o => { overrideByEmpDate[o.employee_id+'_'+o.date] = o; });
+    const apptsByEmpDate = {};
+    (apptsData||[]).forEach(a => {
+      const dt = new Date(a.start_at);
+      const dateISO = horDateISO(dt);
+      const key = a.employee_name+'_'+dateISO;
+      const startMin = toGridMin(String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0'));
+      const dur = a.duration_minutes || 30;
+      (apptsByEmpDate[key] = apptsByEmpDate[key] || []).push({ start:startMin, end:startMin+dur });
+    });
+
+  for(let dayOffset=debutTranche; dayOffset<debutTranche+TRANCHE_JOURS && results.length < maxResults; dayOffset++){
     const dateObj = new Date(today); dateObj.setDate(dateObj.getDate() + dayOffset);
     const dateISO = horDateISO(dateObj);
     let minAllowedStart = 0;
@@ -10598,13 +10605,15 @@ async function searchNextAvailability(){
     dayCandidates.forEach(c => { if(results.length < maxResults) results.push(c); });
   }
 
+  }
+
   renderNaResults(results, duration);
 }
 
 function renderNaResults(results, duration){
   const el = document.getElementById('naResults');
   if(!results.length){
-    el.innerHTML = '<div class="list-msg">Aucune disponibilité trouvée dans les 30 prochains jours.</div>';
+    el.innerHTML = '<div class="list-msg">Aucune disponibilité trouvée dans les deux prochaines années. Vérifie l’horaire régulier des personnes choisies : elles ne travaillent peut-être jamais à ce moment de la journée.</div>';
     return;
   }
   el.innerHTML = results.map(r => {
