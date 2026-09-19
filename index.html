@@ -7358,6 +7358,7 @@ const RAPPORTS = [
   { cle:'fournisseurs',    groupe:'produits',  titre:'Ventes par fournisseur',      desc:'Les ventes de produits regroupées par fournisseur.' },
   { cle:'dormants',        groupe:'produits',  titre:'Produits qui ne se vendent pas', desc:'Les produits de la liste qui n’ont eu aucune vente pendant la période. Les ventes transférées d’AssistTheo portent parfois un nom un peu différent de ta liste : ce rapport est fiable pour les ventes faites dans le nouveau logiciel.', sansComparaison:true },
   { cle:'objectifs',       groupe:'equipe',    titre:'Objectifs de vente',          desc:'Karine fixe un objectif MENSUEL par personne ; la barre montre où chacun en est pendant la période. Pour une période autre qu’un mois, l’objectif est ajusté au nombre de jours.', sansComparaison:true },
+  { cle:'rentabilite',     groupe:'equipe',    titre:'Rentabilité',                 desc:'Ce que chaque personne facture, moins ce que le salon lui verse en commission : ce qui reste au salon, en dollars et en %. La commission suit la grille de chaque personne, semaine par semaine (lundi au dimanche), et le taux des produits. Ne tient pas compte du coût des produits ni des autres dépenses du salon.' },
   { cle:'palmares',        groupe:'equipe',    titre:'Palmarès',                    desc:'Le classement amical de la période : les 3 premières places de chaque catégorie.', sansComparaison:true }
 ];
 
@@ -8146,6 +8147,73 @@ RAP_CALCULS.objectifs = async p => {
     cartes: [],
     html: '<p class="rap-precision">Écris l’objectif mensuel dans la case : il s’enregistre tout seul.'+(facteur !== 1 ? ' Pour cette période de '+Math.round((p.end - p.start) / 86400000)+' jours, les objectifs sont ajustés au nombre de jours.' : '')+'</p>'
       + '<div class="rap-objectifs">'+cartes+'</div>'
+  };
+};
+
+/* ---- Rentabilité ----
+   Même calcul que « Calcul commissions » : le palier se décide sur les services de la SEMAINE
+   (lundi au dimanche) et son taux s'applique à tous les services de cette semaine. Pour une
+   période qui coupe une semaine, le palier se décide quand même sur la semaine complète, et
+   seul ce qui tombe dans la période est compté. */
+function rapLundi(d){ const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); return comptableDecalerJours(x, -((x.getDay() + 6) % 7)); }
+
+RAP_CALCULS.rentabilite = async p => {
+  const debutSem = rapLundi(p.start), finSem = comptableDecalerJours(rapLundi(new Date(p.end.getTime() - 1)), 7);
+  const [items, tiersRes, reglages] = await Promise.all([
+    rapVentes({ start: debutSem, end: finSem }),
+    sbClient.from('commission_tiers').select('*').order('min_amount'),
+    sbClient.from('business_settings').select('product_commission_rate').eq('id', 1).limit(1)
+  ]);
+  if(tiersRes.error) throw tiersRes.error;
+  const tauxProduits = (reglages.data && reglages.data[0] && reglages.data[0].product_commission_rate != null) ? Number(reglages.data[0].product_commission_rate) : 0;
+  const grilles = {};
+  (tiersRes.data || []).forEach(t => { (grilles[t.employee_id] = grilles[t.employee_id] || []).push(t); });
+  const idParNom = {};
+  rapEquipe.forEach(e => { idParNom[e.name] = e.id; });
+
+  const choisis = items.filter(it => rapGarde(it.personne));
+  const dansPeriode = it => { const t = new Date(it.facture.issued_at); return t >= p.start && t < p.end; };
+  const res = Object.entries(rapGrouper(choisis, it => it.personne)).map(([nom, lignes]) => {
+    const grille = (grilles[idParNom[nom]] || []).slice().sort((a, b) => a.min_amount - b.min_amount);
+    const r = { nom, services:0, produits:0, commServices:0, commProduits:0, grille: grille.length > 0, taux: new Set() };
+    Object.values(rapGrouper(lignes, it => horDateISO(rapLundi(new Date(it.facture.issued_at))))).forEach(semaine => {
+      const servicesSemaine = rapSomme(semaine.filter(it => !it.is_product), it => it.montant);
+      const palier = commPalierAtteint(grille, servicesSemaine);
+      const taux = palier ? Number(palier.rate) : 0;
+      const dedans = semaine.filter(dansPeriode);
+      const s = rapSomme(dedans.filter(it => !it.is_product), it => it.montant), pr = rapSomme(dedans.filter(it => it.is_product), it => it.montant);
+      r.services += s; r.produits += pr;
+      r.commServices += s * taux / 100; r.commProduits += pr * tauxProduits / 100;
+      if(s) r.taux.add(taux);
+    });
+    r.facture = r.services + r.produits;
+    r.comm = r.commServices + r.commProduits;
+    r.reste = r.facture - r.comm;
+    return r;
+  }).filter(r => r.facture);
+
+  const avecGrille = res.filter(r => r.grille), sansGrille = res.filter(r => !r.grille);
+  const F = rapSomme(avecGrille, r => r.facture), C = rapSomme(avecGrille, r => r.comm), R = F - C;
+  const pct = (x, sur) => sur ? rapFmt(x / sur, 'pct') : '—';
+  const tauxTexte = r => r.taux.size ? [...r.taux].sort((a, b) => a - b).join(' / ')+' %' : '—';
+  const lignes = [];
+  avecGrille.sort((a, b) => b.reste - a.reste).forEach(r => {
+    lignes.push({ cellules: ['<b>'+escapeHtml(r.nom)+'</b>', formatMoney(r.facture), formatMoney(r.comm), '<b>'+formatMoney(r.reste)+'</b>', pct(r.reste, r.facture), rapBarre(r.facture ? r.reste / r.facture : 0, rapCouleur(r.nom))] });
+    lignes.push({ cls:'sous', cellules: ['Services · '+tauxTexte(r), formatMoney(r.services), formatMoney(r.commServices), formatMoney(r.services - r.commServices), pct(r.services - r.commServices, r.services), ''] });
+    if(r.produits) lignes.push({ cls:'sous', cellules: ['Produits · '+rapNombre(tauxProduits)+' %', formatMoney(r.produits), formatMoney(r.commProduits), formatMoney(r.produits - r.commProduits), pct(r.produits - r.commProduits, r.produits), ''] });
+  });
+  let html = rapTableau('', '1.3fr 1fr 1fr 1fr 70px 1fr', ['Personne', 'Facturé', 'Commission', 'Reste au salon', '%', ''], lignes,
+    { droite:[1,2,3,4], tel:[2,5], total: avecGrille.length ? ['TOTAL', formatMoney(F), formatMoney(C), formatMoney(R), pct(R, F), ''] : null,
+      vide:'Aucune vente pendant cette période'+rapVideSelection()+'.' });
+  if(sansGrille.length){
+    html += '<div class="rap-note">Sans grille de commission, donc pas dans le calcul : '
+      + sansGrille.map(r => escapeHtml(r.nom)+' ('+formatMoney(r.facture)+' facturés)').join(', ')
+      + '. Les grilles se créent dans « Calcul commissions ».</div>';
+  }
+  html += '<p class="rap-precision">Montants avant taxes et sans les pourboires. « Reste au salon » ne tient pas compte du coût des produits vendus, ni des autres dépenses (loyer, fournitures, charges d’employeur…).</p>';
+  return {
+    cartes: [rapCarte('Facturé', F, 'argent', 'services et produits'), rapCarte('Commissions', C, 'argent'), rapCarte('Reste au salon', R, 'argent'), rapCarte('Rentabilité', F ? R / F : null, 'pct', 'de ce qui est facturé')],
+    html
   };
 };
 
