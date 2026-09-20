@@ -2228,6 +2228,10 @@
         <button type="button" class="crep-range-preset-btn" onclick="applyComptablePreset('q2')">2e trimestre</button>
         <button type="button" class="crep-range-preset-btn" onclick="applyComptablePreset('q3')">3e trimestre</button>
         <button type="button" class="crep-range-preset-btn" onclick="applyComptablePreset('q4')">4e trimestre</button>
+        <div class="crep-range-preset-sep"></div>
+        <button type="button" class="crep-range-preset-btn" onclick="applyComptablePreset('yeartodate')">Depuis le 1er janvier</button>
+        <button type="button" class="crep-range-preset-btn" onclick="applyComptablePreset('lastyeartodate')">L’an passé à pareille date</button>
+        <button type="button" class="crep-range-preset-btn" onclick="applyComptablePreset('lastyear')">L’an passé (janv. à déc.)</button>
       </div>
       <div class="crep-range-calendars">
         <div class="crep-range-cal" id="crepCalLeft"></div>
@@ -6801,7 +6805,8 @@ let comptableRepEmployeesCache = [];
 const COMPTABLE_PRESETS = {
   today: "AUJOURD'HUI", yesterday: 'HIER', thisweek: 'SEMAINE EN COURS',
   lastweek: 'SEMAINE PASSÉE', thismonth: 'MOIS EN COURS', lastmonth: 'MOIS PASSÉ',
-  q1: '1ER TRIMESTRE', q2: '2E TRIMESTRE', q3: '3E TRIMESTRE', q4: '4E TRIMESTRE'
+  q1: '1ER TRIMESTRE', q2: '2E TRIMESTRE', q3: '3E TRIMESTRE', q4: '4E TRIMESTRE',
+  yeartodate: 'DEPUIS LE 1ER JANVIER', lastyeartodate: 'L’AN PASSÉ À PAREILLE DATE', lastyear: 'L’AN PASSÉ'
 };
 
 function comptableMonthRange(offset){
@@ -6837,6 +6842,11 @@ function comptablePresetRange(key){
   }
   if(key === 'thismonth') return comptableMonthRange(0);
   if(key === 'lastmonth') return comptableMonthRange(-1);
+  // Du 1er janvier à aujourd'hui, et les mêmes dates l'an passé : demandé par Martin pour
+  // comparer l'année en cours avec la précédente sans avoir à choisir les dates à la main.
+  if(key === 'yeartodate') return { start: new Date(today0.getFullYear(), 0, 1), end: addDays(today0, 1) };
+  if(key === 'lastyeartodate') return { start: new Date(today0.getFullYear() - 1, 0, 1), end: new Date(today0.getFullYear() - 1, today0.getMonth(), today0.getDate() + 1) };
+  if(key === 'lastyear') return { start: new Date(today0.getFullYear() - 1, 0, 1), end: new Date(today0.getFullYear(), 0, 1) };
   if(key === 'q1') return comptableQuarterRange(1);
   if(key === 'q2') return comptableQuarterRange(2);
   if(key === 'q3') return comptableQuarterRange(3);
