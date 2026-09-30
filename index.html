@@ -786,6 +786,24 @@
   .rdv-add-btn{ background:var(--ocre); color:#fff; border:none; padding:10px 18px; border-radius:9px; font-family:'Josefin Sans'; font-weight:600; font-size:13px; letter-spacing:.02em; }
   .rdv-item{ display:flex; align-items:center; gap:14px; padding:12px 14px; background:var(--paper2); border-radius:10px; margin-bottom:8px; }
   .rdv-item .dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  /* ---- Fiche client : onglets Rendez-vous / Historique des factures ---- */
+  .fiche-onglets{ display:flex; gap:6px; border-bottom:2px solid var(--line); margin:0 0 18px; flex-wrap:wrap; }
+  .fiche-onglet{ padding:9px 16px 10px; border:none; background:none; border-bottom:3px solid transparent; margin-bottom:-2px;
+    font-family:'Playfair Display'; font-style:italic; font-size:17px; color:var(--ink-soft); cursor:pointer; }
+  .fiche-onglet:hover{ color:var(--teal-dk); }
+  .fiche-onglet.on{ color:var(--teal-dk); border-bottom-color:var(--ocre); font-weight:600; }
+  .fiche-onglet:focus-visible{ outline:2px solid var(--ocre); outline-offset:2px; }
+  .fac-resume{ display:flex; flex-wrap:wrap; gap:18px; padding:12px 14px; margin-bottom:12px; background:#fff; border:1px solid var(--line);
+    border-radius:10px; font-family:'Josefin Sans'; font-size:13px; color:var(--ink-soft); }
+  .fac-resume b{ color:var(--teal-dk); font-family:'Playfair Display'; font-size:16px; }
+  .fac-item{ cursor:pointer; }
+  .fac-item:hover{ background:#fff; box-shadow:0 2px 10px rgba(32,48,47,.08); }
+  .fac-item .fac-total{ font-family:'Playfair Display'; font-weight:600; color:var(--teal-dk); font-variant-numeric:tabular-nums; }
+  @media (max-width:640px){
+    .fiche-onglet{ font-size:15px; padding:8px 10px 9px; }
+    .fac-item .view-invoice{ display:none; }
+    .fac-resume{ gap:10px; font-size:12px; }
+  }
 
   .team-row{ display:flex; align-items:center; gap:16px; padding:14px 18px; border-radius:14px; margin-bottom:10px; box-shadow:0 6px 18px rgba(32,48,47,.12); transition:opacity .15s, transform .15s; }
   .team-row.dragging{ opacity:.4; }
@@ -5434,11 +5452,72 @@ function selectClient(id){
         '<button class="btn-outline danger" onclick="deleteClient(\''+c.id+'\')">Supprimer</button>' +
       '</div>' +
       '<div class="rdv-section">' +
-        '<div class="rdv-section-head"><h4>Rendez-vous</h4><button class="rdv-add-btn" onclick="go(\'screen-horaire\')">+ Planifier un rendez-vous</button></div>' +
-        '<div id="rdvList"><div class="rdv-empty">Chargement...</div></div>' +
+        '<div class="fiche-onglets">' +
+          '<button type="button" class="fiche-onglet' + (ficheOnglet === 'rdv' ? ' on' : '') + '" onclick="choisirOngletFiche(\'rdv\')">Rendez-vous</button>' +
+          '<button type="button" class="fiche-onglet' + (ficheOnglet === 'factures' ? ' on' : '') + '" onclick="choisirOngletFiche(\'factures\')">Historique des factures</button>' +
+        '</div>' +
+        (ficheOnglet === 'rdv'
+          ? '<div class="rdv-section-head"><h4>Rendez-vous</h4><button class="rdv-add-btn" onclick="go(\'screen-horaire\')">+ Planifier un rendez-vous</button></div>' +
+            '<div id="rdvList"><div class="rdv-empty">Chargement...</div></div>'
+          : '<div id="facturesList"><div class="rdv-empty">Chargement...</div></div>') +
       '</div>' +
     '</div>';
-  loadAppointments(id);
+  if(ficheOnglet === 'rdv') loadAppointments(id); else loadFacturesClient(id);
+}
+
+/* ---- Fiche client : onglet « Historique des factures » ----
+   Demandé par Martin le 30 sept. 2026 : les coiffeuses veulent souvent revoir ce qui a été fait
+   la dernière fois. L'historique inclut les factures transférées d'AssistTheo. */
+let ficheOnglet = 'rdv';
+
+function choisirOngletFiche(cle){
+  ficheOnglet = cle;
+  if(selectedClientId) selectClient(selectedClientId);
+}
+
+async function loadFacturesClient(clientId){
+  const wrap = document.getElementById('facturesList');
+  if(!wrap) return;
+  const { data: factures, error } = await lireToutesLesLignes(() => sbClient.from('invoices')
+    .select('id, invoice_number, issued_at, employee_name, total, tip_amount, payment_method, status')
+    .eq('client_id', clientId).eq('status', 'paid').order('issued_at', { ascending:false }).order('id'));
+  if(!document.getElementById('facturesList')) return;
+  if(error){ wrap.innerHTML = '<div class="rdv-empty">Erreur de chargement.</div>'; console.error(error); return; }
+  if(!factures || !factures.length){ wrap.innerHTML = '<div class="rdv-empty">Aucune facture pour ce client.</div>'; return; }
+
+  // Le détail des lignes sert à résumer chaque visite (services et produits) sous la date.
+  const items = [];
+  const ids = factures.map(f => f.id);
+  for(let i = 0; i < ids.length; i += 100){
+    const { data } = await sbClient.from('invoice_items').select('invoice_id, description, quantity, is_product').in('invoice_id', ids.slice(i, i + 100));
+    items.push(...(data || []));
+  }
+  const parFacture = {};
+  items.forEach(it => { (parFacture[it.invoice_id] = parFacture[it.invoice_id] || []).push(it); });
+
+  const totalDepense = factures.reduce((s, f) => s + (Number(f.total) || 0), 0);
+  const derniere = new Date(factures[0].issued_at);
+  let html = '<div class="fac-resume">'
+    + '<span><b>' + factures.length + '</b> facture' + (factures.length > 1 ? 's' : '') + '</span>'
+    + '<span><b>' + formatMoney(totalDepense) + '</b> au total</span>'
+    + '<span>Dernière visite : <b>' + escapeHtml(derniere.toLocaleDateString('fr-CA', { day:'numeric', month:'long', year:'numeric' })) + '</b></span>'
+    + '</div>';
+  factures.forEach(f => {
+    const d = new Date(f.issued_at);
+    const lignes = parFacture[f.id] || [];
+    const services = lignes.filter(l => !l.is_product).map(l => l.description);
+    const produits = lignes.filter(l => l.is_product).map(l => formatQuantite(Number(l.quantity) || 0) + ' × ' + l.description);
+    const resume = services.concat(produits).join(' · ');
+    html += '<div class="rdv-item fac-item clickable" onclick="openComptableInvoiceReceipt(\'' + f.id + '\')">'
+      + '<div class="dot" style="background:' + (EMPLOYEE_COLORS[f.employee_name] || 'var(--teal)') + '"></div>'
+      + '<div class="info"><b>' + escapeHtml(d.toLocaleDateString('fr-CA', { weekday:'long', day:'numeric', month:'long', year:'numeric' }))
+      + (f.employee_name ? ' · ' + escapeHtml(f.employee_name) : '') + '</b>'
+      + '<span>' + (resume ? escapeHtml(resume) : 'Aucun détail') + '</span></div>'
+      + '<span class="fac-total">' + formatMoney(Number(f.total) || 0) + '</span>'
+      + '<span class="view-invoice">Voir la facture</span>'
+      + '</div>';
+  });
+  wrap.innerHTML = html;
 }
 
 const EMPLOYEE_COLORS = {
