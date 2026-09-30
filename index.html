@@ -1128,6 +1128,7 @@
   .comptable-hub-btn-taxes{ background:#8C5A3E; }
   .comptable-hub-btn-commissions{ background:#3E7C6E; }
   .comptable-hub-btn-rapports{ background:#2F5E7A; }
+  .comptable-hub-btn-scan{ background:#7A4E8C; }
   .comptable-hub-btn-equipe{ background:#5A6B8C; }
   .comptable-hub-btn-theme{ background:#8C5A7A; }
   .comptable-hub-btn-horaires{ background:#4E7C8C; }
@@ -1162,6 +1163,39 @@
   .crep-table-row .ctr-total{ text-align:right; font-family:'Playfair Display'; font-weight:600; }
   .crep-received-line{ font-family:'Josefin Sans'; font-size:13px; color:var(--ink-soft); text-align:right; margin:0 0 6px; }
   .crep-received-line b{ color:var(--teal-dk); font-family:'Playfair Display'; font-style:italic; font-size:17px; }
+  /* ---- Scan (inventaire et commandes) ---- */
+  .scan-zone{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:18px 20px; margin:0 0 20px; }
+  .scan-input{ width:100%; padding:16px 18px; border:2px dashed var(--teal); border-radius:12px; font-family:'Josefin Sans'; font-size:20px; text-align:center; background:var(--paper2); color:var(--ink); }
+  .scan-input:focus{ outline:none; border-style:solid; background:#fff; }
+  .scan-etat{ margin-top:14px; text-align:center; font-family:'Josefin Sans'; font-size:14px; color:var(--ink-soft); min-height:44px; }
+  .scan-etat b{ display:block; font-family:'Playfair Display'; font-size:20px; margin-bottom:2px; }
+  .scan-etat .scan-ok{ color:#2E7D4F; }
+  .scan-etat .scan-ko{ color:#C0392B; }
+  .scan-inconnu{ background:rgba(216,64,47,.05); border:1px solid rgba(216,64,47,.3); border-radius:14px; padding:16px 18px; margin:0 0 22px; }
+  .scan-inconnu .si-titre{ font-family:'Josefin Sans'; font-size:14px; margin-bottom:14px; }
+  .scan-inconnu .si-choix{ display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:18px; margin-bottom:12px; }
+  .scan-inconnu .si-bloc{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .scan-inconnu h4{ font-family:'Playfair Display'; font-style:italic; color:var(--teal-dk); font-size:16px; margin:0 0 10px; }
+  .scan-inconnu label{ display:block; font-family:'Josefin Sans'; font-size:12px; color:var(--ink-soft); margin-bottom:8px; }
+  .scan-inconnu .si-case{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink); }
+  .scan-champ{ width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:9px; font-family:'Josefin Sans'; font-size:14px; margin-top:4px; }
+  .scan-recherche{ width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:10px; font-family:'Josefin Sans'; font-size:14.5px; margin:0 0 14px; }
+  .scan-resultat{ display:flex; justify-content:space-between; gap:10px; padding:9px 11px; border-top:1px solid var(--line); font-family:'Josefin Sans'; font-size:13.5px; }
+  .scan-resultat:hover{ background:var(--paper2); }
+  .scan-filtres{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; margin:0 0 18px; }
+  .scan-filtres label{ font-family:'Josefin Sans'; font-size:12px; color:var(--ink-soft); }
+  .scan-filtres .scan-champ{ width:auto; min-width:150px; }
+  .scan-qte{ width:70px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; font-family:'Josefin Sans'; font-size:13.5px; text-align:right; }
+  .scan-mini{ width:100%; padding:5px 7px; border:1px solid var(--line); border-radius:7px; font-family:'Josefin Sans'; font-size:12.5px; }
+  .scan-ok-flash{ border-color:#2E7D4F; background:rgba(46,125,79,.08); }
+  .scan-x{ border:none; background:none; color:var(--ink-soft); font-size:20px; line-height:1; cursor:pointer; padding:0 4px; }
+  .scan-x:hover{ color:#C0392B; }
+  @media print{ .no-print, .app-nav, .fiche-onglets{ display:none !important; } .scan-qte{ border:none; } }
+  @media (max-width:640px){
+    .scan-input{ font-size:17px; padding:13px; }
+    .scan-filtres{ gap:8px; }
+    .scan-filtres .scan-champ{ min-width:120px; }
+  }
   /* ---- Zone Gestionnaire : Rapport ---- */
   .rap-groupes{ display:flex; flex-wrap:wrap; gap:4px; border-bottom:2px solid var(--line); margin:0 0 16px; }
   .rap-groupe{ padding:10px 16px 11px; border:none; background:none; border-bottom:3px solid transparent; margin-bottom:-2px; font-family:'Playfair Display'; font-style:italic; font-size:18px; color:var(--ink-soft); cursor:pointer; }
@@ -2829,6 +2863,7 @@
         <button type="button" class="comptable-hub-btn comptable-hub-btn-vendeurs" onclick="go('screen-comptable-vendeurs')">Vendeurs</button>
         <button type="button" class="comptable-hub-btn comptable-hub-btn-commissions" onclick="go('screen-comptable-commissions')">Calcul commissions</button>
         <button type="button" class="comptable-hub-btn comptable-hub-btn-rapports" onclick="go('screen-comptable-rapports')">Rapport</button>
+        <button type="button" class="comptable-hub-btn comptable-hub-btn-scan" onclick="go('screen-comptable-scan')">Scan</button>
         <button type="button" class="comptable-hub-btn comptable-hub-btn-taxes" onclick="go('screen-comptable-taxes')">Rapport de taxes</button>
         <button type="button" class="comptable-hub-btn comptable-hub-btn-equipe" onclick="go('screen-comptable-equipe')">Équipe</button>
         <button type="button" class="comptable-hub-btn comptable-hub-btn-theme" onclick="go('screen-comptable-theme')">Thème saisonnier</button>
@@ -3000,6 +3035,19 @@
       <b><input type="number" id="commProduitTaux" min="0" max="100" step="0.5" style="width:80px; padding:7px 9px; border:1px solid var(--line); border-radius:8px; font-family:'Josefin Sans'; font-size:14px; text-align:right;" onchange="enregistrerTauxProduits(this)"> %</b>
     </div>
     <div id="commissionsTableBody"></div>
+  </div>
+</div>
+
+<!-- ======================= ZONE GESTIONNAIRE : Scan (inventaire et commandes) ======================= -->
+<div class="screen" id="screen-comptable-scan">
+  <div class="app-nav">
+    <div class="nav-left"><img class="clickable" onclick="go('screen-cover')" data-imgref="g1"><div class="nav-links"><span class="clickable" onclick="go('screen-horaire')">Horaire</span><span class="clickable" onclick="go('screen-facture')">Facturation</span><span class="clickable" onclick="goToClientsTab()">Clients</span><span class="clickable" onclick="go('screen-prix')">Prix</span></div></div>
+    <div class="nav-links"><span class="clickable" onclick="go('screen-comptable')">Gestionnaire</span><span class="clickable" onclick="go('screen-performances')">Mes performances</span></div>
+  </div>
+  <div class="app-shell">
+    <div class="page-head"><h1><span class="clickable" onclick="go('screen-comptable')" title="Retour">&larr;</span> Scan</h1></div>
+    <div class="fiche-onglets no-print" id="scanOnglets"></div>
+    <div id="scanContenu"></div>
   </div>
 </div>
 
@@ -3215,6 +3263,7 @@ function performGo(id){
   if(id === 'screen-comptable-pourboires') loadComptablePourboires();
   if(id === 'screen-comptable-commissions') loadComptableCommissions();
   if(id === 'screen-comptable-rapports'){ rapCache.clear(); loadRapports(); }
+  if(id === 'screen-comptable-scan') loadScan();
   if(id === 'screen-comptable-taxes') loadComptableTaxes();
   if(id === 'screen-performances') loadPerformances();
   if(id === 'screen-caisse') enterCaisseScreen();
@@ -4600,7 +4649,7 @@ async function submitAddEmployee(){
 async function loadProduits(){
   const container = document.getElementById('productsContainer');
   container.innerHTML = '<div class="list-msg">Chargement...</div>';
-  const { data: products, error } = await sbClient.from('products').select('*').eq('active', true).order('sort_order');
+  const { data: products, error } = await sbClient.from('products').select('*').eq('active', true).eq('vendu_au_comptoir', true).order('sort_order');
   if(error || !products){
     container.innerHTML = '<div class="list-msg">Erreur de chargement.</div>';
     console.error(error);
@@ -5850,7 +5899,7 @@ let factCats = [], factSvcs = [], factTiers = [], factServicesLoaded = false;
 
 async function ensureProductsCatalog(){
   if(productsCache) return productsCache;
-  const { data, error } = await sbClient.from('products').select('*').eq('active', true).order('sort_order');
+  const { data, error } = await sbClient.from('products').select('*').eq('active', true).eq('vendu_au_comptoir', true).order('sort_order');
   if(error){ console.error(error); productsCache = []; return productsCache; }
   productsCache = data || [];
   return productsCache;
@@ -7430,6 +7479,341 @@ function renderComptableTaxesCards(){
   document.getElementById('taxesTotal').textContent = formatMoney(totals.gst + totals.qst);
 }
 
+/* ---- Scan (Zone Gestionnaire) ----
+   La douchette Bluetooth se comporte comme un clavier : elle « tape » le code-barres puis Entrée
+   dans le champ qui a le focus. On garde donc un champ toujours prêt, et chaque code lu ajoute
+   une ligne dans inventaire_scans. Les produits viennent de la liste du logiciel : ceux qu'on
+   vend au comptoir et ceux qui servent seulement à l'inventaire et aux commandes.        */
+let scanOnglet = 'scanner';
+let scanProduits = [];            // tous les produits actifs
+let scanParCode = {};             // code-barres → produit
+let scanDernier = null;           // dernier code inconnu, en attente d'une décision
+let scanAudio = null;
+
+const SCAN_ONGLETS = [
+  { cle:'scanner',  titre:'Scanner' },
+  { cle:'commande', titre:'Commande' },
+  { cle:'produits', titre:'Produits' }
+];
+
+function choisirOngletScan(cle){ scanOnglet = cle; return loadScan(); }
+
+async function loadScan(){
+  document.getElementById('scanOnglets').innerHTML = SCAN_ONGLETS.map(o =>
+    '<button type="button" class="fiche-onglet'+(o.cle === scanOnglet ? ' on' : '')+'" onclick="choisirOngletScan(\'' + o.cle + '\')">'+o.titre+'</button>').join('');
+  const box = document.getElementById('scanContenu');
+  box.innerHTML = '<div class="rap-chargement">Chargement…</div>';
+  const { data, error } = await lireToutesLesLignes(() => sbClient.from('products')
+    .select('id, name, supplier, price, upc, distributeur, supplier_sku, unit_cost, unit, seuil_commande, vendu_au_comptoir')
+    .eq('active', true).order('name').order('id'));
+  if(error){ console.error(error); box.innerHTML = '<div class="rap-note">La liste des produits n’a pas pu être chargée. Vérifie ta connexion Internet.</div>'; return; }
+  scanProduits = data || [];
+  scanParCode = {};
+  scanProduits.forEach(p => { if(p.upc) scanParCode[String(p.upc).trim()] = p; });
+  if(scanOnglet === 'scanner') return renderScanScanner();
+  if(scanOnglet === 'commande') return renderScanCommande();
+  return renderScanProduits();
+}
+
+function scanDistributeurs(){
+  return [...new Set(scanProduits.map(p => p.distributeur).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'));
+}
+
+/* ---- Bip : un son court fabriqué par le navigateur, pas de fichier à téléverser.
+   iPhone n'autorise le son qu'après un vrai geste de l'utilisateur : on prépare donc le son
+   au premier clic dans le champ. ---- */
+function scanPreparerSon(){
+  try{
+    if(!scanAudio) scanAudio = new (window.AudioContext || window.webkitAudioContext)();
+    if(scanAudio.state === 'suspended') scanAudio.resume();
+  }catch(e){ /* pas de son : ce n'est pas bloquant */ }
+}
+function scanBip(ok){
+  try{
+    if(!scanAudio) return;
+    const o = scanAudio.createOscillator(), g = scanAudio.createGain();
+    o.type = 'sine'; o.frequency.value = ok ? 880 : 220;
+    g.gain.setValueAtTime(0.0001, scanAudio.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.25, scanAudio.currentTime + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, scanAudio.currentTime + (ok ? 0.12 : 0.3));
+    o.connect(g); g.connect(scanAudio.destination);
+    o.start(); o.stop(scanAudio.currentTime + (ok ? 0.13 : 0.31));
+  }catch(e){ /* idem */ }
+}
+
+/* ---------- Onglet Scanner ---------- */
+function renderScanScanner(){
+  document.getElementById('scanContenu').innerHTML =
+    '<p class="rap-desc">Le champ reste prêt : appuie sur la gâchette de la douchette et le produit s’ajoute tout seul. ' +
+    'Sans douchette, tu peux taper le code-barres et faire Entrée.</p>' +
+    '<div class="scan-zone">' +
+      '<input type="text" id="scanInput" class="scan-input" placeholder="Prêt à scanner…" autocomplete="off" ' +
+        'onfocus="scanPreparerSon()" onkeydown="if(event.key===\'Enter\'){ event.preventDefault(); traiterCodeScan(this.value); this.value=\'\'; }">' +
+      '<div class="scan-etat" id="scanEtat">En attente d’un code-barres.</div>' +
+    '</div>' +
+    '<div id="scanInconnu"></div>' +
+    '<h2 class="rap-soustitre">Scans d’aujourd’hui</h2>' +
+    '<div id="scanJour"><div class="rap-chargement">Chargement…</div></div>';
+  scanGarderFocus();
+  return chargerScansDuJour();
+}
+
+function scanGarderFocus(){
+  const i = document.getElementById('scanInput');
+  if(!i) return;
+  i.focus();
+  clearInterval(window.scanFocusTimer);
+  window.scanFocusTimer = setInterval(() => {
+    const champ = document.getElementById('scanInput');
+    if(!champ){ clearInterval(window.scanFocusTimer); return; }
+    const actif = document.activeElement;
+    const ailleurs = actif && actif !== champ && /input|textarea|select/i.test(actif.tagName);
+    if(!ailleurs && currentScreenId === 'screen-comptable-scan' && scanOnglet === 'scanner') champ.focus();
+  }, 1200);
+}
+
+async function traiterCodeScan(code){
+  code = (code || '').trim();
+  if(!code) return;
+  const etat = document.getElementById('scanEtat');
+  const produit = scanParCode[code];
+  if(!produit){
+    scanBip(false);
+    if(etat) etat.innerHTML = '<b class="scan-ko">Code inconnu : '+escapeHtml(code)+'</b>';
+    return afficherCodeInconnu(code);
+  }
+  const { error } = await sbClient.from('inventaire_scans').insert({ product_id: produit.id, quantity: 1, par_nom: monNom || nomDuCompte() });
+  if(error){ scanBip(false); if(etat) etat.innerHTML = '<b class="scan-ko">Pas enregistré : '+escapeHtml(error.message)+'</b>'; return; }
+  scanBip(true);
+  if(etat) etat.innerHTML = '<b class="scan-ok">'+escapeHtml(produit.name)+'</b><span>'+escapeHtml(produit.distributeur || 'Sans distributeur')
+    + (produit.supplier_sku ? ' · code '+escapeHtml(produit.supplier_sku) : '')+'</span>';
+  document.getElementById('scanInconnu').innerHTML = '';
+  return chargerScansDuJour();
+}
+
+function nomDuCompte(){
+  return estGestionnaire() ? 'Gestion' : 'Réception';
+}
+
+function afficherCodeInconnu(code){
+  scanDernier = code;
+  document.getElementById('scanInconnu').innerHTML =
+    '<div class="scan-inconnu">' +
+      '<div class="si-titre">Ce code-barres n’est dans aucun produit : <b>'+escapeHtml(code)+'</b></div>' +
+      '<div class="si-choix">' +
+        '<div class="si-bloc">' +
+          '<h4>Le rattacher à un produit existant</h4>' +
+          '<input type="text" id="scanLienRecherche" class="scan-recherche" placeholder="Cherche le produit par son nom…" oninput="chercherProduitPourCode(this.value)">' +
+          '<div id="scanLienResultats"></div>' +
+        '</div>' +
+        '<div class="si-bloc">' +
+          '<h4>Ou créer un nouveau produit</h4>' +
+          '<label>Nom <input type="text" id="scanNouveauNom" class="scan-champ" placeholder="Nom du produit"></label>' +
+          '<label>Distributeur <input type="text" id="scanNouveauDist" class="scan-champ" list="scanDistListe" placeholder="Salon Centric, Binani…"></label>' +
+          '<datalist id="scanDistListe">'+scanDistributeurs().map(d => '<option value="'+escapeHtml(d)+'">').join('')+'</datalist>' +
+          '<label>Format <input type="text" id="scanNouveauUnite" class="scan-champ" placeholder="250ml, unité…"></label>' +
+          '<label>Prix coûtant <input type="number" step="0.01" min="0" id="scanNouveauCout" class="scan-champ"></label>' +
+          '<label class="si-case"><input type="checkbox" id="scanNouveauVente" onchange="document.getElementById(\'scanNouveauPrixLigne\').style.display = this.checked ? \'\' : \'none\'"> Se vend au comptoir</label>' +
+          '<label id="scanNouveauPrixLigne" style="display:none;">Prix de vente <input type="number" step="0.01" min="0" id="scanNouveauPrix" class="scan-champ"></label>' +
+          '<button type="button" class="btn-solid" onclick="creerProduitDepuisScan()">Créer et enregistrer le scan</button>' +
+        '</div>' +
+      '</div>' +
+      '<button type="button" class="btn-outline" onclick="document.getElementById(\'scanInconnu\').innerHTML=\'\'; scanGarderFocus();">Laisser faire</button>' +
+    '</div>';
+}
+
+function chercherProduitPourCode(q){
+  q = (q || '').trim().toLowerCase();
+  const box = document.getElementById('scanLienResultats');
+  if(!box) return;
+  if(q.length < 2){ box.innerHTML = ''; return; }
+  const trouves = scanProduits.filter(p => (p.name || '').toLowerCase().includes(q)).slice(0, 12);
+  box.innerHTML = trouves.length ? trouves.map(p =>
+    '<div class="scan-resultat clickable" onclick="rattacherCodeAuProduit(\''+p.id+'\')">' +
+      '<span>'+escapeHtml(p.name)+'</span>' +
+      '<span class="fin">'+escapeHtml(p.distributeur || '—')+(p.upc ? ' · déjà un code' : '')+'</span>' +
+    '</div>').join('') : '<div class="rap-vide">Aucun produit trouvé.</div>';
+}
+
+async function rattacherCodeAuProduit(produitId){
+  const p = scanProduits.find(x => x.id === produitId);
+  if(!p || !scanDernier) return;
+  if(p.upc && !confirm('Ce produit a déjà le code '+p.upc+'. Le remplacer par '+scanDernier+' ?')) return;
+  const { error } = await sbClient.from('products').update({ upc: scanDernier, updated_at: new Date().toISOString() }).eq('id', produitId);
+  if(error){ alert('Le code n’a pas été enregistré : '+error.message); return; }
+  const code = scanDernier;
+  p.upc = code; scanParCode[code] = p; scanDernier = null;
+  document.getElementById('scanInconnu').innerHTML = '';
+  await traiterCodeScan(code);
+  scanGarderFocus();
+}
+
+async function creerProduitDepuisScan(){
+  const nom = document.getElementById('scanNouveauNom').value.trim();
+  if(!nom){ alert('Écris le nom du produit.'); return; }
+  const vendu = document.getElementById('scanNouveauVente').checked;
+  const prix = parseFloat(document.getElementById('scanNouveauPrix').value);
+  if(vendu && (isNaN(prix) || prix < 0)){ alert('Écris le prix de vente.'); return; }
+  const cout = parseFloat(document.getElementById('scanNouveauCout').value);
+  const { data: dernier } = await sbClient.from('products').select('sort_order').order('sort_order', { ascending:false }).limit(1);
+  const ligne = {
+    name: nom, upc: scanDernier, distributeur: document.getElementById('scanNouveauDist').value.trim() || null,
+    unit: document.getElementById('scanNouveauUnite').value.trim() || null,
+    unit_cost: isNaN(cout) ? null : cout, price: vendu && !isNaN(prix) ? prix : null,
+    vendu_au_comptoir: vendu, active: true, sort_order: ((dernier && dernier[0] && dernier[0].sort_order) || 0) + 1
+  };
+  const { data, error } = await sbClient.from('products').insert(ligne).select('*').limit(1);
+  if(error){ alert('Le produit n’a pas été créé : '+error.message); return; }
+  const p = data[0];
+  scanProduits.push(p); if(p.upc) scanParCode[String(p.upc).trim()] = p;
+  const code = scanDernier; scanDernier = null;
+  document.getElementById('scanInconnu').innerHTML = '';
+  productsCache = null;                      // la facturation rechargera la liste
+  await traiterCodeScan(code);
+  scanGarderFocus();
+}
+
+async function chargerScansDuJour(){
+  const box = document.getElementById('scanJour');
+  if(!box) return;
+  const debut = new Date(); debut.setHours(0, 0, 0, 0);
+  const { data, error } = await lireToutesLesLignes(() => sbClient.from('inventaire_scans')
+    .select('id, quantity, scanned_at, par_nom, products(name, distributeur, supplier_sku)')
+    .gte('scanned_at', debut.toISOString()).order('scanned_at', { ascending:false }).order('id'));
+  if(!document.getElementById('scanJour')) return;
+  if(error){ console.error(error); box.innerHTML = '<div class="rap-vide">Erreur de chargement.</div>'; return; }
+  if(!data.length){ box.innerHTML = '<div class="rap-table"><div class="rap-vide">Rien de scanné aujourd’hui.</div></div>'; return; }
+  const total = data.reduce((s, x) => s + (Number(x.quantity) || 0), 0);
+  box.innerHTML = '<div class="rap-table">' +
+    '<div class="rap-ligne head" style="--cols:1.6fr 1fr 70px 90px 60px; --cols-tel:1.6fr 70px 60px;">' +
+      '<span>Produit</span><span class="rap-cache-tel">Distributeur</span><span class="n">Qté</span><span class="n rap-cache-tel">Heure</span><span class="n"></span></div>' +
+    data.map(x => '<div class="rap-ligne" style="--cols:1.6fr 1fr 70px 90px 60px; --cols-tel:1.6fr 70px 60px;">' +
+      '<span>'+escapeHtml((x.products || {}).name || '(produit retiré)')+'</span>' +
+      '<span class="fin rap-cache-tel">'+escapeHtml((x.products || {}).distributeur || '—')+'</span>' +
+      '<span class="n">'+formatQuantite(Number(x.quantity) || 0)+'</span>' +
+      '<span class="n fin rap-cache-tel">'+new Date(x.scanned_at).toLocaleTimeString('fr-CA', { hour:'2-digit', minute:'2-digit' })+'</span>' +
+      '<span class="n"><button type="button" class="scan-x" title="Retirer ce scan" onclick="retirerScan(\''+x.id+'\')">&times;</button></span>' +
+    '</div>').join('') +
+    '<div class="rap-ligne total" style="--cols:1.6fr 1fr 70px 90px 60px; --cols-tel:1.6fr 70px 60px;"><span>TOTAL</span><span class="rap-cache-tel"></span><span class="n">'+formatQuantite(total)+'</span><span class="rap-cache-tel"></span><span></span></div>' +
+    '</div>';
+}
+
+async function retirerScan(id){
+  const { error } = await sbClient.from('inventaire_scans').delete().eq('id', id);
+  if(error){ alert('Le scan n’a pas été retiré : '+error.message); return; }
+  return chargerScansDuJour();
+}
+
+/* ---------- Onglet Commande ---------- */
+let scanCmdDebut = null, scanCmdFin = null, scanCmdDist = '', scanCmdQtes = {};
+
+function renderScanCommande(){
+  const auj = new Date().toISOString().slice(0, 10);
+  if(!scanCmdDebut) scanCmdDebut = auj;
+  if(!scanCmdFin) scanCmdFin = auj;
+  document.getElementById('scanContenu').innerHTML =
+    '<p class="rap-desc no-print">Les produits scannés pendant la période, regroupés par produit. Tu peux corriger les quantités avant d’imprimer.</p>' +
+    '<div class="scan-filtres no-print">' +
+      '<label>Du <input type="date" id="scanCmdDebut" class="scan-champ" value="'+scanCmdDebut+'" onchange="scanCmdDebut=this.value; chargerCommandeScan();"></label>' +
+      '<label>Au <input type="date" id="scanCmdFin" class="scan-champ" value="'+scanCmdFin+'" onchange="scanCmdFin=this.value; chargerCommandeScan();"></label>' +
+      '<label>Distributeur <select id="scanCmdDist" class="scan-champ" onchange="scanCmdDist=this.value; chargerCommandeScan();">' +
+        '<option value="">Tous</option>' + scanDistributeurs().map(d => '<option value="'+escapeHtml(d)+'"'+(d === scanCmdDist ? ' selected' : '')+'>'+escapeHtml(d)+'</option>').join('') +
+      '</select></label>' +
+      '<button type="button" class="btn-outline" onclick="window.print()">Imprimer</button>' +
+    '</div>' +
+    '<div id="scanCmdTable"><div class="rap-chargement">Chargement…</div></div>';
+  return chargerCommandeScan();
+}
+
+async function chargerCommandeScan(){
+  const box = document.getElementById('scanCmdTable');
+  if(!box) return;
+  box.innerHTML = '<div class="rap-chargement">Chargement…</div>';
+  const debut = new Date(scanCmdDebut + 'T00:00:00');
+  const fin = new Date(scanCmdFin + 'T00:00:00'); fin.setDate(fin.getDate() + 1);
+  const { data, error } = await lireToutesLesLignes(() => sbClient.from('inventaire_scans')
+    .select('quantity, scanned_at, products!inner(id, name, distributeur, supplier_sku, unit, unit_cost)')
+    .gte('scanned_at', debut.toISOString()).lt('scanned_at', fin.toISOString()).order('id'));
+  if(!document.getElementById('scanCmdTable')) return;
+  if(error){ console.error(error); box.innerHTML = '<div class="rap-vide">Erreur de chargement.</div>'; return; }
+  const lignes = {};
+  (data || []).forEach(x => {
+    const p = x.products;
+    if(scanCmdDist && (p.distributeur || '') !== scanCmdDist) return;
+    const l = lignes[p.id] = lignes[p.id] || { p, qte:0 };
+    l.qte += Number(x.quantity) || 0;
+  });
+  const liste = Object.values(lignes).sort((a, b) => (a.p.distributeur || '').localeCompare(b.p.distributeur || '', 'fr') || a.p.name.localeCompare(b.p.name, 'fr'));
+  if(!liste.length){ box.innerHTML = '<div class="rap-table"><div class="rap-vide">Rien de scanné pendant cette période.</div></div>'; return; }
+  const cols = '--cols:1.7fr .9fr .8fr 90px 110px; --cols-tel:1.7fr 90px 110px;';
+  const titre = '<h2 class="rap-soustitre">Bon de commande · ' + escapeHtml(scanCmdDist || 'tous les distributeurs') + ' · du '
+    + escapeHtml(new Date(scanCmdDebut+'T00:00:00').toLocaleDateString('fr-CA', { day:'numeric', month:'long', year:'numeric' }))
+    + ' au ' + escapeHtml(new Date(scanCmdFin+'T00:00:00').toLocaleDateString('fr-CA', { day:'numeric', month:'long', year:'numeric' })) + '</h2>';
+  box.innerHTML = titre + '<div class="rap-table">' +
+    '<div class="rap-ligne head" style="'+cols+'"><span>Produit</span><span class="rap-cache-tel">Distributeur</span><span class="rap-cache-tel">Code</span><span class="n">Qté</span><span class="n">Coûtant</span></div>' +
+    liste.map(l => '<div class="rap-ligne" style="'+cols+'">' +
+      '<span>'+escapeHtml(l.p.name)+(l.p.unit ? ' <span class="fin">('+escapeHtml(l.p.unit)+')</span>' : '')+'</span>' +
+      '<span class="fin rap-cache-tel">'+escapeHtml(l.p.distributeur || '—')+'</span>' +
+      '<span class="fin rap-cache-tel">'+escapeHtml(l.p.supplier_sku || '—')+'</span>' +
+      '<span class="n"><input type="number" min="0" step="1" class="scan-qte" value="'+(scanCmdQtes[l.p.id] != null ? scanCmdQtes[l.p.id] : l.qte)+'" onchange="scanCmdQtes[\''+l.p.id+'\']=this.value"></span>' +
+      '<span class="n">'+(l.p.unit_cost != null ? formatMoney(Number(l.p.unit_cost)) : '—')+'</span>' +
+    '</div>').join('') +
+    '<div class="rap-ligne total" style="'+cols+'"><span>'+liste.length+' produits</span><span class="rap-cache-tel"></span><span class="rap-cache-tel"></span><span class="n">'+formatQuantite(liste.reduce((s, l) => s + l.qte, 0))+'</span><span></span></div>' +
+    '</div>';
+}
+
+/* ---------- Onglet Produits ---------- */
+let scanRecherche = '';
+
+function renderScanProduits(){
+  document.getElementById('scanContenu').innerHTML =
+    '<p class="rap-desc">Toute la liste : les produits vendus au comptoir et ceux qui servent seulement à l’inventaire. ' +
+    'C’est ici qu’on ajuste le distributeur, le code du fournisseur, le prix coûtant et le code-barres.</p>' +
+    '<input type="text" id="scanProdRecherche" class="scan-recherche" placeholder="Cherche un produit, un code-barres, un distributeur…" value="'+escapeHtml(scanRecherche)+'" oninput="scanRecherche=this.value; renderScanListeProduits();">' +
+    '<div id="scanProdListe"></div>';
+  renderScanListeProduits();
+}
+
+function renderScanListeProduits(){
+  const box = document.getElementById('scanProdListe');
+  if(!box) return;
+  const q = scanRecherche.trim().toLowerCase();
+  const liste = scanProduits.filter(p => !q || (p.name || '').toLowerCase().includes(q)
+    || String(p.upc || '').includes(q) || (p.distributeur || '').toLowerCase().includes(q)
+    || (p.supplier_sku || '').toLowerCase().includes(q));
+  const cols = '--cols:1.7fr .9fr .9fr 90px 90px 110px; --cols-tel:1.7fr 90px 110px;';
+  box.innerHTML = '<p class="rap-precision">'+liste.length+' produit'+(liste.length > 1 ? 's' : '')+' sur '+scanProduits.length+'.</p>'
+    + '<div class="rap-table">' +
+    '<div class="rap-ligne head" style="'+cols+'"><span>Produit</span><span class="rap-cache-tel">Distributeur</span><span class="rap-cache-tel">Code-barres</span><span class="rap-cache-tel">Code fourn.</span><span class="n">Coûtant</span><span class="n">Au comptoir</span></div>' +
+    liste.slice(0, 300).map(p => '<div class="rap-ligne" style="'+cols+'">' +
+      '<span>'+escapeHtml(p.name)+(p.unit ? ' <span class="fin">('+escapeHtml(p.unit)+')</span>' : '')+'</span>' +
+      '<span class="rap-cache-tel"><input type="text" class="scan-mini" value="'+escapeHtml(p.distributeur || '')+'" onchange="majProduitScan(\''+p.id+'\',\'distributeur\',this)"></span>' +
+      '<span class="rap-cache-tel"><input type="text" class="scan-mini" value="'+escapeHtml(p.upc || '')+'" onchange="majProduitScan(\''+p.id+'\',\'upc\',this)"></span>' +
+      '<span class="rap-cache-tel"><input type="text" class="scan-mini" value="'+escapeHtml(p.supplier_sku || '')+'" onchange="majProduitScan(\''+p.id+'\',\'supplier_sku\',this)"></span>' +
+      '<span class="n"><input type="number" step="0.01" min="0" class="scan-mini" value="'+(p.unit_cost != null ? Number(p.unit_cost) : '')+'" onchange="majProduitScan(\''+p.id+'\',\'unit_cost\',this)"></span>' +
+      '<span class="n"><input type="checkbox" '+(p.vendu_au_comptoir ? 'checked' : '')+' onchange="majProduitScan(\''+p.id+'\',\'vendu_au_comptoir\',this)"></span>' +
+    '</div>').join('') +
+    (liste.length > 300 ? '<div class="rap-vide">300 produits affichés sur '+liste.length+'. Utilise la recherche pour trouver les autres.</div>' : '') +
+    '</div>';
+}
+
+async function majProduitScan(id, champ, input){
+  let valeur;
+  if(champ === 'vendu_au_comptoir') valeur = input.checked;
+  else if(champ === 'unit_cost'){ const v = parseFloat(input.value); valeur = isNaN(v) ? null : v; }
+  else valeur = input.value.trim() || null;
+  const { error } = await sbClient.from('products').update({ [champ]: valeur, updated_at: new Date().toISOString() }).eq('id', id);
+  if(error){ alert('Le changement n’a pas été enregistré : '+error.message); return; }
+  const p = scanProduits.find(x => x.id === id);
+  if(p){
+    if(champ === 'upc'){ Object.keys(scanParCode).forEach(k => { if(scanParCode[k].id === id) delete scanParCode[k]; }); if(valeur) scanParCode[String(valeur)] = p; }
+    p[champ] = valeur;
+  }
+  productsCache = null;
+  input.classList.add('scan-ok-flash');
+  setTimeout(() => input.classList.remove('scan-ok-flash'), 900);
+}
+
 /* ---- Rapport (Zone Gestionnaire) ----
    Un seul écran, tous les rapports. La période, les personnes choisies et la comparaison restent
    les mêmes quand on passe d'un rapport à l'autre. Aucune personne cochée = toute l'équipe.
@@ -8227,7 +8611,7 @@ RAP_CALCULS.fournisseurs = async p => {
 };
 
 RAP_CALCULS.dormants = async p => {
-  const [ventes, prods] = await Promise.all([rapVentesChoisies(p), lireToutesLesLignes(() => sbClient.from('products').select('id, name, supplier, price').eq('active', true).order('name').order('id'))]);
+  const [ventes, prods] = await Promise.all([rapVentesChoisies(p), lireToutesLesLignes(() => sbClient.from('products').select('id, name, supplier, price').eq('active', true).eq('vendu_au_comptoir', true).order('name').order('id'))]);
   if(prods.error) throw prods.error;
   const vendus = new Set(ventes.filter(it => it.is_product && !it.cadeau).map(it => (it.description || '').trim().toLowerCase()));
   const dormants = (prods.data || []).filter(pr => !vendus.has((pr.name || '').trim().toLowerCase()));
