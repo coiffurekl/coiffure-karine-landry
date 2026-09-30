@@ -5382,6 +5382,22 @@ let clientsAutoSelectId = null; // fixé quand on arrive sur cet écran via « V
 let clientsReturnToHoraire = false; // affiche une flèche « retour à l'horaire » quand on arrive depuis un rendez-vous
 let editingClientId = null;
 
+/* ---- Recherche souple ----------------------------------------------------------------
+   Demandé par Martin le 30 sept. 2026 : on ne devrait jamais avoir à écrire un nom au complet,
+   ni à se soucier des accents ou de l'ordre des mots. « tremblay marie », « Marie Tremblay » et
+   « MARIE tremblay » trouvent la même fiche, et chaque mot peut se trouver n'importe où.
+   Côté base de données, la fonction chercher_clients() fait exactement la même chose.      */
+function texteSimple(s){
+  return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+function correspondRecherche(texte, requete){
+  const mots = texteSimple(requete).split(' ').filter(Boolean);
+  if(!mots.length) return true;
+  const t = texteSimple(texte);
+  const chiffres = (texte || '').replace(/\D/g, '');
+  return mots.every(m => t.includes(m) || (/^\d+$/.test(m) && chiffres.includes(m)));
+}
+
 function escapeHtml(s){
   return (s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
@@ -5425,11 +5441,8 @@ async function loadClients(){
 
 function renderClientList(filter){
   const wrap = document.getElementById('clientListItems');
-  const f = (filter || '').trim().toLowerCase();
-  const filtered = allClients.filter(c => {
-    if(!f) return true;
-    return (c.last_name+' '+c.first_name).toLowerCase().includes(f) || (c.phone||'').toLowerCase().includes(f);
-  });
+  const f = (filter || '').trim();
+  const filtered = allClients.filter(c => !f || correspondRecherche((c.last_name||'')+' '+(c.first_name||'')+' '+(c.phone||''), f));
   wrap.innerHTML = '';
   if(allClients.length === 0){
     wrap.innerHTML = '<div class="list-msg">Aucun client pour l\'instant. Clique sur « + » pour ajouter la première fiche.</div>';
@@ -6122,12 +6135,12 @@ function refreshFactProductCatalogList(){
   const searchEl = document.getElementById('factProductSearch');
   const brandListEl = document.getElementById('factProductBrandList');
   if(!searchEl || !brandListEl) return;
-  const q = searchEl.value.trim().toLowerCase();
+  const q = searchEl.value.trim();
   const catalog = productsCache || [];
 
   if(q){
     const filtered = catalog.filter(p =>
-      (p.name || '').toLowerCase().includes(q) || (p.supplier || '').toLowerCase().includes(q)
+      correspondRecherche((p.name || '') + ' ' + (p.supplier || '') + ' ' + (p.upc || ''), q)
     );
     brandListEl.style.display = 'none';
     renderFactProductCatalogList(filtered, { showBack:false });
@@ -6508,8 +6521,7 @@ function onFactClientInput(){
 
 async function runFactClientSearch(q){
   const box = document.getElementById('factClientResults');
-  const { data, error } = await sbClient.from('clients').select('*')
-    .or('first_name.ilike.%'+q+'%,last_name.ilike.%'+q+'%').limit(6);
+  const { data, error } = await sbClient.rpc('chercher_clients', { q, lim: 6 });
   if(error){ console.error(error); return; }
   let html = '';
   (data||[]).forEach(c=>{
@@ -7639,11 +7651,11 @@ function afficherCodeInconnu(code){
 }
 
 function chercherProduitPourCode(q){
-  q = (q || '').trim().toLowerCase();
+  q = (q || '').trim();
   const box = document.getElementById('scanLienResultats');
   if(!box) return;
   if(q.length < 2){ box.innerHTML = ''; return; }
-  const trouves = scanProduits.filter(p => (p.name || '').toLowerCase().includes(q)).slice(0, 12);
+  const trouves = scanProduits.filter(p => correspondRecherche((p.name || '') + ' ' + (p.distributeur || ''), q)).slice(0, 12);
   box.innerHTML = trouves.length ? trouves.map(p =>
     '<div class="scan-resultat clickable" onclick="rattacherCodeAuProduit(\''+p.id+'\')">' +
       '<span>'+escapeHtml(p.name)+'</span>' +
@@ -7691,12 +7703,11 @@ async function creerProduitDepuisScan(){
 
 /* ---- Ajout à la main : même effet qu'un coup de douchette, pour les produits sans code-barres. ---- */
 function chercherProduitManuel(q){
-  q = (q || '').trim().toLowerCase();
+  q = (q || '').trim();
   const box = document.getElementById('scanManuelResultats');
   if(!box) return;
   if(q.length < 2){ box.innerHTML = ''; return; }
-  const trouves = scanProduits.filter(p => (p.name || '').toLowerCase().includes(q)
-    || (p.distributeur || '').toLowerCase().includes(q) || String(p.upc || '').includes(q)).slice(0, 15);
+  const trouves = scanProduits.filter(p => correspondRecherche((p.name || '') + ' ' + (p.distributeur || '') + ' ' + (p.upc || ''), q)).slice(0, 15);
   box.innerHTML = trouves.length ? '<div class="rap-table">' + trouves.map(p =>
     '<div class="rap-ligne" style="--cols:1.7fr 1fr 130px; --cols-tel:1.6fr 110px;">' +
       '<span>'+escapeHtml(p.name)+(p.unit ? ' <span class="fin">('+escapeHtml(p.unit)+')</span>' : '')+'</span>' +
@@ -7827,10 +7838,8 @@ function renderScanProduits(){
 function renderScanListeProduits(){
   const box = document.getElementById('scanProdListe');
   if(!box) return;
-  const q = scanRecherche.trim().toLowerCase();
-  const liste = scanProduits.filter(p => !q || (p.name || '').toLowerCase().includes(q)
-    || String(p.upc || '').includes(q) || (p.distributeur || '').toLowerCase().includes(q)
-    || (p.supplier_sku || '').toLowerCase().includes(q));
+  const q = scanRecherche.trim();
+  const liste = scanProduits.filter(p => !q || correspondRecherche((p.name || '') + ' ' + (p.distributeur || '') + ' ' + (p.upc || '') + ' ' + (p.supplier_sku || ''), q));
   const cols = '--cols:1.7fr .9fr .9fr 90px 90px 110px; --cols-tel:1.7fr 90px 110px;';
   box.innerHTML = '<p class="rap-precision">'+liste.length+' produit'+(liste.length > 1 ? 's' : '')+' sur '+scanProduits.length+'.</p>'
     + '<div class="rap-table">' +
@@ -9064,10 +9073,8 @@ async function enregistrerTauxProduits(input){
 /* ---- Historique des factures (sur l'écran Rapport de Ventes) ---- */
 function comptableInvoiceMatchesSearch(inv, q){
   if(!q) return true;
-  q = q.toLowerCase();
-  const clientName = inv.clients ? ((inv.clients.first_name||'')+' '+(inv.clients.last_name||'')).toLowerCase() : '';
-  const num = (inv.invoice_number || '').toLowerCase();
-  return clientName.includes(q) || num.includes(q);
+  const clientName = inv.clients ? ((inv.clients.first_name||'')+' '+(inv.clients.last_name||'')) : '';
+  return correspondRecherche(clientName + ' ' + (inv.invoice_number || '') + ' ' + (inv.employee_name || ''), q);
 }
 
 function onComptableSearchInput(){ renderComptableInvoiceList(); }
@@ -11587,8 +11594,7 @@ async function runQaClientSearch(q){
   // Recherche par nom OU par téléphone (utile pour retrouver une cliente avec les 4 derniers
   // chiffres de son numéro : ilike sur "phone" trouve n'importe quelle suite de chiffres tapée,
   // peu importe où elle se trouve dans le numéro).
-  const { data, error } = await sbClient.from('clients').select('*')
-    .or('first_name.ilike.%'+q+'%,last_name.ilike.%'+q+'%,phone.ilike.%'+q+'%').limit(6);
+  const { data, error } = await sbClient.rpc('chercher_clients', { q, lim: 6 });
   if(error){ console.error(error); return; }
   let html = '';
   (data||[]).forEach(c=>{
