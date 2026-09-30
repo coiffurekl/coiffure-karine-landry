@@ -7250,11 +7250,30 @@ function crepSortGroupKeys(groups){
 async function renderComptableVentesTable(){
   const rates = await factureTaxRates();
   const catMap = await ensureComptableServiceCategoryMap();
-  const services = comptableRepItemsCache.filter(it => !it.is_product);
-  const products = comptableRepItemsCache.filter(it => it.is_product);
+  // Une carte-cadeau vendue n'est ni un service ni un produit, et n'est pas taxée : elle a sa
+  // propre ligne, comme dans AssistTheo (« Prépayés »).
+  const cadeaux = comptableRepItemsCache.filter(it => it.est_carte_cadeau);
+  const services = comptableRepItemsCache.filter(it => !it.is_product && !it.est_carte_cadeau);
+  const products = comptableRepItemsCache.filter(it => it.is_product && !it.est_carte_cadeau);
   const svcRow = crepGroupTotals(services, rates);
   const prodRow = crepGroupTotals(products, rates);
-  const totalRow = crepGroupTotals(comptableRepItemsCache, rates);
+  const cadeauRow = crepGroupTotals(cadeaux, { gst:0, qst:0 });
+  // Les taxes viennent des factures elles-mêmes (arrondies au cent, facture par facture) plutôt
+  // que d'un pourcentage appliqué au total : sinon les centimes d'arrondi s'accumulent et le
+  // rapport ne tombe plus pile sur celui d'AssistTheo (2 $ d'écart sur un mois).
+  const taxesReelles = comptableRepInvoicesCache.reduce((a, inv) => {
+    a.gst += Number(inv.gst_amount) || 0; a.qst += Number(inv.qst_amount) || 0; a.total += Number(inv.total) || 0; return a;
+  }, { gst:0, qst:0, total:0 });
+  const netTaxable = svcRow.ventes + prodRow.ventes;
+  if(netTaxable > 0){
+    [[svcRow, svcRow.ventes], [prodRow, prodRow.ventes]].forEach(([r, net]) => {
+      r.gst = taxesReelles.gst * (net / netTaxable);
+      r.qst = taxesReelles.qst * (net / netTaxable);
+      r.total = net + r.gst + r.qst;
+    });
+  }
+  const totalRow = { qty: svcRow.qty + prodRow.qty + cadeauRow.qty, ventes: svcRow.ventes + prodRow.ventes + cadeauRow.ventes,
+    gst: taxesReelles.gst, qst: taxesReelles.qst, total: taxesReelles.total };
 
   let html = crepMoneyRowHtml('Services', svcRow, {
     expandable:true, expanded:comptableVentesExpanded.services, level:0,
@@ -7292,6 +7311,9 @@ async function renderComptableVentesTable(){
     });
   }
 
+  if(cadeaux.length){
+    html += crepMoneyRowHtml('Cartes-cadeaux', cadeauRow, { expandable:false, level:0 });
+  }
   html += '<div class="crep-table-row total"><span>TOTAL</span><span>'+formatQuantite(totalRow.qty)+'</span><span>'+formatMoney(totalRow.ventes)+'</span><span>'+formatMoney(totalRow.gst)+'</span><span>'+formatMoney(totalRow.qst)+'</span><span class="ctr-total">'+formatMoney(totalRow.total)+'</span></div>';
   document.getElementById('ventesTableBody').innerHTML = html;
   document.getElementById('ventesPaiementsRecus').textContent = formatMoney(totalRow.total);
@@ -7439,7 +7461,7 @@ const RAPPORTS = [
   { cle:'servicesAjoutes', groupe:'ventes',    titre:'Services ajoutés',            desc:'Le % des factures où la personne a fait plus d’un service (par exemple une coupe et un toner). Les quantités de couleur ne comptent pas comme un service.' },
   { cle:'revenuHeure',     groupe:'ventes',    titre:'Revenu par heure travaillée', desc:'Les ventes de services divisées par les heures passées en rendez-vous (rendez-vous déjà passés, non annulés).' },
   { cle:'rabais',          groupe:'ventes',    titre:'Rabais accordés',             desc:'Le total des rabais donnés sur les factures.' },
-  { cle:'paiements',       groupe:'ventes',    titre:'Modes de paiement',           desc:'Ce qui a été encaissé selon le mode de paiement, taxes et pourboires compris. Un paiement partagé est réparti entre ses modes.' },
+  { cle:'paiements',       groupe:'ventes',    titre:'Modes de paiement',           desc:'Ce qui a été encaissé selon le mode de paiement, taxes comprises. Comme dans AssistTheo, les pourboires payés par carte ne sont pas comptés ici : ils ont leur propre rapport. Un paiement partagé est réparti entre ses modes.' },
   { cle:'couleur',         groupe:'ventes',    titre:'Consommation de couleur',     desc:'Les quantités de couleur, déco, royal et Brésilian Kératine facturées, en grammes (une quantité = 10 g). Utile pour prévoir les commandes.' },
   { cle:'produits',        groupe:'produits',  titre:'Produits vendus',             desc:'Le nombre de produits vendus et leur montant, par personne.' },
   { cle:'meilleursProduits', groupe:'produits', titre:'Meilleurs produits',         desc:'Le classement des produits les plus vendus, et le meilleur produit de chaque personne.' },
@@ -7626,13 +7648,13 @@ async function rapVentes(p){
 function rapVentesBloc(p){
   return rapMemo(rapCle('ventes', p), async () => {
     const { data, error } = await lireToutesLesLignes(() => sbClient.from('invoice_items')
-      .select('id, invoice_id, service_id, description, supplier, quantity, unit_price, discount_percent, line_total, is_product, employee_name, invoices!inner(id, issued_at, status, employee_name, payment_method, client_id, total)')
+      .select('id, invoice_id, service_id, description, supplier, quantity, unit_price, discount_percent, line_total, is_product, est_carte_cadeau, employee_name, invoices!inner(id, issued_at, status, employee_name, payment_method, client_id, total)')
       .eq('invoices.status', 'paid')
       .gte('invoices.issued_at', p.start.toISOString())
       .lt('invoices.issued_at', p.end.toISOString())
       .order('id'));
     if(error) throw error;
-    return (data || []).map(it => ({ ...it, montant: Number(it.line_total) || 0, qte: Number(it.quantity) || 0,
+    return (data || []).map(it => ({ ...it, montant: Number(it.line_total) || 0, qte: Number(it.quantity) || 0, cadeau: !!it.est_carte_cadeau,
       personne: it.employee_name || (it.invoices && it.invoices.employee_name) || 'Sans nom', facture: it.invoices }));
   });
 }
@@ -7926,9 +7948,11 @@ RAP_CALCULS.achalandage = async p => {
 };
 
 function rapTotaux(items){
-  const t = { services:0, produits:0, articles:0, factures:new Set() };
+  const t = { services:0, produits:0, cadeaux:0, articles:0, factures:new Set() };
   items.forEach(it => {
-    if(it.is_product){ t.produits += it.montant; t.articles += it.qte; } else t.services += it.montant;
+    if(it.cadeau) t.cadeaux += it.montant;
+    else if(it.is_product){ t.produits += it.montant; t.articles += it.qte; }
+    else t.services += it.montant;
     t.factures.add(it.invoice_id);
   });
   t.total = t.services + t.produits;
@@ -7949,6 +7973,7 @@ RAP_CALCULS.anpasse = async p => {
   html += '<p class="rap-precision">Du '+escapeHtml(rapPlageTexte(p.start, p.end))+', comparé au '+escapeHtml(rapPlageTexte(avantP.start, avantP.end))+'.</p>';
   html += rapTableau('', '1.2fr 1fr 1fr 80px', ['', anA, anB, 'Écart'], [
     L('Services', a.services, b.services, true), L('Produits', a.produits, b.produits, true), L('<b>TOTAL</b>', a.total, b.total, true, 'fort'),
+    ...((a.cadeaux || b.cadeaux) ? [L('Cartes-cadeaux', a.cadeaux, b.cadeaux, true, 'sous')] : []),
     L('Articles vendus', a.articles, b.articles, false, 'sous'), L('Factures', a.factures.size, b.factures.size, false, 'sous')], { droite:[1,2,3] });
   const noms = [...new Set([...cetteAnnee, ...anPasse].map(it => it.personne))];
   if(noms.length){
@@ -8008,7 +8033,7 @@ RAP_CALCULS.jours = async p => {
 };
 
 RAP_CALCULS.servicesPop = async p => {
-  const items = (await rapVentesChoisies(p)).filter(it => !it.is_product);
+  const items = (await rapVentesChoisies(p)).filter(it => !it.is_product && !it.cadeau);
   const g = rapGrouper(items, it => it.description || '(sans nom)');
   const total = rapSomme(items, it => it.montant);
   const lignes = Object.keys(g).map(nom => ({ nom, fois: g[nom].length, m: rapSomme(g[nom], it => it.montant) })).sort((a, b) => b.fois - a.fois || b.m - a.m)
@@ -8020,7 +8045,7 @@ RAP_CALCULS.servicesPop = async p => {
 };
 
 RAP_CALCULS.categories = async p => {
-  const items = (await rapVentesChoisies(p)).filter(it => !it.is_product);
+  const items = (await rapVentesChoisies(p)).filter(it => !it.is_product && !it.cadeau);
   const cat = await ensureComptableServiceCategoryMap();
   const g = rapGrouper(items, it => cat[it.service_id] || 'Sans catégorie');
   const total = rapSomme(items, it => it.montant);
@@ -8046,7 +8071,7 @@ RAP_CALCULS.factureMoy = async p => {
 };
 
 RAP_CALCULS.servicesAjoutes = async p => {
-  const items = (await rapVentesChoisies(p)).filter(it => !it.is_product && !RAP_QUANTITE.test(it.description || ''));
+  const items = (await rapVentesChoisies(p)).filter(it => !it.is_product && !it.cadeau && !RAP_QUANTITE.test(it.description || ''));
   const calc = l => {
     const parFacture = rapGrouper(l, it => it.invoice_id), f = Object.keys(parFacture).length;
     const plus = Object.values(parFacture).filter(x => x.length >= 2).length;
@@ -8069,7 +8094,7 @@ RAP_CALCULS.revenuHeure = async p => {
   const minutes = {};
   rdvs.forEach(a => { if(a.client_status !== 'cancelled' && new Date(a.start_at).getTime() < maintenant && rapGarde(a.employee_name)) minutes[a.employee_name] = (minutes[a.employee_name] || 0) + (a.duration_minutes || 0); });
   const services = {};
-  items.filter(it => !it.is_product).forEach(it => { services[it.personne] = (services[it.personne] || 0) + it.montant; });
+  items.filter(it => !it.is_product && !it.cadeau).forEach(it => { services[it.personne] = (services[it.personne] || 0) + it.montant; });
   const noms = [...new Set([...Object.keys(minutes), ...Object.keys(services)])];
   const lignes = noms.map(nom => ({ nom, min: minutes[nom] || 0, m: services[nom] || 0 })).sort((a, b) => (b.min ? b.m / b.min : 0) - (a.min ? a.m / a.min : 0))
     .map(x => [escapeHtml(x.nom), rapHeures(x.min), formatMoney(x.m), x.min ? formatMoney(x.m / x.min * 60) : '—']);
@@ -8118,13 +8143,13 @@ RAP_CALCULS.paiements = async p => {
   const lignes = Object.keys(modes).sort((a, b) => modes[b].m - modes[a].m)
     .map(m => [escapeHtml(m), String(modes[m].f.size), formatMoney(modes[m].m), rapFmt(rapTaux(modes[m].m, T), 'pct'), rapBarre(rapTaux(modes[m].m, T))]);
   return {
-    cartes: [rapCarte('Total encaissé', T, 'argent', 'taxes et pourboires compris'), rapCarte('Factures', ids.length, 'nombre')],
+    cartes: [rapCarte('Total encaissé', T, 'argent', 'taxes comprises, sans les pourboires'), rapCarte('Factures', ids.length, 'nombre')],
     html: rapTableau('', '1.2fr 80px 1fr 70px 1.2fr', ['Mode de paiement', 'Factures', 'Montant', 'Part', ''], lignes, { droite:[1,2,3], tel:[4], vide:'Aucune facture pendant cette période'+rapVideSelection()+'.' })
   };
 };
 
 RAP_CALCULS.couleur = async p => {
-  const items = (await rapVentesChoisies(p)).filter(it => !it.is_product && RAP_QUANTITE.test(it.description || ''));
+  const items = (await rapVentesChoisies(p)).filter(it => !it.is_product && !it.cadeau && RAP_QUANTITE.test(it.description || ''));
   const nomCourt = d => /d[ée]co/i.test(d) ? 'Déco' : /royal/i.test(d) ? 'Royal' : /k[ée]ratine/i.test(d) ? 'Brésilian Kératine' : /toner/i.test(d) ? 'Toner' : /colo/i.test(d) ? 'Couleur' : d;
   const g = rapGrouper(items, it => nomCourt(it.description || ''));
   const lignes = Object.keys(g).sort((a, b) => rapSomme(g[b], it => it.qte) - rapSomme(g[a], it => it.qte))
@@ -8141,7 +8166,7 @@ RAP_CALCULS.couleur = async p => {
 };
 
 RAP_CALCULS.produits = async p => {
-  const produits = (await rapVentesChoisies(p)).filter(it => it.is_product);
+  const produits = (await rapVentesChoisies(p)).filter(it => it.is_product && !it.cadeau);
   const qte = rapSomme(produits, it => it.qte), montant = rapSomme(produits, it => it.montant);
   const parPersonne = rapGrouper(produits, it => it.personne);
   const lignes = Object.keys(parPersonne).sort((a, b) => rapSomme(parPersonne[b], it => it.montant) - rapSomme(parPersonne[a], it => it.montant))
@@ -8153,7 +8178,7 @@ RAP_CALCULS.produits = async p => {
 };
 
 RAP_CALCULS.meilleursProduits = async p => {
-  const produits = (await rapVentesChoisies(p)).filter(it => it.is_product);
+  const produits = (await rapVentesChoisies(p)).filter(it => it.is_product && !it.cadeau);
   const cle = it => (it.description || '(sans nom)') + ' ' + (it.supplier || '');
   const g = rapGrouper(produits, cle);
   const classes = Object.keys(g).map(k => ({ nom: g[k][0].description || '(sans nom)', fournisseur: g[k][0].supplier || '', q: rapSomme(g[k], it => it.qte), m: rapSomme(g[k], it => it.montant) }))
@@ -8175,8 +8200,8 @@ RAP_CALCULS.meilleursProduits = async p => {
 RAP_CALCULS.revente = async p => {
   const items = await rapVentesChoisies(p);
   const calc = l => {
-    const f = new Set(l.map(it => it.invoice_id)).size, fp = new Set(l.filter(it => it.is_product).map(it => it.invoice_id)).size;
-    const m = rapSomme(l, it => it.montant), mp = rapSomme(l.filter(it => it.is_product), it => it.montant);
+    const f = new Set(l.map(it => it.invoice_id)).size, fp = new Set(l.filter(it => it.is_product && !it.cadeau).map(it => it.invoice_id)).size;
+    const m = rapSomme(l, it => it.montant), mp = rapSomme(l.filter(it => it.is_product && !it.cadeau), it => it.montant);
     return { f, fp, taux: rapTaux(fp, f), part: rapTaux(mp, m) };
   };
   const g = calc(items);
@@ -8190,7 +8215,7 @@ RAP_CALCULS.revente = async p => {
 };
 
 RAP_CALCULS.fournisseurs = async p => {
-  const produits = (await rapVentesChoisies(p)).filter(it => it.is_product);
+  const produits = (await rapVentesChoisies(p)).filter(it => it.is_product && !it.cadeau);
   const g = rapGrouper(produits, it => it.supplier || 'Fournisseur non précisé');
   const T = rapSomme(produits, it => it.montant);
   const lignes = Object.keys(g).sort((a, b) => rapSomme(g[b], it => it.montant) - rapSomme(g[a], it => it.montant))
@@ -8204,7 +8229,7 @@ RAP_CALCULS.fournisseurs = async p => {
 RAP_CALCULS.dormants = async p => {
   const [ventes, prods] = await Promise.all([rapVentesChoisies(p), lireToutesLesLignes(() => sbClient.from('products').select('id, name, supplier, price').eq('active', true).order('name').order('id'))]);
   if(prods.error) throw prods.error;
-  const vendus = new Set(ventes.filter(it => it.is_product).map(it => (it.description || '').trim().toLowerCase()));
+  const vendus = new Set(ventes.filter(it => it.is_product && !it.cadeau).map(it => (it.description || '').trim().toLowerCase()));
   const dormants = (prods.data || []).filter(pr => !vendus.has((pr.name || '').trim().toLowerCase()));
   const lignes = dormants.map(pr => [escapeHtml(pr.name || ''), '<span class="fin">'+escapeHtml(pr.supplier || '—')+'</span>', pr.price != null ? formatMoney(Number(pr.price)) : '—']);
   return {
@@ -8227,7 +8252,7 @@ RAP_CALCULS.objectifs = async p => {
   };
   const cartes = rapEquipe.filter(e => rapGarde(e.name)).map(e => {
     const l = items.filter(it => it.personne === e.name);
-    const s = rapSomme(l.filter(it => !it.is_product), it => it.montant), pr = rapSomme(l.filter(it => it.is_product), it => it.montant);
+    const s = rapSomme(l.filter(it => !it.is_product && !it.cadeau), it => it.montant), pr = rapSomme(l.filter(it => it.is_product && !it.cadeau), it => it.montant);
     const o = objectifs[e.name] || {};
     return '<div class="rap-obj-carte"><div class="roc-nom"><span class="pt" style="background:'+escapeHtml(e.color_hex || '#999')+'"></span>'+escapeHtml(e.name)+'</div>'
       + ligne(e.name, 'services', 'Services', s, Number(o.services) || 0) + ligne(e.name, 'produits', 'Produits', pr, Number(o.produits) || 0) + '</div>';
@@ -8266,11 +8291,11 @@ RAP_CALCULS.rentabilite = async p => {
     const grille = (grilles[idParNom[nom]] || []).slice().sort((a, b) => a.min_amount - b.min_amount);
     const r = { nom, services:0, produits:0, commServices:0, commProduits:0, grille: grille.length > 0, taux: new Set() };
     Object.values(rapGrouper(lignes, it => horDateISO(rapLundi(new Date(it.facture.issued_at))))).forEach(semaine => {
-      const servicesSemaine = rapSomme(semaine.filter(it => !it.is_product), it => it.montant);
+      const servicesSemaine = rapSomme(semaine.filter(it => !it.is_product && !it.cadeau), it => it.montant);
       const palier = commPalierAtteint(grille, servicesSemaine);
       const taux = palier ? Number(palier.rate) : 0;
       const dedans = semaine.filter(dansPeriode);
-      const s = rapSomme(dedans.filter(it => !it.is_product), it => it.montant), pr = rapSomme(dedans.filter(it => it.is_product), it => it.montant);
+      const s = rapSomme(dedans.filter(it => !it.is_product && !it.cadeau), it => it.montant), pr = rapSomme(dedans.filter(it => it.is_product && !it.cadeau), it => it.montant);
       r.services += s; r.produits += pr;
       r.commServices += s * taux / 100; r.commProduits += pr * tauxProduits / 100;
       if(s) r.taux.add(taux);
@@ -8322,8 +8347,8 @@ RAP_CALCULS.palmares = async p => {
   const parPersonne = rapGrouper(items, it => it.personne);
   const stats = Object.keys(parPersonne).map(nom => {
     const l = parPersonne[nom], f = new Set(l.map(it => it.invoice_id)).size;
-    return { nom, ventes: rapSomme(l, it => it.montant), produits: rapSomme(l.filter(it => it.is_product), it => it.qte), facture: f ? rapSomme(l, it => it.montant) / f : 0,
-      revente: rapTaux(new Set(l.filter(it => it.is_product).map(it => it.invoice_id)).size, f) || 0, nouveaux: nouveaux.filter(c => c.personne === nom).length };
+    return { nom, ventes: rapSomme(l, it => it.montant), produits: rapSomme(l.filter(it => it.is_product && !it.cadeau), it => it.qte), facture: f ? rapSomme(l, it => it.montant) / f : 0,
+      revente: rapTaux(new Set(l.filter(it => it.is_product && !it.cadeau).map(it => it.invoice_id)).size, f) || 0, nouveaux: nouveaux.filter(c => c.personne === nom).length };
   });
   rapEquipe.forEach(e => { if(rapGarde(e.name) && !stats.find(s => s.nom === e.name)) { const n = nouveaux.filter(c => c.personne === e.name).length; if(n) stats.push({ nom:e.name, ventes:0, produits:0, facture:0, revente:0, nouveaux:n }); } });
   const cats = [['ventes', 'Plus de ventes', 'argent'], ['produits', 'Plus de produits vendus', 'nombre'], ['nouveaux', 'Plus de nouveaux clients', 'nombre'], ['facture', 'Meilleure facture moyenne', 'argent'], ['revente', 'Meilleur taux de revente', 'pct']];
@@ -8400,6 +8425,7 @@ function renderPerformancesCards(){
     if(!inv) return;
     const itemEmployee = it.employee_name || inv.employee_name || '';
     if(itemEmployee !== performancesActiveEmployee) return;
+    if(it.est_carte_cadeau) return;
     if(it.is_product) produitsTotal += Number(it.line_total) || 0;
     else servicesTotal += Number(it.line_total) || 0;
   });
@@ -8488,6 +8514,7 @@ function renderComptableCommissionsTable(){
     const inv = invoiceById[it.invoice_id];
     const nom = it.employee_name || (inv && inv.employee_name) || 'Non assigné';
     const cible = parNom[nom] = parNom[nom] || { services:0, produits:0 };
+    if(it.est_carte_cadeau) return;                 // une carte-cadeau vendue n'est pas une vente
     if(it.is_product === true) cible.produits += (Number(it.line_total)||0);
     else cible.services += (Number(it.line_total)||0);
   });
@@ -8854,14 +8881,15 @@ function buildCaisseReceiptHTML(invs, items, settings, dayStart, payments){
   const gstSum = invs.reduce((s,i)=> s + (Number(i.gst_amount)||0), 0);
   const qstSum = invs.reduce((s,i)=> s + (Number(i.qst_amount)||0), 0);
   const totalSum = invs.reduce((s,i)=> s + (Number(i.total)||0), 0);
-  const servicesTotal = items.filter(it => !it.is_product).reduce((s,it)=> s + (Number(it.line_total)||0), 0);
-  const produitsTotal = items.filter(it => it.is_product).reduce((s,it)=> s + (Number(it.line_total)||0), 0);
+  const servicesTotal = items.filter(it => !it.is_product && !it.est_carte_cadeau).reduce((s,it)=> s + (Number(it.line_total)||0), 0);
+  const produitsTotal = items.filter(it => it.is_product && !it.est_carte_cadeau).reduce((s,it)=> s + (Number(it.line_total)||0), 0);
 
   // ---- Sommaire des ventes par vendeur (avant taxes) ----
   const byEmpItems = {};
   items.forEach(it => {
     const name = it.employee_name || 'Non assigné';
     if(!byEmpItems[name]) byEmpItems[name] = { services:0, produits:0 };
+    if(it.est_carte_cadeau) return;
     if(it.is_product) byEmpItems[name].produits += Number(it.line_total)||0;
     else byEmpItems[name].services += Number(it.line_total)||0;
   });
