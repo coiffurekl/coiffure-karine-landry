@@ -1188,6 +1188,13 @@
   .scan-qte{ width:70px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; font-family:'Josefin Sans'; font-size:13.5px; text-align:right; }
   .scan-mini{ width:100%; padding:5px 7px; border:1px solid var(--line); border-radius:7px; font-family:'Josefin Sans'; font-size:12.5px; }
   .scan-ok-flash{ border-color:#2E7D4F; background:rgba(46,125,79,.08); }
+  .scan-manuel{ margin-top:26px; }
+  .scan-manuel-barre{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; }
+  .scan-manuel-barre .scan-recherche{ flex:1; min-width:220px; margin-bottom:0; }
+  .scan-manuel-qte{ font-family:'Josefin Sans'; font-size:12px; color:var(--ink-soft); }
+  .scan-manuel-qte .scan-champ{ width:90px; text-align:right; }
+  .scan-manuel #scanManuelResultats{ margin-top:12px; }
+  .scan-ajout{ padding:7px 14px; font-size:13px; }
   .scan-x{ border:none; background:none; color:var(--ink-soft); font-size:20px; line-height:1; cursor:pointer; padding:0 4px; }
   .scan-x:hover{ color:#C0392B; }
   @media print{ .no-print, .app-nav, .fiche-onglets{ display:none !important; } .scan-qte{ border:none; } }
@@ -7552,6 +7559,15 @@ function renderScanScanner(){
       '<div class="scan-etat" id="scanEtat">En attente d’un code-barres.</div>' +
     '</div>' +
     '<div id="scanInconnu"></div>' +
+    '<div class="scan-manuel">' +
+      '<h2 class="rap-soustitre">Ajouter un produit à la main</h2>' +
+      '<p class="rap-precision">Pour un produit sans code-barres, ou quand la douchette n’est pas à portée. Cherche-le par son nom, choisis la quantité, puis touche Ajouter : il s’inscrit comme un scan.</p>' +
+      '<div class="scan-manuel-barre">' +
+        '<input type="text" id="scanManuelRecherche" class="scan-recherche" placeholder="Cherche un produit par son nom…" autocomplete="off" oninput="chercherProduitManuel(this.value)">' +
+        '<label class="scan-manuel-qte">Quantité <input type="number" id="scanManuelQte" class="scan-champ" min="0.5" step="0.5" value="1"></label>' +
+      '</div>' +
+      '<div id="scanManuelResultats"></div>' +
+    '</div>' +
     '<h2 class="rap-soustitre">Scans d’aujourd’hui</h2>' +
     '<div id="scanJour"><div class="rap-chargement">Chargement…</div></div>';
   scanGarderFocus();
@@ -7671,6 +7687,40 @@ async function creerProduitDepuisScan(){
   productsCache = null;                      // la facturation rechargera la liste
   await traiterCodeScan(code);
   scanGarderFocus();
+}
+
+/* ---- Ajout à la main : même effet qu'un coup de douchette, pour les produits sans code-barres. ---- */
+function chercherProduitManuel(q){
+  q = (q || '').trim().toLowerCase();
+  const box = document.getElementById('scanManuelResultats');
+  if(!box) return;
+  if(q.length < 2){ box.innerHTML = ''; return; }
+  const trouves = scanProduits.filter(p => (p.name || '').toLowerCase().includes(q)
+    || (p.distributeur || '').toLowerCase().includes(q) || String(p.upc || '').includes(q)).slice(0, 15);
+  box.innerHTML = trouves.length ? '<div class="rap-table">' + trouves.map(p =>
+    '<div class="rap-ligne" style="--cols:1.7fr 1fr 130px; --cols-tel:1.6fr 110px;">' +
+      '<span>'+escapeHtml(p.name)+(p.unit ? ' <span class="fin">('+escapeHtml(p.unit)+')</span>' : '')+'</span>' +
+      '<span class="fin rap-cache-tel">'+escapeHtml(p.distributeur || '—')+(p.upc ? '' : ' · sans code-barres')+'</span>' +
+      '<span class="n"><button type="button" class="btn-solid scan-ajout" onclick="ajouterScanManuel(\''+p.id+'\')">Ajouter</button></span>' +
+    '</div>').join('') + '</div>' : '<div class="rap-table"><div class="rap-vide">Aucun produit trouvé.</div></div>';
+}
+
+async function ajouterScanManuel(produitId){
+  const p = scanProduits.find(x => x.id === produitId);
+  if(!p) return;
+  const champQte = document.getElementById('scanManuelQte');
+  const qte = Math.round((parseFloat(champQte && champQte.value) || 1) * 100) / 100;
+  if(!(qte > 0)){ alert('Écris une quantité plus grande que zéro.'); return; }
+  const etat = document.getElementById('scanEtat');
+  const { error } = await sbClient.from('inventaire_scans').insert({ product_id: p.id, quantity: qte, par_nom: (monNom || nomDuCompte()) + ' (à la main)' });
+  if(error){ scanBip(false); if(etat) etat.innerHTML = '<b class="scan-ko">Pas enregistré : '+escapeHtml(error.message)+'</b>'; return; }
+  scanBip(true);
+  if(etat) etat.innerHTML = '<b class="scan-ok">'+escapeHtml(p.name)+'</b><span>Ajouté à la main · '+formatQuantite(qte)+'</span>';
+  const recherche = document.getElementById('scanManuelRecherche');
+  if(recherche){ recherche.value = ''; }
+  document.getElementById('scanManuelResultats').innerHTML = '';
+  if(champQte) champQte.value = 1;
+  return chargerScansDuJour();
 }
 
 async function chargerScansDuJour(){
