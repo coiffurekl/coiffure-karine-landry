@@ -1188,6 +1188,13 @@
   .scan-qte{ width:70px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; font-family:'Josefin Sans'; font-size:13.5px; text-align:right; }
   .scan-mini{ width:100%; padding:5px 7px; border:1px solid var(--line); border-radius:7px; font-family:'Josefin Sans'; font-size:12.5px; }
   .scan-ok-flash{ border-color:#2E7D4F; background:rgba(46,125,79,.08); }
+  .scan-courriel{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; background:var(--paper2); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin:0 0 16px; }
+  .scan-courriel label{ font-family:'Josefin Sans'; font-size:12px; color:var(--ink-soft); }
+  .scan-courriel .scan-champ{ width:auto; min-width:230px; }
+  .scan-courriel-note .scan-champ{ min-width:200px; }
+  .scan-envoi{ font-family:'Josefin Sans'; font-size:13px; color:var(--ink-soft); padding:8px 12px; border-left:3px solid var(--line); margin:0 0 6px; }
+  .scan-envoi.dernier{ border-left-color:#2E7D4F; background:rgba(46,125,79,.07); color:var(--ink); border-radius:0 8px 8px 0; }
+  .scan-envoi b{ color:#2E7D4F; }
   .scan-manuel{ margin-top:26px; }
   .scan-manuel-barre{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; }
   .scan-manuel-barre .scan-recherche{ flex:1; min-width:220px; margin-bottom:0; }
@@ -1765,27 +1772,50 @@
      services, pas une grille tarifaire. Deux colonnes pour tenir sur une seule feuille. */
   #feuilleServices{ display:none; }
   @media print{
-    body > *{ display:none !important; }
-    body{ background:#fff !important; padding:0 !important; }
-    #feuilleServices{ display:block !important; padding:0; color:#000; font-family:Georgia, serif; }
-    #feuilleServices .fs-titre{ font-size:20pt; margin:0 0 2mm; }
-    #feuilleServices .fs-nom{ font-size:11pt; margin:0 0 6mm; }
-    #feuilleServices .fs-nom span{ display:inline-block; min-width:70mm; border-bottom:1px solid #000; }
-    #feuilleServices .fs-consigne{ font-size:9pt; margin:0 0 7mm; font-style:italic; }
-    #feuilleServices .fs-colonnes{ column-count:2; column-gap:12mm; }
-    #feuilleServices .fs-cat{ break-inside:avoid; margin:0 0 5mm; }
-    #feuilleServices .fs-cat h2{ font-size:11.5pt; margin:0 0 1.5mm; border-bottom:1px solid #000; padding-bottom:1mm; }
-    #feuilleServices .fs-svc{ font-size:10.5pt; line-height:2.1; display:flex; align-items:baseline; gap:2.5mm; break-inside:avoid; }
-    #feuilleServices .fs-case{ width:4mm; height:4mm; border:1px solid #000; flex-shrink:0; align-self:center; }
-    #feuilleServices .fs-nom-svc{ flex:0 1 auto; }
-    #feuilleServices .fs-pointille{ flex:1 1 auto; border-bottom:1px dotted #999; min-width:3mm; }
+    /* Chaque impression a sa propre page : on met une classe sur <body> le temps d'imprimer,
+       sinon la feuille de services cachait TOUT le reste et les autres impressions
+       (commande du Scan, fermeture de caisse) sortaient blanches. */
+    body.impr-feuille > *{ display:none !important; }
+    body.impr-feuille{ background:#fff !important; padding:0 !important; }
+    body.impr-feuille #feuilleServices{ display:block !important; padding:0; color:#000; font-family:Georgia, serif; }
+    body.impr-feuille #feuilleServices .fs-titre{ font-size:20pt; margin:0 0 2mm; }
+    body.impr-feuille #feuilleServices .fs-nom{ font-size:11pt; margin:0 0 6mm; }
+    body.impr-feuille #feuilleServices .fs-nom span{ display:inline-block; min-width:70mm; border-bottom:1px solid #000; }
+    body.impr-feuille #feuilleServices .fs-consigne{ font-size:9pt; margin:0 0 7mm; font-style:italic; }
+    body.impr-feuille #feuilleServices .fs-colonnes{ column-count:2; column-gap:12mm; }
+    body.impr-feuille #feuilleServices .fs-cat{ break-inside:avoid; margin:0 0 5mm; }
+    body.impr-feuille #feuilleServices .fs-cat h2{ font-size:11.5pt; margin:0 0 1.5mm; border-bottom:1px solid #000; padding-bottom:1mm; }
+    body.impr-feuille #feuilleServices .fs-svc{ font-size:10.5pt; line-height:2.1; display:flex; align-items:baseline; gap:2.5mm; break-inside:avoid; }
+    body.impr-feuille #feuilleServices .fs-case{ width:4mm; height:4mm; border:1px solid #000; flex-shrink:0; align-self:center; }
+    body.impr-feuille #feuilleServices .fs-nom-svc{ flex:0 1 auto; }
+    body.impr-feuille #feuilleServices .fs-pointille{ flex:1 1 auto; border-bottom:1px dotted #999; min-width:3mm; }
     #feuilleServices .fs-duree{ width:13mm; border-bottom:1px solid #000; flex-shrink:0; }
-    #feuilleServices .fs-min{ font-size:8.5pt; color:#444; flex-shrink:0; }
+    body.impr-feuille #feuilleServices .fs-min{ font-size:8.5pt; color:#444; flex-shrink:0; }
     @page{ margin:14mm; }
+  }
+
+  /* ---- Zone d'impression commune (commande du Scan, fermeture de caisse…) ---- */
+  #zoneImpression{ display:none; }
+  @media print{
+    body.impr-zone > *{ display:none !important; }
+    body.impr-zone{ background:#fff !important; padding:0 !important; }
+    body.impr-zone #zoneImpression{ display:block !important; color:#000; font-family:Georgia, serif; padding:0; }
+    body.impr-zone #zoneImpression h1{ font-size:17pt; margin:0 0 2mm; }
+    body.impr-zone #zoneImpression .zi-sous{ font-size:10pt; margin:0 0 6mm; color:#333; }
+    body.impr-zone #zoneImpression table{ width:100%; border-collapse:collapse; font-size:10pt; }
+    body.impr-zone #zoneImpression th{ text-align:left; border-bottom:1.5px solid #000; padding:2mm 1.5mm; font-size:9.5pt; text-transform:uppercase; letter-spacing:.04em; }
+    body.impr-zone #zoneImpression td{ border-bottom:1px solid #bbb; padding:2mm 1.5mm; }
+    body.impr-zone #zoneImpression td.n, body.impr-zone #zoneImpression th.n{ text-align:right; }
+    body.impr-zone #zoneImpression tr{ break-inside:avoid; }
+    body.impr-zone #zoneImpression .zi-total td{ border-top:1.5px solid #000; border-bottom:none; font-weight:bold; }
+    body.impr-zone #zoneImpression .zi-pied{ margin-top:8mm; font-size:8.5pt; color:#555; }
+    body.impr-zone #zoneImpression pre{ font-family:'Courier New', monospace; font-size:10pt; white-space:pre-wrap; }
   }
 </style>
 </head>
 <body>
+
+<div id="zoneImpression"></div>
 
 <svg class="leaf-accent" viewBox="0 0 200 200" fill="none" stroke="#27656C" stroke-width="2">
   <path d="M20 180 C 60 160, 90 120, 180 20 M50 150 C70 140 85 125 95 110 M75 120 C90 112 100 100 108 90"/>
@@ -2515,7 +2545,7 @@
         <div id="caisseReceiptBody" class="receipt-body"><div class="list-msg">Chargement...</div></div>
       </div>
     </div>
-    <div style="text-align:center; margin:22px 0 40px;"><button class="btn-solid" onclick="window.print()">Imprimer</button></div>
+    <div style="text-align:center; margin:22px 0 40px;"><button class="btn-solid" onclick="imprimerFermetureCaisse()">Imprimer</button></div>
   </div>
 </div>
 
@@ -3645,7 +3675,10 @@ function imprimerFeuilleServices(){
     '<p class="fs-nom">Nom : <span></span></p>' +
     '<p class="fs-consigne">Coche les services que tu offres, et inscris le temps qu’ils te prennent.</p>' +
     '<div class="fs-colonnes">' + colonnes + '</div>';
-  window.print();
+  document.body.classList.add('impr-feuille');
+  const finFeuille = () => { document.body.classList.remove('impr-feuille'); window.removeEventListener('afterprint', finFeuille); };
+  window.addEventListener('afterprint', finFeuille);
+  setTimeout(() => { window.print(); setTimeout(finFeuille, 1500); }, 60);
 }
 
 async function ajouterCategorieService(){
@@ -5396,6 +5429,19 @@ function correspondRecherche(texte, requete){
   const t = texteSimple(texte);
   const chiffres = (texte || '').replace(/\D/g, '');
   return mots.every(m => t.includes(m) || (/^\d+$/.test(m) && chiffres.includes(m)));
+}
+
+/* ---- Imprimer une seule chose à la fois ----
+   On dépose le contenu à imprimer dans #zoneImpression et on marque <body> le temps de
+   l'impression : le reste de l'écran disparaît, et revient tout de suite après.     */
+function imprimerZone(html){
+  const zone = document.getElementById('zoneImpression');
+  if(!zone){ window.print(); return; }
+  zone.innerHTML = html;
+  document.body.classList.add('impr-zone');
+  const nettoyer = () => { document.body.classList.remove('impr-zone'); zone.innerHTML = ''; window.removeEventListener('afterprint', nettoyer); };
+  window.addEventListener('afterprint', nettoyer);
+  setTimeout(() => { window.print(); setTimeout(nettoyer, 1500); }, 60);
 }
 
 function escapeHtml(s){
@@ -7766,7 +7812,7 @@ async function retirerScan(id){
 }
 
 /* ---------- Onglet Commande ---------- */
-let scanCmdDebut = null, scanCmdFin = null, scanCmdDist = '', scanCmdQtes = {};
+let scanCmdDebut = null, scanCmdFin = null, scanCmdDist = '', scanCmdQtes = {}, scanCmdListe = [];
 
 function renderScanCommande(){
   const auj = new Date().toISOString().slice(0, 10);
@@ -7777,13 +7823,81 @@ function renderScanCommande(){
     '<div class="scan-filtres no-print">' +
       '<label>Du <input type="date" id="scanCmdDebut" class="scan-champ" value="'+scanCmdDebut+'" onchange="scanCmdDebut=this.value; chargerCommandeScan();"></label>' +
       '<label>Au <input type="date" id="scanCmdFin" class="scan-champ" value="'+scanCmdFin+'" onchange="scanCmdFin=this.value; chargerCommandeScan();"></label>' +
-      '<label>Distributeur <select id="scanCmdDist" class="scan-champ" onchange="scanCmdDist=this.value; chargerCommandeScan();">' +
+      '<label>Distributeur <select id="scanCmdDist" class="scan-champ" onchange="scanCmdDist=this.value; chargerCourrielDistributeur(); chargerCommandeScan();">' +
         '<option value="">Tous</option>' + scanDistributeurs().map(d => '<option value="'+escapeHtml(d)+'"'+(d === scanCmdDist ? ' selected' : '')+'>'+escapeHtml(d)+'</option>').join('') +
       '</select></label>' +
-      '<button type="button" class="btn-outline" onclick="window.print()">Imprimer</button>' +
+      '<button type="button" class="btn-outline" onclick="imprimerCommandeScan()">Imprimer ou PDF</button>' +
     '</div>' +
+    '<div class="scan-courriel no-print">' +
+      '<label>Courriel du distributeur <input type="email" id="scanCmdCourriel" class="scan-champ" placeholder="commandes@fournisseur.ca" onchange="retenirCourrielDistributeur(this.value)"></label>' +
+      '<label class="scan-courriel-note">Mot pour le distributeur (optionnel) <input type="text" id="scanCmdNote" class="scan-champ" placeholder="Ex. : livrer avant vendredi"></label>' +
+      '<button type="button" class="btn-solid" id="scanCmdEnvoiBtn" onclick="envoyerCommandeCourriel()">Envoyer par courriel</button>' +
+    '</div>' +
+    '<div id="scanCmdEnvois" class="no-print"></div>' +
     '<div id="scanCmdTable"><div class="rap-chargement">Chargement…</div></div>';
+  chargerCourrielDistributeur();
   return chargerCommandeScan();
+}
+
+async function chargerCourrielDistributeur(){
+  const champ = document.getElementById('scanCmdCourriel');
+  if(!champ) return;
+  champ.value = '';
+  if(!scanCmdDist) return;
+  const { data } = await sbClient.from('distributeurs').select('courriel').eq('nom', scanCmdDist).limit(1);
+  if(data && data[0] && data[0].courriel && document.getElementById('scanCmdCourriel')) document.getElementById('scanCmdCourriel').value = data[0].courriel;
+}
+
+async function retenirCourrielDistributeur(valeur){
+  valeur = (valeur || '').trim();
+  if(!scanCmdDist) return;                       // on ne retient une adresse que pour un distributeur précis
+  const { error } = await sbClient.from('distributeurs').upsert({ nom: scanCmdDist, courriel: valeur || null, modifie_le: new Date().toISOString() }, { onConflict: 'nom' });
+  if(error) console.error(error);
+}
+
+// Les envois déjà faits : la trace reste affichée pour qu'on sache que c'est parti, et par qui.
+async function chargerEnvoisCommande(){
+  const box = document.getElementById('scanCmdEnvois');
+  if(!box) return;
+  let req = sbClient.from('commandes_envoyees').select('*').order('envoye_le', { ascending:false }).limit(5);
+  if(scanCmdDist) req = req.eq('distributeur', scanCmdDist);
+  const { data } = await req;
+  if(!document.getElementById('scanCmdEnvois')) return;
+  if(!data || !data.length){ box.innerHTML = ''; return; }
+  box.innerHTML = data.map((e, i) => {
+    const d = new Date(e.envoye_le);
+    const quand = d.toLocaleDateString('fr-CA', { day:'numeric', month:'long', year:'numeric' }) + ' à ' + d.toLocaleTimeString('fr-CA', { hour:'2-digit', minute:'2-digit' });
+    const periode = e.debut === e.fin ? e.debut : e.debut + ' au ' + e.fin;
+    return '<div class="scan-envoi'+(i === 0 ? ' dernier' : '')+'">' +
+      '<b>Envoyé par courriel</b> le '+escapeHtml(quand)+' à '+escapeHtml(e.destinataire)+
+      ' · '+e.nb_produits+' produits (scans du '+escapeHtml(periode)+')'+(e.par_nom ? ' · par '+escapeHtml(e.par_nom) : '')+
+    '</div>';
+  }).join('');
+}
+
+async function envoyerCommandeCourriel(){
+  const champ = document.getElementById('scanCmdCourriel');
+  const destinataire = (champ && champ.value || '').trim();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(destinataire)){ alert('Écris l’adresse courriel du distributeur.'); return; }
+  const lignes = scanCmdListe.filter(l => scanCmdQte(l) > 0).map(l => ({ nom:l.p.name, format:l.p.unit || '', code:l.p.supplier_sku || '', qte:scanCmdQte(l) }));
+  if(!lignes.length){ alert('Il n’y a rien à envoyer pour cette période.'); return; }
+  const apercu = lignes.length + ' produit' + (lignes.length > 1 ? 's' : '') + ' seront envoyés à ' + destinataire + '.\n\nEnvoyer la commande ?';
+  if(!confirm(apercu)) return;
+  const btn = document.getElementById('scanCmdEnvoiBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Envoi en cours…'; }
+  const note = (document.getElementById('scanCmdNote') || {}).value || '';
+  const { data, error } = await sbClient.functions.invoke('envoyer-commande', { body: {
+    destinataire, distributeur: scanCmdDist, periode: scanCmdPeriodeTexte(), note, lignes } });
+  if(btn){ btn.disabled = false; btn.textContent = 'Envoyer par courriel'; }
+  if(error || (data && data.error)){
+    alert('La commande n’est pas partie : ' + ((data && data.error) || error.message));
+    return;
+  }
+  await sbClient.from('commandes_envoyees').insert({ distributeur: scanCmdDist || null, debut: scanCmdDebut, fin: scanCmdFin,
+    destinataire, nb_produits: lignes.length, total_qte: lignes.reduce((s, l) => s + Number(l.qte), 0), par_nom: data.par_nom || monNom || nomDuCompte() });
+  await retenirCourrielDistributeur(destinataire);
+  alert('Commande envoyée à ' + destinataire + '.');
+  return chargerEnvoisCommande();
 }
 
 async function chargerCommandeScan(){
@@ -7805,6 +7919,8 @@ async function chargerCommandeScan(){
     l.qte += Number(x.quantity) || 0;
   });
   const liste = Object.values(lignes).sort((a, b) => (a.p.distributeur || '').localeCompare(b.p.distributeur || '', 'fr') || a.p.name.localeCompare(b.p.name, 'fr'));
+  scanCmdListe = liste;
+  chargerEnvoisCommande();
   if(!liste.length){ box.innerHTML = '<div class="rap-table"><div class="rap-vide">Rien de scanné pendant cette période.</div></div>'; return; }
   const cols = '--cols:1.7fr .9fr .8fr 90px 110px; --cols-tel:1.7fr 90px 110px;';
   const titre = '<h2 class="rap-soustitre">Bon de commande · ' + escapeHtml(scanCmdDist || 'tous les distributeurs') + ' · du '
@@ -7821,6 +7937,39 @@ async function chargerCommandeScan(){
     '</div>').join('') +
     '<div class="rap-ligne total" style="'+cols+'"><span>'+liste.length+' produits</span><span class="rap-cache-tel"></span><span class="rap-cache-tel"></span><span class="n">'+formatQuantite(liste.reduce((s, l) => s + l.qte, 0))+'</span><span></span></div>' +
     '</div>';
+}
+
+function scanCmdPeriodeTexte(){
+  const f = d => new Date(d + 'T00:00:00').toLocaleDateString('fr-CA', { day:'numeric', month:'long', year:'numeric' });
+  return scanCmdDebut === scanCmdFin ? f(scanCmdDebut) : 'du ' + f(scanCmdDebut) + ' au ' + f(scanCmdFin);
+}
+
+function scanCmdQte(l){
+  const v = scanCmdQtes[l.p.id];
+  const n = v === undefined || v === '' ? l.qte : Number(v);
+  return isNaN(n) ? l.qte : n;
+}
+
+// Le bon de commande en HTML : même contenu pour l'impression, le PDF et le courriel.
+function scanCmdHtml(){
+  const lignes = scanCmdListe.filter(l => scanCmdQte(l) > 0);
+  const total = lignes.reduce((s, l) => s + scanCmdQte(l), 0);
+  return '<h1>Bon de commande — ' + escapeHtml(scanCmdDist || 'tous les distributeurs') + '</h1>' +
+    '<p class="zi-sous">La Coiffure par Karine Landry · produits scannés ' + escapeHtml(scanCmdPeriodeTexte()) + '</p>' +
+    '<table><thead><tr><th>Produit</th><th>Format</th><th>Code fournisseur</th><th class="n">Quantité</th></tr></thead><tbody>' +
+    lignes.map(l => '<tr>' +
+      '<td>' + escapeHtml(l.p.name) + '</td>' +
+      '<td>' + escapeHtml(l.p.unit || '') + '</td>' +
+      '<td>' + escapeHtml(l.p.supplier_sku || '') + '</td>' +
+      '<td class="n">' + formatQuantite(scanCmdQte(l)) + '</td></tr>').join('') +
+    '<tr class="zi-total"><td>' + lignes.length + ' produits</td><td></td><td></td><td class="n">' + formatQuantite(total) + '</td></tr>' +
+    '</tbody></table>' +
+    '<p class="zi-pied">Imprimé le ' + escapeHtml(new Date().toLocaleDateString('fr-CA', { day:'numeric', month:'long', year:'numeric' })) + '.</p>';
+}
+
+function imprimerCommandeScan(){
+  if(!scanCmdListe.length){ alert('Il n’y a rien à imprimer pour cette période.'); return; }
+  imprimerZone(scanCmdHtml());
 }
 
 /* ---------- Onglet Produits ---------- */
@@ -9239,6 +9388,15 @@ function renderCaisseDayNav(){
   const dateFull = start.toLocaleDateString('fr-CA', { day:'numeric', month:'long', year:'numeric' });
   const labelEl = document.getElementById('caisseDayLabel');
   if(labelEl) labelEl.textContent = (isToday ? "Aujourd'hui, " : (weekdayShort.charAt(0).toUpperCase()+weekdayShort.slice(1)+' ')) + dateFull;
+}
+
+function imprimerFermetureCaisse(){
+  const corps = document.getElementById('caisseReceiptBody');
+  if(!corps || !corps.innerHTML.trim()){ alert('Le rapport n’est pas encore chargé.'); return; }
+  const titre = (document.getElementById('caisseDayLabel') || {}).textContent || '';
+  imprimerZone('<h1>Fermeture de caisse</h1>' +
+    (titre ? '<p class="zi-sous">' + escapeHtml(titre) + '</p>' : '') +
+    '<div class="receipt-body">' + corps.innerHTML + '</div>');
 }
 
 async function loadCaisseReport(){
