@@ -728,6 +728,22 @@
   /* ---- Ajout rapide de rendez-vous depuis l'horaire ---- */
   .qa-results{ margin-top:6px; border:1px solid var(--line); border-radius:9px; overflow:hidden; max-height:180px; overflow-y:auto; }
   .qa-client-fiche-link{ display:block; margin-top:7px; font-size:12.5px; color:var(--teal); text-decoration:underline; text-transform:none; letter-spacing:normal; }
+
+  /* Avertissement « numéro de téléphone manquant ». Les clients transférés d'AssistTheo sans
+     numéro entrent quand même dans le logiciel (demandé par Martin le 25 nov. 2026) : c'est ici
+     qu'on réclame le numéro, sur la fiche du client et sur chacun de ses rendez-vous. Le champ
+     est juste à côté : on tape le numéro et on l'enregistre sans changer d'écran. */
+  .avis-tel{ margin-top:10px; padding:11px 13px; border-radius:11px; background:#FBEAE6; border:1px solid #E4B4A8;
+    text-transform:none; letter-spacing:normal; }
+  .avis-tel .avis-tel-titre{ display:block; font-size:13px; font-weight:700; color:#9B3A22; margin-bottom:7px; }
+  .avis-tel .avis-tel-ligne{ display:flex; gap:7px; align-items:center; }
+  .avis-tel input{ flex:1; min-width:0; height:38px; padding:0 11px; border:1px solid #D9A596; border-radius:9px;
+    background:#fff; font-size:14.5px; font-family:inherit; color:var(--ink); }
+  .avis-tel button{ flex:0 0 auto; height:38px; padding:0 15px; border:0; border-radius:9px; background:#9B3A22;
+    color:#fff; font-size:13.5px; font-weight:600; font-family:inherit; cursor:pointer; }
+  .avis-tel button:disabled{ opacity:.6; cursor:default; }
+  .avis-tel .avis-tel-etat{ display:block; margin-top:6px; font-size:12.5px; color:#9B3A22; }
+  .client-row .ph.manquant{ color:#9B3A22; font-weight:600; }
   .qa-client-fiche-link:hover{ color:var(--teal-dk); }
   .qa-results:empty{ display:none; border:none; }
   .qa-result{ padding:10px 13px; font-size:14px; font-family:'Poppins'; text-transform:none; letter-spacing:normal; cursor:pointer; border-bottom:1px solid var(--line); }
@@ -2141,6 +2157,7 @@
       <div id="qaClientResults" class="qa-results"></div>
       <span id="qaClientFicheLink" class="qa-client-fiche-link clickable" style="display:none;" onclick="openClientFromAppointment()">Voir la fiche client (notes, historique...) &rarr;</span>
       <span id="qaClientUpcomingLink" class="qa-client-fiche-link clickable" style="display:none;" onclick="openClientUpcomingCalModal()">&#128197; Voir ses rendez-vous à venir</span>
+      <div id="qaAvisTel" class="avis-tel" style="display:none;"></div>
     </label>
     <label>Service
       <div id="qaServiceTrigger" class="qa-service-trigger clickable" onclick="toggleQaServiceMenu()">— Choisir un service — <span class="chev">&#9662;</span></div>
@@ -5505,7 +5522,9 @@ function renderClientList(filter){
     // Le drapeau suit le nom jusque dans la liste : sans ça, il fallait ouvrir la fiche pour
     // savoir qu'il y avait quelque chose à lire dans les notes. Même icône qu'à la recherche
     // de cliente au moment de planifier un rendez-vous.
-    row.innerHTML = '<div><div class="nm">'+escapeHtml(c.last_name)+', '+escapeHtml(c.first_name)+qaResultFlagIconHTML(c.flag)+'</div><div class="ph">'+escapeHtml(c.phone||'')+'</div></div><span>&rsaquo;</span>';
+    const telManquant = !String(c.phone || '').trim();
+    row.innerHTML = '<div><div class="nm">'+escapeHtml(c.last_name)+', '+escapeHtml(c.first_name)+qaResultFlagIconHTML(c.flag)+'</div>'+
+      '<div class="ph'+(telManquant?' manquant':'')+'">'+(telManquant ? '&#9888; Numéro à ajouter' : escapeHtml(c.phone))+'</div></div><span>&rsaquo;</span>';
     wrap.appendChild(row);
   });
 }
@@ -5548,6 +5567,62 @@ async function setClientFlagInline(clientId, flag){
   selectClient(clientId);
 }
 
+/* ---- « Numéro de téléphone manquant » ----
+   Depuis le 25 nov. 2026, un client transféré d'AssistTheo entre dans le logiciel même sans
+   numéro (avant, le transfert était bloqué et le rendez-vous se perdait). En échange, le
+   logiciel le réclame à l'écran : sur la fiche du client et dans chacun de ses rendez-vous.
+   Le champ est dans l'avertissement lui-même — on tape le numéro, on l'enregistre, c'est réglé.
+   La réception, elle, doit toujours mettre un numéro pour créer une fiche à la main. */
+function avisTelHTML(clientId, prefixe){
+  const pid = prefixe + clientId;
+  return '<span class="avis-tel-titre">&#9888; Numéro de téléphone manquant — il faut l\'ajouter.</span>' +
+    '<div class="avis-tel-ligne">' +
+      '<input id="'+pid+'" type="tel" inputmode="tel" placeholder="418 555-1234" autocomplete="off" ' +
+        'onkeydown="if(event.key===\'Enter\'){ event.preventDefault(); enregistrerTelAvis(\''+clientId+'\', \''+pid+'\'); }">' +
+      '<button type="button" onclick="enregistrerTelAvis(\''+clientId+'\', \''+pid+'\')">Enregistrer</button>' +
+    '</div><span class="avis-tel-etat" id="'+pid+'-etat"></span>';
+}
+
+async function enregistrerTelAvis(clientId, champId){
+  const champ = document.getElementById(champId);
+  if(!champ) return;
+  const etat = document.getElementById(champId + '-etat');
+  const tel = champ.value.trim();
+  if(!tel){ if(etat) etat.textContent = 'Écris le numéro avant d\'enregistrer.'; champ.focus(); return; }
+  const bouton = champ.parentElement.querySelector('button');
+  if(bouton) bouton.disabled = true;
+  const { error } = await sbClient.from('clients')
+    .update({ phone: tel, updated_at: new Date().toISOString() }).eq('id', clientId);
+  if(bouton) bouton.disabled = false;
+  if(error){ if(etat) etat.textContent = 'Erreur : ' + error.message; return; }
+  if(typeof allClients !== 'undefined'){
+    const c = allClients.find(x => x.id === clientId);
+    if(c) c.phone = tel;
+  }
+  if(etat) etat.textContent = 'Numéro enregistré. Merci !';
+  const bloc = champ.closest('.avis-tel');
+  setTimeout(() => {
+    if(bloc){ bloc.style.display = 'none'; bloc.innerHTML = ''; }
+    // Si la fiche de ce client est ouverte en même temps, elle se redessine avec le numéro.
+    if(typeof selectedClientId !== 'undefined' && selectedClientId === clientId && document.getElementById('clientsDetail')) selectClient(clientId);
+  }, 1000);
+}
+
+// Avertissement dans la fenêtre d'un rendez-vous : on va chercher le numéro du client choisi.
+// En cas de pépin de lecture, on n'affiche rien plutôt que de crier à tort.
+async function majAvisTelRdv(){
+  const bloc = document.getElementById('qaAvisTel');
+  if(!bloc) return;
+  const id = qaSelectedClientId;
+  if(!id){ bloc.style.display = 'none'; bloc.innerHTML = ''; return; }
+  const { data } = await sbClient.from('clients').select('phone').eq('id', id).limit(1);
+  if(qaSelectedClientId !== id) return;                 // le client a changé entre-temps
+  const tel = (data && data[0]) ? String(data[0].phone || '').trim() : 'inconnu';
+  if(tel){ bloc.style.display = 'none'; bloc.innerHTML = ''; return; }
+  bloc.innerHTML = avisTelHTML(id, 'avisTelRdv-');
+  bloc.style.display = 'block';
+}
+
 function selectClient(id){
   selectedClientId = id;
   renderClientList(document.getElementById('clientSearch').value);
@@ -5558,6 +5633,7 @@ function selectClient(id){
     '<div class="client-detail-card">' +
       '<h2>'+escapeHtml(c.first_name)+' '+escapeHtml(c.last_name)+buildClientFlagBadgeHTML(c.flag)+'</h2>' +
       '<div class="detail-row"><span>Téléphone</span><b>'+escapeHtml(c.phone||'—')+'</b></div>' +
+      (String(c.phone||'').trim() ? '' : '<div class="avis-tel">'+avisTelHTML(c.id, 'avisTelFiche-')+'</div>') +
       '<div class="detail-row"><span>Courriel</span><b>'+escapeHtml(c.email||'—')+'</b></div>' +
       buildClientFlagRowHTML(c) +
       buildClientBreuvageHTML(c) +
@@ -10836,6 +10912,7 @@ function updateQaClientFicheLink(){
   if(link) link.style.display = qaSelectedClientId ? 'block' : 'none';
   const upcomingLink = document.getElementById('qaClientUpcomingLink');
   if(upcomingLink) upcomingLink.style.display = qaSelectedClientId ? 'block' : 'none';
+  majAvisTelRdv();
 }
 
 // Rendez-vous laissé en plan quand on quitte la fenêtre pour aller voir la fiche d'une cliente
@@ -11734,6 +11811,7 @@ function qaBackToCategories(){
 let qaSearchTimer = null;
 function onQaClientInput(){
   qaSelectedClientId = null;
+  updateQaClientFicheLink();   // on retape un nom : l'avertissement et les liens du client précédent s'effacent
   const q = document.getElementById('qaClientSearch').value.trim();
   clearTimeout(qaSearchTimer);
   if(!q){ document.getElementById('qaClientResults').innerHTML = ''; return; }
